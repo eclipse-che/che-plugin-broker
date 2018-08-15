@@ -17,8 +17,5 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo 
 
 
 FROM alpine:3.7
-ENV XDG_CONFIG_HOME=/config/
-VOLUME /config
 COPY --from=builder /go/src/github.com/eclipse/che-plugin-broker/che-plugin-broker /usr/local/bin
 ENTRYPOINT ["che-plugin-broker"]
-CMD ["-config", "/config/config.yaml"]

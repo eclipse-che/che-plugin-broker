@@ -18,6 +18,7 @@ import (
 	"compress/gzip"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -62,8 +63,8 @@ func copyFile(src string, dest string) error {
 	return err
 }
 
-func resolveDestPath(location string, destDir string) string {
-	destName := filepath.Base(location)
+func resolveDestPath(filePath string, destDir string) string {
+	destName := filepath.Base(filePath)
 	destPath := filepath.Join(destDir, destName)
 	return destPath
 }
@@ -101,25 +102,48 @@ func untar(tarPath string, dest string) error {
 
 			// skip empty header
 		case header == nil:
+			log.Println("Empty prefix")
 			continue
 		}
 
+		// TODO what will happen if it contains a folder and files insode of it
 		tarEntry := filepath.Join(dest, header.Name)
+		log.Printf("Tar entry: headerName:'%s'; tarEntry:'%s'; typeFlag:'%c'; isDir:'%t'", header.Name, tarEntry, header.Typeflag, header.FileInfo().IsDir())
 
 		switch header.Typeflag {
 		case tar.TypeDir:
+			log.Println("1")
 			if err := os.MkdirAll(tarEntry, 0755); err != nil {
+				log.Println("2")
 				return err
 			}
+			log.Println("3")
 		case tar.TypeReg:
-			createFile(tarEntry, tr)
+			log.Println("3.1")
+			if err := createContainingDir(tarEntry); err != nil {
+				return err
+			}
+			log.Println("4")
+			if err := createFile(tarEntry, tr); err != nil {
+				return err
+			}
+			log.Println("5")
 		default:
+			log.Println("6")
 			return errors.New("Unpacking archive problem occured. Archive content has unexpected data")
 		}
 	}
 }
 
+func createContainingDir(filePath string) error {
+	log.Printf("File path: '%s'", filePath)
+	dirPath := filepath.Dir(filePath)
+	log.Printf("Create path: '%s'", dirPath)
+	return os.MkdirAll(dirPath, 0755)
+}
+
 func createFile(file string, tr io.Reader) error {
+	log.Printf("Create file: '%s'", file)
 	f, err := os.Create(file)
 	if err != nil {
 		return err
@@ -128,5 +152,18 @@ func createFile(file string, tr io.Reader) error {
 	if _, err := io.Copy(f, tr); err != nil {
 		return err
 	}
-	return nil
+	return f.Sync()
+}
+
+func getDirContent(path string) (names []string, err error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	files, err := file.Readdirnames(0)
+	if err != nil {
+		return nil, err
+	}
+	return files, nil
 }

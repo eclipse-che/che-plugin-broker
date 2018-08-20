@@ -23,6 +23,10 @@ const (
 	StatusDone BrokerStatus = "DONE"
 
 	StatusFailed BrokerStatus = "FAILED"
+
+	BrokerStatusEventType = "broker/statusChanged"
+
+	BrokerResultEventType = "broker/result"
 )
 
 type PluginMeta struct {
@@ -43,10 +47,17 @@ type PluginMeta struct {
 	URL string `json:"url" yaml:"url"`
 }
 
+type EndpointAttributes struct {
+	Protocol string `json:"protocol" yaml:"protocol"`
+	Path     string `json:"path" yaml:"path"`
+	Type     string `json:"type" yaml:"type"`
+}
+
 type Endpoint struct {
-	Name       string `json:"name" yaml:"name"`
-	Public     bool   `json:"public" yaml:"public"`
-	TargetPort int    `json:"targetPort yaml:"targetPort"`
+	Name       string             `json:"name" yaml:"name"`
+	Public     bool               `json:"public" yaml:"public"`
+	TargetPort int                `json:"targetPort" yaml:"targetPort"`
+	Attributes EndpointAttributes `json:"attributes" yaml:"attributes"`
 }
 
 type EnvVar struct {
@@ -70,7 +81,6 @@ type ExposedPort struct {
 }
 
 type Container struct {
-	Name           string          `json:"name" yaml:"name"`
 	Image          string          `json:"image" yaml:"image"`
 	Env            []EnvVar        `json:"env" yaml:"env"`
 	EditorCommands []EditorCommand `json:"editor-commands" yaml:"editor-commands"`
@@ -99,3 +109,22 @@ type CheDependency struct {
 type CheDependencies struct {
 	Plugins []CheDependency `json:"plugins" yaml:"plugins"`
 }
+
+type ErrorEvent struct {
+	Status      BrokerStatus `json:"status" yaml:"status"`
+	WorkspaceID string       `json:"workspaceId" yaml:"workspaceId"`
+	Error       string       `json:"error" yaml:"error"`
+}
+
+// Type returns BrokerStatusEventType.
+func (e *ErrorEvent) Type() string { return BrokerStatusEventType }
+
+// We have to encode tooling as string to overcome limitations of parsing of event delivering mechanism on Che master side
+type SuccessEvent struct {
+	Status      BrokerStatus `json:"status" yaml:"status"`
+	WorkspaceID string       `json:"workspaceId" yaml:"workspaceId"`
+	Tooling     string       `json:"tooling" yaml:"tooling"`
+}
+
+// Type returns BrokerResultEventType.
+func (e *SuccessEvent) Type() string { return BrokerResultEventType }

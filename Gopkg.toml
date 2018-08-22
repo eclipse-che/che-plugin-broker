@@ -1,10 +1,10 @@
 [[constraint]]
-  name = "github.com/eclipse/che"
-  version = "=v6.9.0"
-
-[[constraint]]
   name = "gopkg.in/yaml.v2"
   version = "=v2.2.1"
+
+[[constraint]]
+    name = "github.com/gin-gonic/gin"
+    revision = "bd4f73af679e7d645f6d0277258fa360eda96f2d"
 
 [prune]
   go-tests = true

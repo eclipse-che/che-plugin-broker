@@ -17,71 +17,48 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/eclipse/che-plugin-broker/broker"
-	"github.com/eclipse/che-plugin-broker/model"
-	"github.com/eclipse/che-plugin-broker/resttemp"
+	"github.com/gin-gonic/gin"
 	"github.com/eclipse/che-plugin-broker/storage"
-	"github.com/eclipse/che/agents/go-agents/core/rest"
-	"github.com/eclipse/che/agents/go-agents/core/rest/restutil"
+	"github.com/eclipse/che-plugin-broker/model"
+	"github.com/eclipse/che-plugin-broker/broker"
 )
 
-// HTTPRoutes provides all routes that should be handled by the broker API
-var HTTPRoutes = rest.RoutesGroup{
-	Name: "Process Routes",
-	Items: []rest.Route{
-		{
-			Method:     "POST",
-			Name:       "Start broker",
-			Path:       "/",
-			HandleFunc: start,
-		},
-		{
-			Method:     "GET",
-			Name:       "Get status",
-			Path:       "/status",
-			HandleFunc: getStatus,
-		},
-		{
-			Method:     "GET",
-			Name:       "Get results",
-			Path:       "/",
-			HandleFunc: getResults,
-		},
-		{
-			Method:     "GET",
-			Name:       "Get results",
-			Path:       "/logs",
-			HandleFunc: getLogs,
-		},
-	},
+func SetUpRouter(router *gin.Engine) {
+	router.POST("/", Start)
+	router.GET("/status", GetStatus)
+	router.GET("/", GetResults)
+	router.GET("/logs", GetResults)
 }
 
-func start(w http.ResponseWriter, r *http.Request, _ rest.Params) error {
+func Start(c *gin.Context) {
 	if ok, status := storage.SetStatus(model.StatusStarting); !ok {
 		m := fmt.Sprintf("Starting broker in state '%s' is not allowed", status)
-		return rest.Conflict(errors.New(m))
+		c.JSON(http.StatusConflict, errors.New(m))
+		return
 	}
 
 	var metas []model.PluginMeta
-	if err := restutil.ReadJSON(r, &metas); err != nil {
-		return err
+	if err := c.ShouldBindJSON(&metas); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
+
 	if err := checkMetas(metas); err != nil {
-		return rest.BadRequest(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
 	go broker.ProcessPlugins(metas)
-	return nil
 }
 
-func getStatus(w http.ResponseWriter, r *http.Request, _ rest.Params) error {
+func GetStatus(c *gin.Context) {
 	status := Status{
 		storage.Status(),
 	}
-	return restutil.WriteJSON(w, status)
+	c.JSON(http.StatusOK, status)
 }
 
-func getResults(w http.ResponseWriter, r *http.Request, _ rest.Params) error {
+func GetResults(c *gin.Context) {
 	status := storage.Status()
 	errMess := fmt.Sprintf("Broker is in '%s' state. Plugins configuration resolution is not available", status)
 	switch status {
@@ -89,22 +66,28 @@ func getResults(w http.ResponseWriter, r *http.Request, _ rest.Params) error {
 		result, err := storage.Tooling()
 		if err != nil {
 			errMess := fmt.Sprintf("Broker is in '%s' state but plugins configuration is broken", status)
-			return resttemp.ServerError(errors.New(errMess))
+			c.JSON(http.StatusInternalServerError, errors.New(errMess))
+			return
 		}
-		return restutil.WriteJSON(w, result)
+		c.JSON(http.StatusOK, result)
+		return
 	case model.StatusIdle:
-		return rest.NotFound(errors.New(errMess))
+		c.JSON(http.StatusNotFound, errors.New(errMess))
+		return
 	case model.StatusStarting:
-		return rest.NotFound(errors.New(errMess))
+		c.JSON(http.StatusNotFound, errors.New(errMess))
+		return
 	case model.StatusFailed:
 		errMess := fmt.Sprintf("Broker is in '%s' state. Plugins configuration resolution failed with error: %s", status, storage.Err())
-		return resttemp.ServerError(errors.New(errMess))
+		c.JSON(http.StatusInternalServerError, errors.New(errMess))
+		return
 	default:
-		return resttemp.ServerError(errors.New(errMess))
+		c.JSON(http.StatusInternalServerError, errors.New(errMess))
+		return
 	}
 }
 
-func getLogs(w http.ResponseWriter, r *http.Request, _ rest.Params) error {
+func GetLogs(c *gin.Context) {
 	logs := storage.Logs()
-	return restutil.WriteJSON(w, logs)
+	c.JSON(http.StatusOK, logs)
 }

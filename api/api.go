@@ -33,18 +33,18 @@ func SetUpRouter(router *gin.Engine) {
 func Start(c *gin.Context) {
 	if ok, status := storage.SetStatus(model.StatusStarting); !ok {
 		m := fmt.Sprintf("Starting broker in state '%s' is not allowed", status)
-		c.JSON(http.StatusConflict, errors.New(m))
+		c.JSON(http.StatusConflict, Conflict(errors.New(m)))
 		return
 	}
 
 	var metas []model.PluginMeta
 	if err := c.ShouldBindJSON(&metas); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest,  BadRequest(err))
 		return
 	}
 
 	if err := checkMetas(metas); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, BadRequest(err))
 		return
 	}
 
@@ -66,23 +66,23 @@ func GetResults(c *gin.Context) {
 		result, err := storage.Tooling()
 		if err != nil {
 			errMess := fmt.Sprintf("Broker is in '%s' state but plugins configuration is broken", status)
-			c.JSON(http.StatusInternalServerError, errors.New(errMess))
+			c.JSON(http.StatusInternalServerError, ServerError(errors.New(errMess)))
 			return
 		}
 		c.JSON(http.StatusOK, result)
 		return
 	case model.StatusIdle:
-		c.JSON(http.StatusNotFound, errors.New(errMess))
+		c.AbortWithError(http.StatusNotFound,errors.New(errMess))
 		return
 	case model.StatusStarting:
-		c.JSON(http.StatusNotFound, errors.New(errMess))
+		c.JSON(http.StatusNotFound, NotFound(errors.New(errMess)))
 		return
 	case model.StatusFailed:
 		errMess := fmt.Sprintf("Broker is in '%s' state. Plugins configuration resolution failed with error: %s", status, storage.Err())
-		c.JSON(http.StatusInternalServerError, errors.New(errMess))
+		c.JSON(http.StatusInternalServerError, ServerError(errors.New(errMess)))
 		return
 	default:
-		c.JSON(http.StatusInternalServerError, errors.New(errMess))
+		c.JSON(http.StatusInternalServerError, ServerError(errors.New(errMess)))
 		return
 	}
 }

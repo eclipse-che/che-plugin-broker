@@ -4,10 +4,19 @@
 [[projects]]
   name = "github.com/eclipse/che"
   packages = [
+    "agents/go-agents/core/event",
+    "agents/go-agents/core/jsonrpc",
+    "agents/go-agents/core/jsonrpc/jsonrpcws",
     "agents/go-agents/core/rest",
     "agents/go-agents/core/rest/restutil"
   ]
   revision = "ecf99117e9b53fb0013fe739cdfff5c30f5e17e2"
+  version = "6.9.0"
+
+[[projects]]
+  name = "github.com/eclipse/che-lib"
+  packages = ["websocket"]
+  revision = "d93d5cf925d743be8884a44cc79968ca0155e7dd"
   version = "6.9.0"
 
 [[projects]]
@@ -25,6 +34,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "dcb64c8217fe9255bad0e752120c738c41d31515f812b0e38e08846f08c9eaaa"
+  inputs-digest = "c6bad9fe1f5996a985a72fce5b4469b79560848319059c777ad85a802a84c858"
   solver-name = "gps-cdcl"
   solver-version = 1

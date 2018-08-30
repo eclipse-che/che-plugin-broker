@@ -22,6 +22,7 @@ var s = &Storage{
 	status: model.StatusIdle,
 }
 
+// Storage stores broker execution results
 type Storage struct {
 	sync.RWMutex
 	status  model.BrokerStatus
@@ -30,12 +31,14 @@ type Storage struct {
 	tooling []model.ToolingConf
 }
 
+// Status returns current status of broker execution
 func Status() model.BrokerStatus {
 	s.Lock()
 	defer s.Unlock()
 	return s.status
 }
 
+// SetStatus sets current status of broker execution
 func SetStatus(status model.BrokerStatus) (ok bool, currentValue model.BrokerStatus) {
 	s.Lock()
 	defer s.Unlock()
@@ -50,38 +53,29 @@ func SetStatus(status model.BrokerStatus) (ok bool, currentValue model.BrokerSta
 	}
 }
 
+// Err returns error message of broker execution if any
 func Err() string {
 	s.Lock()
 	defer s.Unlock()
 	return s.err
 }
 
+// SetErr sets error message of broker execution
 func SetErr(err string) {
 	s.Lock()
 	defer s.Unlock()
 	s.err = err
 }
 
-func Logs() *[]string {
-	s.Lock()
-	defer s.Unlock()
-	logsCopy := []string{}
-	copy(logsCopy, s.logs)
-	return &logsCopy
-}
-
-func AppendLogs(log string) {
-	s.Lock()
-	defer s.Unlock()
-	s.logs = append(s.logs, log)
-}
-
+// Tooling returns configuration of Che plugins tooling resolved during the broker execution.
+// At any particular point of time configuration might be incomplete if tooling resolution failed or not completed yet
 func Tooling() (*[]model.ToolingConf, error) {
 	s.Lock()
 	defer s.Unlock()
 	return &s.tooling, nil
 }
 
+// AddTooling adds configuration of model.ToolingConf to the results of broker execution
 func AddTooling(tooling *model.ToolingConf) error {
 	s.Lock()
 	defer s.Unlock()

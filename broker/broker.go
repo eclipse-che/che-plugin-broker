@@ -13,6 +13,7 @@
 package broker
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -20,22 +21,94 @@ import (
 	"os"
 	"path/filepath"
 
+	jsonrpc "github.com/eclipse/che-go-jsonrpc"
+	"github.com/eclipse/che-go-jsonrpc/event"
+	"github.com/eclipse/che-plugin-broker/cfg"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
 	yaml "gopkg.in/yaml.v2"
 )
 
-func ProcessPlugins(metas []model.PluginMeta) {
+var (
+	bus = event.NewBus()
+)
+
+// Start executes plugins metas processing and sends data to Che master
+func Start(metas []model.PluginMeta) {
+	if ok, status := storage.SetStatus(model.StatusStarting); !ok {
+		m := fmt.Sprintf("Starting broker in state '%s' is not allowed", status)
+		pubFailed(m)
+		log.Fatal(m)
+	}
+
 	for _, meta := range metas {
 		err := processPlugin(meta)
 		if err != nil {
-			log.Panic(err)
+			pubFailed(err.Error())
+			log.Fatal(err)
 		}
 	}
 
-	log.Println("Set success status")
 	if ok, status := storage.SetStatus(model.StatusDone); !ok {
-		log.Panicf("Setting '%s' broker status failed. Broker has '%s' state", model.StatusDone, status)
+		err := fmt.Sprintf("Setting '%s' broker status failed. Broker has '%s' state", model.StatusDone, status)
+		pubFailed(err)
+		log.Fatalf(err)
+	}
+
+	tooling, err := storage.Tooling()
+	if err != nil {
+		pubFailed(err.Error())
+		log.Fatalf(err.Error())
+	}
+	bytes, err := json.Marshal(tooling)
+	if err != nil {
+		pubFailed(err.Error())
+		log.Fatalf(err.Error())
+	}
+	pubDone(string(bytes))
+	closeConsumers()
+}
+
+func closeConsumers() {
+	for _, candidates := range bus.Clear() {
+		for _, candidate := range candidates {
+			if broadcaster, ok := candidate.(*tunnelBroadcaster); ok {
+				broadcaster.Close()
+			}
+		}
+	}
+}
+
+func (tb *tunnelBroadcaster) Close() { tb.tunnel.Close() }
+
+func pubFailed(err string) {
+	bus.Pub(&model.ErrorEvent{
+		Status:      model.StatusFailed,
+		Error:       err,
+		WorkspaceID: cfg.WorkspaceID,
+	})
+}
+
+func pubDone(tooling string) {
+	bus.Pub(&model.SuccessEvent{
+		Status:      model.StatusDone,
+		WorkspaceID: cfg.WorkspaceID,
+		Tooling:     tooling,
+	})
+}
+
+// PushStatuses sets given tunnel as consumer of broker events.
+func PushStatuses(tun *jsonrpc.Tunnel) {
+	bus.SubAny(&tunnelBroadcaster{tunnel: tun}, model.BrokerStatusEventType, model.BrokerResultEventType)
+}
+
+type tunnelBroadcaster struct {
+	tunnel *jsonrpc.Tunnel
+}
+
+func (tb *tunnelBroadcaster) Accept(e event.E) {
+	if err := tb.tunnel.Notify(e.Type(), e); err != nil {
+		log.Fatalf("Trying to send event of type '%s' to closed tunnel '%s'", e.Type(), tb.tunnel.ID())
 	}
 }
 
@@ -46,37 +119,32 @@ func processPlugin(meta model.PluginMeta) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Working directory: %s", workDir)
 
 	archivePath := filepath.Join(workDir, "testArchive.tar.gz")
 	pluginPath := filepath.Join(workDir, "testArchive")
 
 	// Download an archive
-	log.Println("Downloading")
+	log.Printf("Downloading archive '%s' to '%s'", url, archivePath)
 	err = download(url, archivePath)
 	if err != nil {
 		return err
 	}
 
-	log.Println("Untarring")
 	// Untar it
+	log.Printf("Untarring '%s' to '%s'", archivePath, pluginPath)
 	err = untar(archivePath, pluginPath)
 	if err != nil {
 		return err
 	}
 
-	log.Println("Resolving yamls")
+	log.Println("Resolving Che plugins")
 	err = resolveToolingConfig(pluginPath)
 	if err != nil {
 		return err
 	}
 
 	log.Println("Copying dependencies")
-	if err = copyDependencies(pluginPath); err != nil {
-		return err
-	}
-
-	return nil
+	return copyDependencies(pluginPath)
 }
 
 func resolveToolingConfig(workDir string) error {
@@ -117,11 +185,14 @@ func copyDependencies(workDir string) error {
 			return errors.New(m)
 		case dep.Location != "":
 			fileDest := resolveDestPath(dep.Location, "/plugins")
-			if err = copyFile(filepath.Join(workDir, dep.Location), fileDest); err != nil {
+			fileSrc := filepath.Join(workDir, dep.Location)
+			log.Printf("Copying file '%s' to '%s'", fileSrc, fileDest)
+			if err = copyFile(fileSrc, fileDest); err != nil {
 				return err
 			}
 		case dep.URL != "":
 			fileDest := resolveDestPathFromURL(dep.URL, "/plugins")
+			log.Printf("Downloading file '%s' to '%s'", dep.URL, fileDest)
 			if err = download(dep.URL, fileDest); err != nil {
 				return err
 			}

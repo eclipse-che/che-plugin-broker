@@ -2,29 +2,41 @@
 
 
 [[projects]]
-  name = "github.com/eclipse/che"
+  digest = "1:f5bb63f36061adf9e239e1300343020bfbb6a4d54173cd75206f124406c16b9e"
+  name = "github.com/eclipse/che-go-jsonrpc"
   packages = [
-    "agents/go-agents/core/rest",
-    "agents/go-agents/core/rest/restutil"
+    ".",
+    "event",
+    "jsonrpcws",
   ]
-  revision = "ecf99117e9b53fb0013fe739cdfff5c30f5e17e2"
-  version = "6.9.0"
+  pruneopts = "UT"
+  revision = "8449a748a2cdfa68f54d2d72e2b02f539f1cd2c5"
+  version = "0.1.0"
 
 [[projects]]
-  name = "github.com/julienschmidt/httprouter"
+  digest = "1:cee8e8ac80df6373e7daa11baf1f98c1b6f7242c49ccae7e1ec34a971dc408d9"
+  name = "github.com/gorilla/websocket"
   packages = ["."]
-  revision = "8c199fb6259ffc1af525cc3ad52ee60ba8359669"
-  version = "v1.1"
+  pruneopts = "UT"
+  revision = "3ff3320c2a1756a3691521efc290b4701575147c"
+  version = "v1.3.0"
 
 [[projects]]
+  digest = "1:342378ac4dcb378a5448dd723f0784ae519383532f5e70ade24132c4c8693202"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
+  pruneopts = "UT"
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
   version = "v2.2.1"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "dcb64c8217fe9255bad0e752120c738c41d31515f812b0e38e08846f08c9eaaa"
+  input-imports = [
+    "github.com/eclipse/che-go-jsonrpc",
+    "github.com/eclipse/che-go-jsonrpc/event",
+    "github.com/eclipse/che-go-jsonrpc/jsonrpcws",
+    "gopkg.in/yaml.v2",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -62,8 +62,8 @@ func copyFile(src string, dest string) error {
 	return err
 }
 
-func resolveDestPath(location string, destDir string) string {
-	destName := filepath.Base(location)
+func resolveDestPath(filePath string, destDir string) string {
+	destName := filepath.Base(filePath)
 	destPath := filepath.Join(destDir, destName)
 	return destPath
 }
@@ -112,11 +112,21 @@ func untar(tarPath string, dest string) error {
 				return err
 			}
 		case tar.TypeReg:
-			createFile(tarEntry, tr)
+			if err := createContainingDir(tarEntry); err != nil {
+				return err
+			}
+			if err := createFile(tarEntry, tr); err != nil {
+				return err
+			}
 		default:
-			return errors.New("Unpacking archive problem occured. Archive content has unexpected data")
+			return errors.New("Unpacking archive problem occurred. Archive content has unexpected data")
 		}
 	}
+}
+
+func createContainingDir(filePath string) error {
+	dirPath := filepath.Dir(filePath)
+	return os.MkdirAll(dirPath, 0755)
 }
 
 func createFile(file string, tr io.Reader) error {
@@ -128,5 +138,18 @@ func createFile(file string, tr io.Reader) error {
 	if _, err := io.Copy(f, tr); err != nil {
 		return err
 	}
-	return nil
+	return f.Sync()
+}
+
+func getDirContent(path string) (names []string, err error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	files, err := file.Readdirnames(0)
+	if err != nil {
+		return nil, err
+	}
+	return files, nil
 }

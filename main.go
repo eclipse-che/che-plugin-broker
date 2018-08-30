@@ -13,66 +13,47 @@
 package main
 
 import (
-	"flag"
 	"log"
-	"net/http"
 	"os"
-	"time"
 
-	"github.com/eclipse/che-plugin-broker/api"
-	"github.com/eclipse/che/agents/go-agents/core/rest"
+	jsonrpc "github.com/eclipse/che-go-jsonrpc"
+	"github.com/eclipse/che-go-jsonrpc/jsonrpcws"
+	"github.com/eclipse/che-plugin-broker/broker"
+	"github.com/eclipse/che-plugin-broker/cfg"
 )
 
-var (
-	config = &brokerConfig{}
-)
-
-func init() {
-	config.init()
-}
-
-// TODO: process logs, send them to master to show on WS start
 func main() {
-	flag.Parse()
-
 	log.SetOutput(os.Stdout)
 
-	config.printAll()
+	cfg.Parse()
+	cfg.Print()
 
-	appHTTPRoutes := []rest.RoutesGroup{
-		api.HTTPRoutes,
+	statusTun := connectOrFail(cfg.PushStatusesEndpoint, cfg.Token)
+	broker.PushStatuses(statusTun)
+
+	metas := cfg.ReadConfig()
+	broker.Start(metas)
+}
+
+func connectOrFail(endpoint string, token string) *jsonrpc.Tunnel {
+	tunnel, err := connect(endpoint, token)
+	if err != nil {
+		log.Fatalf("Couldn't connect to endpoint '%s', due to error '%s'", endpoint, err)
 	}
+	return tunnel
+}
 
-	// register routes and http handlers
-	r := rest.NewDefaultRouter("", appHTTPRoutes)
-	rest.PrintRoutes(appHTTPRoutes)
-
-	server := &http.Server{
-		Handler:      r,
-		Addr:         config.serverAddress,
-		WriteTimeout: 10 * time.Second,
-		ReadTimeout:  10 * time.Second,
+func connect(endpoint string, token string) (*jsonrpc.Tunnel, error) {
+	conn, err := jsonrpcws.Dial(endpoint, token)
+	if err != nil {
+		return nil, err
 	}
-	log.Fatal(server.ListenAndServe())
+	return jsonrpc.NewManagedTunnel(conn), nil
 }
 
-type brokerConfig struct {
-	serverAddress string
+type wsDialConnector struct {
+	endpoint string
+	token    string
 }
 
-func (cfg *brokerConfig) init() {
-	// server configuration
-	flag.StringVar(
-		&cfg.serverAddress,
-		"addr",
-		":9000",
-		"IP:PORT or :PORT the address to start the server on",
-	)
-}
-
-func (cfg *brokerConfig) printAll() {
-	log.Println("Plugin broker configuration")
-	log.Println("  Server")
-	log.Printf("    - Address: %s\n", cfg.serverAddress)
-	log.Println()
-}
+func (c *wsDialConnector) Connect() (*jsonrpc.Tunnel, error) { return connect(c.endpoint, c.token) }

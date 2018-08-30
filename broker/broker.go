@@ -33,21 +33,6 @@ var (
 	bus = event.NewBus()
 )
 
-// ProcessPlugins processes passed plugins metas and set success state of broker execution
-func ProcessPlugins(metas []model.PluginMeta) {
-	for _, meta := range metas {
-		err := processPlugin(meta)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	log.Println("Set success status")
-	if ok, status := storage.SetStatus(model.StatusDone); !ok {
-		log.Fatalf("Setting '%s' broker status failed. Broker has '%s' state", model.StatusDone, status)
-	}
-}
-
 // Start executes plugins metas processing and sends data to Che master
 func Start(metas []model.PluginMeta) {
 	if ok, status := storage.SetStatus(model.StatusStarting); !ok {
@@ -64,7 +49,6 @@ func Start(metas []model.PluginMeta) {
 		}
 	}
 
-	log.Println("Set success status")
 	if ok, status := storage.SetStatus(model.StatusDone); !ok {
 		err := fmt.Sprintf("Setting '%s' broker status failed. Broker has '%s' state", model.StatusDone, status)
 		pubFailed(err)
@@ -135,7 +119,6 @@ func processPlugin(meta model.PluginMeta) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Working directory: %s", workDir)
 
 	archivePath := filepath.Join(workDir, "testArchive.tar.gz")
 	pluginPath := filepath.Join(workDir, "testArchive")
@@ -153,13 +136,8 @@ func processPlugin(meta model.PluginMeta) error {
 	if err != nil {
 		return err
 	}
-	files, err := getDirContent(pluginPath)
-	if err != nil {
-		return err
-	}
-	log.Printf("Untarred content: '%s'", files)
 
-	log.Println("Resolving yamls")
+	log.Println("Resolving Che plugins")
 	err = resolveToolingConfig(pluginPath)
 	if err != nil {
 		return err

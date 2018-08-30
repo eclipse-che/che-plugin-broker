@@ -20,8 +20,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sync"
-	"time"
 
 	jsonrpc "github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-go-jsonrpc/event"
@@ -119,21 +117,13 @@ func PushStatuses(tun *jsonrpc.Tunnel) {
 }
 
 type tunnelBroadcaster struct {
-	tunnel          *jsonrpc.Tunnel
-	connector       Connector
-	reconnectPeriod time.Duration
-	reconnectOnce   *sync.Once
+	tunnel *jsonrpc.Tunnel
 }
 
 func (tb *tunnelBroadcaster) Accept(e event.E) {
 	if err := tb.tunnel.Notify(e.Type(), e); err != nil {
 		log.Fatalf("Trying to send event of type '%s' to closed tunnel '%s'", e.Type(), tb.tunnel.ID())
 	}
-}
-
-// Connector encloses implementation specific jsonrpc connection establishment.
-type Connector interface {
-	Connect() (*jsonrpc.Tunnel, error)
 }
 
 func processPlugin(meta model.PluginMeta) error {

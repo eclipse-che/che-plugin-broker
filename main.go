@@ -16,10 +16,10 @@ import (
 	"log"
 	"os"
 
+	jsonrpc "github.com/eclipse/che-go-jsonrpc"
+	"github.com/eclipse/che-go-jsonrpc/jsonrpcws"
 	"github.com/eclipse/che-plugin-broker/broker"
 	"github.com/eclipse/che-plugin-broker/cfg"
-	"github.com/eclipse/che/agents/go-agents/core/jsonrpc"
-	"github.com/eclipse/che/agents/go-agents/core/jsonrpc/jsonrpcws"
 )
 
 func main() {

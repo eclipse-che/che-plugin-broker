@@ -130,7 +130,7 @@ func untar(tarPath string, dest string) error {
 			log.Println("5")
 		default:
 			log.Println("6")
-			return errors.New("Unpacking archive problem occured. Archive content has unexpected data")
+			return errors.New("Unpacking archive problem occurred. Archive content has unexpected data")
 		}
 	}
 }

@@ -33,6 +33,7 @@ var (
 	bus = event.NewBus()
 )
 
+// ProcessPlugins processes passed plugins metas and set success state of broker execution
 func ProcessPlugins(metas []model.PluginMeta) {
 	for _, meta := range metas {
 		err := processPlugin(meta)
@@ -47,6 +48,7 @@ func ProcessPlugins(metas []model.PluginMeta) {
 	}
 }
 
+// Start executes plugins metas processing and sends data to Che master
 func Start(metas []model.PluginMeta) {
 	if ok, status := storage.SetStatus(model.StatusStarting); !ok {
 		m := fmt.Sprintf("Starting broker in state '%s' is not allowed", status)
@@ -164,11 +166,7 @@ func processPlugin(meta model.PluginMeta) error {
 	}
 
 	log.Println("Copying dependencies")
-	if err = copyDependencies(pluginPath); err != nil {
-		return err
-	}
-
-	return nil
+	return copyDependencies(pluginPath)
 }
 
 func resolveToolingConfig(workDir string) error {

@@ -119,7 +119,7 @@ type ErrorEvent struct {
 // Type returns BrokerStatusEventType.
 func (e *ErrorEvent) Type() string { return BrokerStatusEventType }
 
-// We have to encode tooling as string to overcome limitations of parsing of event delivering mechanism on Che master side
+// SuccessEvent is used to send encoded workspace tooling configuration to Che master
 type SuccessEvent struct {
 	Status      BrokerStatus `json:"status" yaml:"status"`
 	WorkspaceID string       `json:"workspaceId" yaml:"workspaceId"`

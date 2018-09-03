@@ -27,7 +27,6 @@ type Storage struct {
 	sync.RWMutex
 	status  model.BrokerStatus
 	err     string
-	logs    []string
 	tooling []model.ToolingConf
 }
 

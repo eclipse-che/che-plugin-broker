@@ -140,16 +140,3 @@ func createFile(file string, tr io.Reader) error {
 	}
 	return f.Sync()
 }
-
-func getDirContent(path string) (names []string, err error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-
-	files, err := file.Readdirnames(0)
-	if err != nil {
-		return nil, err
-	}
-	return files, nil
-}

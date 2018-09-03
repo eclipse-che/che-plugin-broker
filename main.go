@@ -50,10 +50,3 @@ func connect(endpoint string, token string) (*jsonrpc.Tunnel, error) {
 	}
 	return jsonrpc.NewManagedTunnel(conn), nil
 }
-
-type wsDialConnector struct {
-	endpoint string
-	token    string
-}
-
-func (c *wsDialConnector) Connect() (*jsonrpc.Tunnel, error) { return connect(c.endpoint, c.token) }

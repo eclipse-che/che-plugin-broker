@@ -86,6 +86,7 @@ type Container struct {
 	EditorCommands []EditorCommand `json:"editor-commands" yaml:"editor-commands"`
 	Volumes        []Volume        `json:"volumes" yaml:"volumes"`
 	Ports          []ExposedPort   `json:"ports" yaml:"ports"`
+	MemoryLimit    string          `json:"memory-limit" yaml:"memory-limit"`
 }
 
 type Editor struct {

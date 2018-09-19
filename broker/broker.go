@@ -41,6 +41,13 @@ func Start(metas []model.PluginMeta) {
 		log.Fatal(m)
 	}
 
+	// Clear any existing plugins from dir
+	log.Println("Cleaning /plugins dir")
+	err := clearDir("/plugins")
+	if err != nil {
+		log.Printf("WARN: failed to clear /plugins directory: %s", err)
+	}
+
 	for _, meta := range metas {
 		err := processPlugin(meta)
 		if err != nil {

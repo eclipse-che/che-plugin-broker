@@ -81,6 +81,7 @@ type ExposedPort struct {
 }
 
 type Container struct {
+	Name           string          `json:"name" yaml:"name"`
 	Image          string          `json:"image" yaml:"image"`
 	Env            []EnvVar        `json:"env" yaml:"env"`
 	EditorCommands []EditorCommand `json:"editor-commands" yaml:"editor-commands"`

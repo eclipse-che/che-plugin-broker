@@ -18,7 +18,7 @@ type BrokerStatus string
 const (
 	StatusIdle BrokerStatus = "IDLE"
 
-	StatusStarting BrokerStatus = "STARTING"
+	StatusStarted BrokerStatus = "STARTED"
 
 	StatusDone BrokerStatus = "DONE"
 
@@ -109,6 +109,14 @@ type CheDependency struct {
 type CheDependencies struct {
 	Plugins []CheDependency `json:"plugins" yaml:"plugins"`
 }
+
+type StartedEvent struct {
+	Status      BrokerStatus `json:"status" yaml:"status"`
+	WorkspaceID string       `json:"workspaceId" yaml:"workspaceId"`
+}
+
+// Type returns BrokerStatusEventType.
+func (e *StartedEvent) Type() string { return BrokerStatusEventType }
 
 type ErrorEvent struct {
 	Status      BrokerStatus `json:"status" yaml:"status"`

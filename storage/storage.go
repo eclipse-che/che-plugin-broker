@@ -42,9 +42,9 @@ func SetStatus(status model.BrokerStatus) (ok bool, currentValue model.BrokerSta
 	s.Lock()
 	defer s.Unlock()
 	switch {
-	case s.status == model.StatusIdle && status == model.StatusStarting:
+	case s.status == model.StatusIdle && status == model.StatusStarted:
 		fallthrough
-	case s.status == model.StatusStarting && status == model.StatusDone:
+	case s.status == model.StatusStarted && status == model.StatusDone:
 		s.status = status
 		return true, status
 	default:

@@ -35,11 +35,12 @@ var (
 
 // Start executes plugins metas processing and sends data to Che master
 func Start(metas []model.PluginMeta) {
-	if ok, status := storage.SetStatus(model.StatusStarting); !ok {
+	if ok, status := storage.SetStatus(model.StatusStarted); !ok {
 		m := fmt.Sprintf("Starting broker in state '%s' is not allowed", status)
 		pubFailed(m)
 		log.Fatal(m)
 	}
+	pubStarted()
 
 	// Clear any existing plugins from dir
 	log.Println("Cleaning /plugins dir")
@@ -87,6 +88,13 @@ func closeConsumers() {
 }
 
 func (tb *tunnelBroadcaster) Close() { tb.tunnel.Close() }
+
+func pubStarted() {
+	bus.Pub(&model.StartedEvent{
+		Status:      model.StatusStarted,
+		WorkspaceID: cfg.WorkspaceID,
+	})
+}
 
 func pubFailed(err string) {
 	bus.Pub(&model.ErrorEvent{

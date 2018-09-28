@@ -47,17 +47,11 @@ type PluginMeta struct {
 	URL string `json:"url" yaml:"url"`
 }
 
-type EndpointAttributes struct {
-	Protocol string `json:"protocol" yaml:"protocol"`
-	Path     string `json:"path" yaml:"path"`
-	Type     string `json:"type" yaml:"type"`
-}
-
 type Endpoint struct {
 	Name       string             `json:"name" yaml:"name"`
 	Public     bool               `json:"public" yaml:"public"`
 	TargetPort int                `json:"targetPort" yaml:"targetPort"`
-	Attributes EndpointAttributes `json:"attributes" yaml:"attributes"`
+	Attributes map[string]string  `json:"attributes" yaml:"attributes"`
 }
 
 type EnvVar struct {

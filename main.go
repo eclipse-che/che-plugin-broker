@@ -29,7 +29,7 @@ func main() {
 	cfg.Print()
 
 	statusTun := connectOrFail(cfg.PushStatusesEndpoint, cfg.Token)
-	broker.PushStatuses(statusTun)
+	broker.PushEvents(statusTun)
 
 	metas := cfg.ReadConfig()
 	broker.Start(metas)

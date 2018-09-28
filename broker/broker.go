@@ -91,24 +91,24 @@ func (tb *tunnelBroadcaster) Close() { tb.tunnel.Close() }
 
 func pubStarted() {
 	bus.Pub(&model.StartedEvent{
-		Status:      model.StatusStarted,
-		WorkspaceID: cfg.WorkspaceID,
+		Status:    model.StatusStarted,
+		RuntimeID: cfg.RuntimeID,
 	})
 }
 
 func pubFailed(err string) {
 	bus.Pub(&model.ErrorEvent{
-		Status:      model.StatusFailed,
-		Error:       err,
-		WorkspaceID: cfg.WorkspaceID,
+		Status:    model.StatusFailed,
+		Error:     err,
+		RuntimeID: cfg.RuntimeID,
 	})
 }
 
 func pubDone(tooling string) {
 	bus.Pub(&model.SuccessEvent{
-		Status:      model.StatusDone,
-		WorkspaceID: cfg.WorkspaceID,
-		Tooling:     tooling,
+		Status:    model.StatusDone,
+		RuntimeID: cfg.RuntimeID,
+		Tooling:   tooling,
 	})
 }
 

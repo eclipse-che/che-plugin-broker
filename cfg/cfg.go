@@ -37,8 +37,9 @@ var (
 	// Token to access wsmaster API
 	Token string
 
-	// WorkspaceID the id of workspace runtime this broker belongs to.
-	WorkspaceID string
+	// RuntimeID the id of workspace runtime this machine belongs to.
+	RuntimeID    model.RuntimeID
+	runtimeIDRaw string
 )
 
 func init() {
@@ -73,10 +74,10 @@ func init() {
 			"By default the value from 'CHE_AUTH_ENABLED' environment variable is used or `false` if it is missing",
 	)
 	flag.StringVar(
-		&WorkspaceID,
-		"workspace-id",
+		&runtimeIDRaw,
+		"runtime-id",
 		"",
-		"The identifier of the workspace",
+		"The identifier of the runtime in format 'workspace:environment:ownerId'",
 	)
 }
 
@@ -97,10 +98,15 @@ func Parse() {
 		Token = os.Getenv("CHE_MACHINE_TOKEN")
 	}
 
-	// workspace-id
-	if len(WorkspaceID) == 0 {
-		log.Fatal("Workspace ID required(set it with -workspace-id argument)")
+	// runtime-id
+	if len(runtimeIDRaw) == 0 {
+		log.Fatal("Runtime ID required(set it with -runtime-id argument)")
 	}
+	parts := strings.Split(runtimeIDRaw, ":")
+	if len(parts) != 3 {
+		log.Fatalf("Expected runtime id to be in format 'workspace:env:ownerId'")
+	}
+	RuntimeID = model.RuntimeID{Workspace: parts[0], Environment: parts[1], OwnerId: parts[2]}
 }
 
 // Print prints configuration.
@@ -108,7 +114,11 @@ func Print() {
 	log.Print("Broker configuration")
 	log.Printf("  Push endpoint: %s", PushStatusesEndpoint)
 	log.Printf("  Auth enabled: %t", AuthEnabled)
-	log.Printf("  Workspace: %s", WorkspaceID)
+	log.Print("  Runtime ID:")
+	log.Printf("    Workspace: %s", RuntimeID.Workspace)
+	log.Printf("    Environment: %s", RuntimeID.Environment)
+	log.Printf("    OwnerId: %s", RuntimeID.OwnerId)
+
 }
 
 // ReadConfig reads content of file by path cfg.FilePath,

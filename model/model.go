@@ -29,6 +29,19 @@ const (
 	BrokerResultEventType = "broker/result"
 )
 
+// RuntimeID is an identifier of running workspace.
+// Included to the plugin broker log events.
+type RuntimeID struct {
+	// Workspace is an identifier of the workspace e.g. "workspace123456".
+	Workspace string `json:"workspaceId" yaml:"workspaceId"`
+
+	// Environment is a name of environment e.g. "default".
+	Environment string `json:"envName" yaml:"envName"`
+
+	// OwnerId is an identifier of user who is runtime owner.
+	OwnerId string `json:"ownerId" yaml:"ownerId"`
+}
+
 type PluginMeta struct {
 	ID string `json:"id" yaml:"id"`
 
@@ -48,10 +61,10 @@ type PluginMeta struct {
 }
 
 type Endpoint struct {
-	Name       string             `json:"name" yaml:"name"`
-	Public     bool               `json:"public" yaml:"public"`
-	TargetPort int                `json:"targetPort" yaml:"targetPort"`
-	Attributes map[string]string  `json:"attributes" yaml:"attributes"`
+	Name       string            `json:"name" yaml:"name"`
+	Public     bool              `json:"public" yaml:"public"`
+	TargetPort int               `json:"targetPort" yaml:"targetPort"`
+	Attributes map[string]string `json:"attributes" yaml:"attributes"`
 }
 
 type EnvVar struct {
@@ -107,17 +120,17 @@ type CheDependencies struct {
 }
 
 type StartedEvent struct {
-	Status      BrokerStatus `json:"status" yaml:"status"`
-	WorkspaceID string       `json:"workspaceId" yaml:"workspaceId"`
+	Status    BrokerStatus `json:"status" yaml:"status"`
+	RuntimeID RuntimeID    `json:"runtimeId" yaml:"runtimeId"`
 }
 
 // Type returns BrokerStatusEventType.
 func (e *StartedEvent) Type() string { return BrokerStatusEventType }
 
 type ErrorEvent struct {
-	Status      BrokerStatus `json:"status" yaml:"status"`
-	WorkspaceID string       `json:"workspaceId" yaml:"workspaceId"`
-	Error       string       `json:"error" yaml:"error"`
+	Status    BrokerStatus `json:"status" yaml:"status"`
+	RuntimeID RuntimeID    `json:"runtimeId" yaml:"runtimeId"`
+	Error     string       `json:"error" yaml:"error"`
 }
 
 // Type returns BrokerStatusEventType.
@@ -125,9 +138,9 @@ func (e *ErrorEvent) Type() string { return BrokerStatusEventType }
 
 // SuccessEvent is used to send encoded workspace tooling configuration to Che master
 type SuccessEvent struct {
-	Status      BrokerStatus `json:"status" yaml:"status"`
-	WorkspaceID string       `json:"workspaceId" yaml:"workspaceId"`
-	Tooling     string       `json:"tooling" yaml:"tooling"`
+	Status    BrokerStatus `json:"status" yaml:"status"`
+	RuntimeID RuntimeID    `json:"runtimeId" yaml:"runtimeId"`
+	Tooling   string       `json:"tooling" yaml:"tooling"`
 }
 
 // Type returns BrokerResultEventType.

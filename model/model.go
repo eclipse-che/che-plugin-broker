@@ -12,7 +12,17 @@
 
 package model
 
+import "time"
+
 type BrokerStatus string
+
+const (
+	// StderrStream value of InstallerLogEvent.Stream if log line is from process STDERR.
+	StderrStream = "STDERR"
+
+	// StdoutStream value of InstallerLogEvent.Stream if log line is from process STDOUT.
+	StdoutStream = "STDOUT"
+)
 
 // Broker statuses
 const (
@@ -27,6 +37,8 @@ const (
 	BrokerStatusEventType = "broker/statusChanged"
 
 	BrokerResultEventType = "broker/result"
+
+	BrokerLogEventType = "broker/log"
 )
 
 // RuntimeID is an identifier of running workspace.
@@ -145,3 +157,19 @@ type SuccessEvent struct {
 
 // Type returns BrokerResultEventType.
 func (e *SuccessEvent) Type() string { return BrokerResultEventType }
+
+type PluginBrokerLogEvent struct {
+	RuntimeID RuntimeID `json:"runtimeId" yaml:"runtimeId"`
+
+	// Time when this event occurred.
+	Time time.Time `json:"time" yaml:"text"`
+
+	// Text is written by plugin broker line of text.
+	Text string `json:"text" yaml:"text"`
+
+	// Stream defines whether it is STDERR or STDOUT
+	Stream string `json:"stream" yaml:"stream"`
+}
+
+// Type returns BrokerLogEventType.
+func (e *PluginBrokerLogEvent) Type() string { return BrokerLogEventType }

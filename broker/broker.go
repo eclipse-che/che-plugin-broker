@@ -21,12 +21,14 @@ import (
 	"os"
 	"path/filepath"
 
+	"bytes"
 	jsonrpc "github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-go-jsonrpc/event"
 	"github.com/eclipse/che-plugin-broker/cfg"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
 	yaml "gopkg.in/yaml.v2"
+	"time"
 )
 
 var (
@@ -38,9 +40,10 @@ func Start(metas []model.PluginMeta) {
 	if ok, status := storage.SetStatus(model.StatusStarted); !ok {
 		m := fmt.Sprintf("Starting broker in state '%s' is not allowed", status)
 		pubFailed(m)
-		log.Fatal(m)
+		printFatal(m)
 	}
 	pubStarted()
+	printInfo("Started Plugin Broker")
 
 	// Clear any existing plugins from dir
 	log.Println("Cleaning /plugins dir")
@@ -49,30 +52,35 @@ func Start(metas []model.PluginMeta) {
 		log.Printf("WARN: failed to clear /plugins directory: %s", err)
 	}
 
+	printPlan(metas)
+
+	printInfo("Starting plugins processing")
 	for _, meta := range metas {
 		err := processPlugin(meta)
 		if err != nil {
 			pubFailed(err.Error())
-			log.Fatal(err)
+			printFatal(err.Error())
 		}
 	}
 
 	if ok, status := storage.SetStatus(model.StatusDone); !ok {
 		err := fmt.Sprintf("Setting '%s' broker status failed. Broker has '%s' state", model.StatusDone, status)
 		pubFailed(err)
-		log.Fatalf(err)
+		printFatal(err)
 	}
 
 	tooling, err := storage.Tooling()
 	if err != nil {
 		pubFailed(err.Error())
-		log.Fatalf(err.Error())
+		printFatal(err.Error())
 	}
 	bytes, err := json.Marshal(tooling)
 	if err != nil {
 		pubFailed(err.Error())
-		log.Fatalf(err.Error())
+		printFatal(err.Error())
 	}
+
+	printInfo("All plugins have been successfully processed")
 	pubDone(string(bytes))
 	closeConsumers()
 }
@@ -112,9 +120,9 @@ func pubDone(tooling string) {
 	})
 }
 
-// PushStatuses sets given tunnel as consumer of broker events.
-func PushStatuses(tun *jsonrpc.Tunnel) {
-	bus.SubAny(&tunnelBroadcaster{tunnel: tun}, model.BrokerStatusEventType, model.BrokerResultEventType)
+// PushEvents sets given tunnel as consumer of broker events.
+func PushEvents(tun *jsonrpc.Tunnel) {
+	bus.SubAny(&tunnelBroadcaster{tunnel: tun}, model.BrokerStatusEventType, model.BrokerResultEventType, model.BrokerLogEventType)
 }
 
 type tunnelBroadcaster struct {
@@ -128,6 +136,7 @@ func (tb *tunnelBroadcaster) Accept(e event.E) {
 }
 
 func processPlugin(meta model.PluginMeta) error {
+	printDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
 	url := meta.URL
 
 	workDir, err := ioutil.TempDir("", "che-plugin-broker")
@@ -139,26 +148,26 @@ func processPlugin(meta model.PluginMeta) error {
 	pluginPath := filepath.Join(workDir, "testArchive")
 
 	// Download an archive
-	log.Printf("Downloading archive '%s' to '%s'", url, archivePath)
+	printDebug("Downloading archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
 	err = download(url, archivePath)
 	if err != nil {
 		return err
 	}
 
 	// Untar it
-	log.Printf("Untarring '%s' to '%s'", archivePath, pluginPath)
+	printDebug("Untarring archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
 	err = untar(archivePath, pluginPath)
 	if err != nil {
 		return err
 	}
 
-	log.Println("Resolving Che plugins")
+	printDebug("Resolving Che plugins for '%s:%s'", meta.ID, meta.Version)
 	err = resolveToolingConfig(pluginPath)
 	if err != nil {
 		return err
 	}
 
-	log.Println("Copying dependencies")
+	printDebug("Copying dependencies for '%s:%s'", meta.ID, meta.Version)
 	return copyDependencies(pluginPath)
 }
 
@@ -201,13 +210,13 @@ func copyDependencies(workDir string) error {
 		case dep.Location != "":
 			fileDest := resolveDestPath(dep.Location, "/plugins")
 			fileSrc := filepath.Join(workDir, dep.Location)
-			log.Printf("Copying file '%s' to '%s'", fileSrc, fileDest)
+			printDebug("Copying file '%s' to '%s'", fileSrc, fileDest)
 			if err = copyFile(fileSrc, fileDest); err != nil {
 				return err
 			}
 		case dep.URL != "":
 			fileDest := resolveDestPathFromURL(dep.URL, "/plugins")
-			log.Printf("Downloading file '%s' to '%s'", dep.URL, fileDest)
+			printDebug("Downloading file '%s' to '%s'", dep.URL, fileDest)
 			if err = download(dep.URL, fileDest); err != nil {
 				return err
 			}
@@ -218,4 +227,34 @@ func copyDependencies(workDir string) error {
 	}
 
 	return nil
+}
+
+func printDebug(format string, v ...interface{}) {
+	log.Printf(format, v...)
+}
+
+func printInfo(format string, v ...interface{}) {
+	message := fmt.Sprintf(format, v...)
+	bus.Pub(&model.PluginBrokerLogEvent{
+		RuntimeID: cfg.RuntimeID,
+		Text:      message,
+		Time:      time.Now(),
+		Stream:    model.StdoutStream,
+	})
+}
+
+func printFatal(format string, v ...interface{}) {
+	message := fmt.Sprintf(format, v...)
+	log.Fatal(message)
+}
+
+func printPlan(metas []model.PluginMeta) {
+	var buffer bytes.Buffer
+
+	buffer.WriteString("List of plugins and editors to install\n")
+	for _, plugin := range metas {
+		buffer.WriteString(fmt.Sprintf("- %s:%s - %s\n", plugin.ID, plugin.Version, plugin.Description))
+	}
+
+	printInfo(buffer.String())
 }

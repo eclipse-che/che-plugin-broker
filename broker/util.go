@@ -24,7 +24,7 @@ import (
 	"strings"
 )
 
-func download(URL string, destPath string) error {
+func Download(URL string, destPath string) error {
 	out, err := os.Create(destPath)
 	if err != nil {
 		return err
@@ -45,7 +45,7 @@ func download(URL string, destPath string) error {
 	return nil
 }
 
-func copyFile(src string, dest string) error {
+func CopyFile(src string, dest string) error {
 	to, err := os.Create(dest)
 	if err != nil {
 		return err
@@ -62,20 +62,20 @@ func copyFile(src string, dest string) error {
 	return err
 }
 
-func resolveDestPath(filePath string, destDir string) string {
+func ResolveDestPath(filePath string, destDir string) string {
 	destName := filepath.Base(filePath)
 	destPath := filepath.Join(destDir, destName)
 	return destPath
 }
 
-func resolveDestPathFromURL(url string, destDir string) string {
+func ResolveDestPathFromURL(url string, destDir string) string {
 	tokens := strings.Split(url, "/")
 	fileName := tokens[len(tokens)-1]
 	destPath := filepath.Join(destDir, fileName)
 	return destPath
 }
 
-func untar(tarPath string, dest string) error {
+func Untar(tarPath string, dest string) error {
 	file, err := os.Open(tarPath)
 	if err != nil {
 		return err
@@ -112,10 +112,10 @@ func untar(tarPath string, dest string) error {
 				return err
 			}
 		case tar.TypeReg:
-			if err := createContainingDir(tarEntry); err != nil {
+			if err := CreateContainingDir(tarEntry); err != nil {
 				return err
 			}
-			if err := createFile(tarEntry, tr); err != nil {
+			if err := CreateFile(tarEntry, tr); err != nil {
 				return err
 			}
 		default:
@@ -124,12 +124,12 @@ func untar(tarPath string, dest string) error {
 	}
 }
 
-func createContainingDir(filePath string) error {
+func CreateContainingDir(filePath string) error {
 	dirPath := filepath.Dir(filePath)
 	return os.MkdirAll(dirPath, 0755)
 }
 
-func createFile(file string, tr io.Reader) error {
+func CreateFile(file string, tr io.Reader) error {
 	f, err := os.Create(file)
 	if err != nil {
 		return err
@@ -141,7 +141,7 @@ func createFile(file string, tr io.Reader) error {
 	return f.Sync()
 }
 
-func clearDir(dir string) error {
+func ClearDir(dir string) error {
 	files, err := filepath.Glob(filepath.Join(dir, "*"))
 	if err != nil {
 		return err

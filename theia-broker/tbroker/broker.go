@@ -10,7 +10,7 @@
 //   Red Hat, Inc. - initial API and implementation
 //
 
-package broker
+package tbroker
 
 import (
 	"encoding/json"
@@ -18,14 +18,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	jsonrpc "github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-go-jsonrpc/event"
 	"github.com/eclipse/che-plugin-broker/cfg"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
+	"github.com/eclipse/che-plugin-broker/broker"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -43,11 +46,11 @@ func Start(metas []model.PluginMeta) {
 	pubStarted()
 
 	// Clear any existing plugins from dir
-	log.Println("Cleaning /plugins dir")
-	err := ClearDir("/plugins")
-	if err != nil {
-		log.Printf("WARN: failed to clear /plugins directory: %s", err)
-	}
+	//log.Println("Cleaning /plugins dir")
+	//err := clearDir("/plugins")
+	//if err != nil {
+	//	log.Printf("WARN: failed to clear /plugins directory: %s", err)
+	//}
 
 	for _, meta := range metas {
 		err := processPlugin(meta)
@@ -140,14 +143,14 @@ func processPlugin(meta model.PluginMeta) error {
 
 	// Download an archive
 	log.Printf("Downloading archive '%s' to '%s'", url, archivePath)
-	err = Download(url, archivePath)
+	err = broker.Download(url, archivePath)
 	if err != nil {
 		return err
 	}
 
 	// Untar it
 	log.Printf("Untarring '%s' to '%s'", archivePath, pluginPath)
-	err = Untar(archivePath, pluginPath)
+	err = broker.Untar(archivePath, pluginPath)
 	if err != nil {
 		return err
 	}
@@ -174,7 +177,28 @@ func resolveToolingConfig(workDir string) error {
 		return err
 	}
 
+	addPortToTooling(tooling)
+
 	return storage.AddTooling(tooling)
+}
+
+func addPortToTooling(toolingConf *model.ToolingConf) {
+	port := findPort()
+	sPort := strconv.Itoa(port)
+	endpointName := "port" + sPort
+
+	toolingConf.Containers[0].Ports = append(toolingConf.Containers[0].Ports, model.ExposedPort{ExposedPort: port})
+	toolingConf.Endpoints = append(toolingConf.Endpoints, model.Endpoint{
+		Name: endpointName,
+		Public:false,
+		TargetPort:port,
+	})
+	toolingConf.Containers[0].Env = append(toolingConf.Containers[0].Env, model.EnvVar{Name:"THEIA_PORT", Value:sPort})
+	toolingConf.WorkspaceEnv = append(toolingConf.WorkspaceEnv, model.EnvVar{Name:"THEIA_" + toolingConf.ID, Value:endpointName + ":" + sPort})
+}
+
+func findPort() int {
+	return 4000 + rand.Intn(6000)
 }
 
 func copyDependencies(workDir string) error {
@@ -199,16 +223,16 @@ func copyDependencies(workDir string) error {
 			m := fmt.Sprintf("Plugin dependency '%s:%s' contains both 'location' and 'url' fields while just one should be present", dep.ID, dep.Version)
 			return errors.New(m)
 		case dep.Location != "":
-			fileDest := ResolveDestPath(dep.Location, "/plugins")
+			fileDest := broker.ResolveDestPath(dep.Location, "/plugins")
 			fileSrc := filepath.Join(workDir, dep.Location)
 			log.Printf("Copying file '%s' to '%s'", fileSrc, fileDest)
-			if err = CopyFile(fileSrc, fileDest); err != nil {
+			if err = broker.CopyFile(fileSrc, fileDest); err != nil {
 				return err
 			}
 		case dep.URL != "":
-			fileDest := ResolveDestPathFromURL(dep.URL, "/plugins")
+			fileDest := broker.ResolveDestPathFromURL(dep.URL, "/plugins")
 			log.Printf("Downloading file '%s' to '%s'", dep.URL, fileDest)
-			if err = Download(dep.URL, fileDest); err != nil {
+			if err = broker.Download(dep.URL, fileDest); err != nil {
 				return err
 			}
 		default:

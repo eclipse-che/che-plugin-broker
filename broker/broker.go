@@ -22,12 +22,12 @@ import (
 	"path/filepath"
 
 	"bytes"
-	jsonrpc "github.com/eclipse/che-go-jsonrpc"
+	"github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-go-jsonrpc/event"
 	"github.com/eclipse/che-plugin-broker/cfg"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 	"time"
 )
 
@@ -117,6 +117,14 @@ func pubDone(tooling string) {
 		Status:    model.StatusDone,
 		RuntimeID: cfg.RuntimeID,
 		Tooling:   tooling,
+	})
+}
+
+func pubLog(text string) {
+	bus.Pub(&model.PluginBrokerLogEvent{
+		RuntimeID: cfg.RuntimeID,
+		Text:      text,
+		Time:      time.Now(),
 	})
 }
 
@@ -229,24 +237,6 @@ func copyDependencies(workDir string) error {
 	return nil
 }
 
-func printDebug(format string, v ...interface{}) {
-	log.Printf(format, v...)
-}
-
-func printInfo(format string, v ...interface{}) {
-	message := fmt.Sprintf(format, v...)
-	bus.Pub(&model.PluginBrokerLogEvent{
-		RuntimeID: cfg.RuntimeID,
-		Text:      message,
-		Time:      time.Now(),
-	})
-}
-
-func printFatal(format string, v ...interface{}) {
-	message := fmt.Sprintf(format, v...)
-	log.Fatal(message)
-}
-
 func printPlan(metas []model.PluginMeta) {
 	var buffer bytes.Buffer
 
@@ -256,4 +246,20 @@ func printPlan(metas []model.PluginMeta) {
 	}
 
 	printInfo(buffer.String())
+}
+
+func printDebug(format string, v ...interface{}) {
+	log.Printf(format, v...)
+}
+
+func printInfo(format string, v ...interface{}) {
+	message := fmt.Sprintf(format, v...)
+	pubLog(message)
+	log.Print(message)
+}
+
+func printFatal(format string, v ...interface{}) {
+	message := fmt.Sprintf(format, v...)
+	pubLog(message)
+	log.Fatal(message)
 }

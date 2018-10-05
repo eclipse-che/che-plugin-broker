@@ -239,7 +239,6 @@ func printInfo(format string, v ...interface{}) {
 		RuntimeID: cfg.RuntimeID,
 		Text:      message,
 		Time:      time.Now(),
-		Stream:    model.StdoutStream,
 	})
 }
 

@@ -16,14 +16,6 @@ import "time"
 
 type BrokerStatus string
 
-const (
-	// StderrStream value of InstallerLogEvent.Stream if log line is from process STDERR.
-	StderrStream = "STDERR"
-
-	// StdoutStream value of InstallerLogEvent.Stream if log line is from process STDOUT.
-	StdoutStream = "STDOUT"
-)
-
 // Broker statuses
 const (
 	StatusIdle BrokerStatus = "IDLE"
@@ -166,9 +158,6 @@ type PluginBrokerLogEvent struct {
 
 	// Text is written by plugin broker line of text.
 	Text string `json:"text" yaml:"text"`
-
-	// Stream defines whether it is STDERR or STDOUT
-	Stream string `json:"stream" yaml:"stream"`
 }
 
 // Type returns BrokerLogEventType.

@@ -31,6 +31,12 @@ var (
 	// PushStatusesEndpoint where to push statuses.
 	PushStatusesEndpoint string
 
+	// PushLogsEndpoint where to push logs.
+	PushLogsEndpoint string
+
+	// EndpointReconnectPeriodSec how much time(seconds) is between endpoint reconnect attempts.
+	EndpointReconnectPeriodSec int
+
 	// AuthEnabled whether authentication is needed
 	AuthEnabled bool
 
@@ -58,6 +64,19 @@ func init() {
 		"push-endpoint",
 		"",
 		"WebSocket endpoint where to push statuses",
+	)
+	flag.StringVar(
+		&PushLogsEndpoint,
+		"push-logs-endpoint",
+		"",
+		"WebSocket endpoint where to push logs",
+	)
+	flag.IntVar(
+		&EndpointReconnectPeriodSec,
+		"endpoint-reconnect-period",
+		10,
+		`Time(in seconds) between attempts to reconnect to logs and status endpoint.
+	Broker tries to reconnect to endpoints when previously established connection is lost`,
 	)
 	// auth configuration
 	defaultAuthEnabled := false
@@ -93,6 +112,11 @@ func Parse() {
 		log.Fatal("Push endpoint protocol must be either ws or wss")
 	}
 
+	// push-logs-endpoint
+	if len(PushLogsEndpoint) != 0 && !strings.HasPrefix(PushLogsEndpoint, "ws") {
+		log.Fatal("Push logs endpoint protocol must be either ws or wss")
+	}
+
 	// auth-enabled - fetch CHE_MACHINE_TOKEN
 	if AuthEnabled {
 		Token = os.Getenv("CHE_MACHINE_TOKEN")
@@ -113,6 +137,8 @@ func Parse() {
 func Print() {
 	log.Print("Broker configuration")
 	log.Printf("  Push endpoint: %s", PushStatusesEndpoint)
+	log.Printf("  Push logs endpoint: %s", PushLogsEndpoint)
+	log.Printf("  Push logs endpoint reconnect period: %dseconds", EndpointReconnectPeriodSec)
 	log.Printf("  Auth enabled: %t", AuthEnabled)
 	log.Print("  Runtime ID:")
 	log.Printf("    Workspace: %s", RuntimeID.Workspace)

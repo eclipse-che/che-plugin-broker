@@ -20,6 +20,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
+	"time"
 
 	"github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-go-jsonrpc/event"
@@ -29,6 +31,8 @@ import (
 )
 
 var (
+	EndpointReconnectPeriod time.Duration
+
 	bus = event.NewBus()
 )
 
@@ -82,9 +86,21 @@ func Start(metas []model.PluginMeta) {
 	closeConsumers()
 }
 
-// PushEvents sets given tunnel as consumer of broker events.
-func PushEvents(tun *jsonrpc.Tunnel) {
-	bus.SubAny(&tunnelBroadcaster{tunnel: tun}, model.BrokerStatusEventType, model.BrokerResultEventType, model.BrokerLogEventType)
+// PushStatuses sets given tunnel as consumer of broker events.
+func PushStatuses(tun *jsonrpc.Tunnel) {
+	bus.SubAny(&tunnelBroadcaster{tunnel: tun}, model.BrokerStatusEventType, model.BrokerResultEventType)
+}
+
+// PushLogs sets given tunnel as consumer of logs.
+// Connector is used to reconnect to jsonrpc endpoint if
+// established connection behind given tunnel was lost.
+func PushLogs(tun *jsonrpc.Tunnel, connector Connector) {
+	bus.Sub(&tunnelBroadcaster{
+		tunnel:          tun,
+		connector:       connector,
+		reconnectPeriod: EndpointReconnectPeriod,
+		reconnectOnce:   &sync.Once{},
+	}, model.BrokerLogEventType)
 }
 
 func processPlugin(meta model.PluginMeta) error {

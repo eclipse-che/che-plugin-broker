@@ -15,6 +15,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/eclipse/che-plugin-broker/broker"
 	"github.com/eclipse/che-plugin-broker/cfg"
@@ -26,8 +27,23 @@ func main() {
 	cfg.Parse()
 	cfg.Print()
 
+	broker.EndpointReconnectPeriod = time.Second * time.Duration(cfg.EndpointReconnectPeriodSec)
+
 	statusTun := broker.ConnectOrFail(cfg.PushStatusesEndpoint, cfg.Token)
-	broker.PushEvents(statusTun)
+	broker.PushStatuses(statusTun)
+
+	// in case cfg.PushLogsEndpoint is not specified cfg.PushStatusesEndpoint is used instead
+	if len(cfg.PushLogsEndpoint) != 0 {
+		connector := &broker.WSDialConnector{
+			Endpoint: cfg.PushLogsEndpoint,
+			Token:    cfg.Token,
+		}
+		if cfg.PushLogsEndpoint == cfg.PushStatusesEndpoint {
+			broker.PushLogs(statusTun, connector)
+		} else {
+			broker.PushLogs(broker.ConnectOrFail(cfg.PushLogsEndpoint, cfg.Token), connector)
+		}
+	}
 
 	metas := cfg.ReadConfig()
 	broker.Start(metas)

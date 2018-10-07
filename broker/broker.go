@@ -21,14 +21,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"bytes"
 	"github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-go-jsonrpc/event"
-	"github.com/eclipse/che-plugin-broker/cfg"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
 	"gopkg.in/yaml.v2"
-	"time"
 )
 
 var (
@@ -85,62 +82,9 @@ func Start(metas []model.PluginMeta) {
 	closeConsumers()
 }
 
-func closeConsumers() {
-	for _, candidates := range bus.Clear() {
-		for _, candidate := range candidates {
-			if broadcaster, ok := candidate.(*tunnelBroadcaster); ok {
-				broadcaster.Close()
-			}
-		}
-	}
-}
-
-func (tb *tunnelBroadcaster) Close() { tb.tunnel.Close() }
-
-func pubStarted() {
-	bus.Pub(&model.StartedEvent{
-		Status:    model.StatusStarted,
-		RuntimeID: cfg.RuntimeID,
-	})
-}
-
-func pubFailed(err string) {
-	bus.Pub(&model.ErrorEvent{
-		Status:    model.StatusFailed,
-		Error:     err,
-		RuntimeID: cfg.RuntimeID,
-	})
-}
-
-func pubDone(tooling string) {
-	bus.Pub(&model.SuccessEvent{
-		Status:    model.StatusDone,
-		RuntimeID: cfg.RuntimeID,
-		Tooling:   tooling,
-	})
-}
-
-func pubLog(text string) {
-	bus.Pub(&model.PluginBrokerLogEvent{
-		RuntimeID: cfg.RuntimeID,
-		Text:      text,
-		Time:      time.Now(),
-	})
-}
-
 // PushEvents sets given tunnel as consumer of broker events.
 func PushEvents(tun *jsonrpc.Tunnel) {
 	bus.SubAny(&tunnelBroadcaster{tunnel: tun}, model.BrokerStatusEventType, model.BrokerResultEventType, model.BrokerLogEventType)
-}
-
-type tunnelBroadcaster struct {
-	tunnel *jsonrpc.Tunnel
-}
-
-func (tb *tunnelBroadcaster) Accept(e event.E) {
-	if err := tb.tunnel.Notify(e.Type(), e); err != nil {
-		log.Fatalf("Trying to send event of type '%s' to closed tunnel '%s'", e.Type(), tb.tunnel.ID())
-	}
 }
 
 func processPlugin(meta model.PluginMeta) error {
@@ -235,31 +179,4 @@ func copyDependencies(workDir string) error {
 	}
 
 	return nil
-}
-
-func printPlan(metas []model.PluginMeta) {
-	var buffer bytes.Buffer
-
-	buffer.WriteString("List of plugins and editors to install\n")
-	for _, plugin := range metas {
-		buffer.WriteString(fmt.Sprintf("- %s:%s - %s\n", plugin.ID, plugin.Version, plugin.Description))
-	}
-
-	printInfo(buffer.String())
-}
-
-func printDebug(format string, v ...interface{}) {
-	log.Printf(format, v...)
-}
-
-func printInfo(format string, v ...interface{}) {
-	message := fmt.Sprintf(format, v...)
-	pubLog(message)
-	log.Print(message)
-}
-
-func printFatal(format string, v ...interface{}) {
-	message := fmt.Sprintf(format, v...)
-	pubLog(message)
-	log.Fatal(message)
 }

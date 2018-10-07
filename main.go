@@ -16,8 +16,6 @@ import (
 	"log"
 	"os"
 
-	jsonrpc "github.com/eclipse/che-go-jsonrpc"
-	"github.com/eclipse/che-go-jsonrpc/jsonrpcws"
 	"github.com/eclipse/che-plugin-broker/broker"
 	"github.com/eclipse/che-plugin-broker/cfg"
 )
@@ -28,25 +26,9 @@ func main() {
 	cfg.Parse()
 	cfg.Print()
 
-	statusTun := connectOrFail(cfg.PushStatusesEndpoint, cfg.Token)
+	statusTun := broker.ConnectOrFail(cfg.PushStatusesEndpoint, cfg.Token)
 	broker.PushEvents(statusTun)
 
 	metas := cfg.ReadConfig()
 	broker.Start(metas)
-}
-
-func connectOrFail(endpoint string, token string) *jsonrpc.Tunnel {
-	tunnel, err := connect(endpoint, token)
-	if err != nil {
-		log.Fatalf("Couldn't connect to endpoint '%s', due to error '%s'", endpoint, err)
-	}
-	return tunnel
-}
-
-func connect(endpoint string, token string) (*jsonrpc.Tunnel, error) {
-	conn, err := jsonrpcws.Dial(endpoint, token)
-	if err != nil {
-		return nil, err
-	}
-	return jsonrpc.NewManagedTunnel(conn), nil
 }

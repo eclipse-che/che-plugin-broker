@@ -45,6 +45,20 @@ func Start(metas []model.PluginMeta) {
 	pubStarted()
 	printInfo("Started Plugin Broker")
 
+	for {
+		var buffer bytes.Buffer
+
+		buffer.WriteString("Sample text\n")
+		buffer.WriteString("Sample text\n")
+		buffer.WriteString("Sample text\n")
+		buffer.WriteString("Sample text\n")
+		buffer.WriteString("Sample text\n")
+		buffer.WriteString("Sample text\n")
+		buffer.WriteString("Sample text\n")
+
+		printInfo(buffer.String())
+	}
+
 	// Clear any existing plugins from dir
 	log.Println("Cleaning /plugins dir")
 	err := clearDir("/plugins")

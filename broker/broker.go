@@ -170,7 +170,7 @@ func processPlugin(meta model.PluginMeta) error {
 	}
 
 	printDebug("Resolving Che plugins for '%s:%s'", meta.ID, meta.Version)
-	err = resolveToolingConfig(pluginPath)
+	err = resolveToolingConfig(&meta, pluginPath)
 	if err != nil {
 		return err
 	}
@@ -179,7 +179,7 @@ func processPlugin(meta model.PluginMeta) error {
 	return copyDependencies(pluginPath)
 }
 
-func resolveToolingConfig(workDir string) error {
+func resolveToolingConfig(meta *model.PluginMeta, workDir string) error {
 	toolingConfPath := filepath.Join(workDir, "che-plugin.yaml")
 	f, err := ioutil.ReadFile(toolingConfPath)
 	if err != nil {
@@ -191,7 +191,7 @@ func resolveToolingConfig(workDir string) error {
 		return err
 	}
 
-	return storage.AddTooling(tooling)
+	return storage.AddTooling(meta, tooling)
 }
 
 func copyDependencies(workDir string) error {

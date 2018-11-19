@@ -27,7 +27,7 @@ type Storage struct {
 	sync.RWMutex
 	status  model.BrokerStatus
 	err     string
-	tooling []model.ToolingConf
+	plugins []model.ChePlugin
 }
 
 // Status returns current status of broker execution
@@ -66,18 +66,25 @@ func SetErr(err string) {
 	s.err = err
 }
 
-// Tooling returns configuration of Che plugins tooling resolved during the broker execution.
+// Tooling returns configuration of Che Plugins resolved during the broker execution.
 // At any particular point of time configuration might be incomplete if tooling resolution failed or not completed yet
-func Tooling() (*[]model.ToolingConf, error) {
+func Tooling() (*[]model.ChePlugin, error) {
 	s.Lock()
 	defer s.Unlock()
-	return &s.tooling, nil
+	return &s.plugins, nil
 }
 
 // AddTooling adds configuration of model.ToolingConf to the results of broker execution
-func AddTooling(tooling *model.ToolingConf) error {
+func AddTooling(meta *model.PluginMeta, tooling *model.ToolingConf) error {
 	s.Lock()
 	defer s.Unlock()
-	s.tooling = append(s.tooling, *tooling)
+	plugin := &model.ChePlugin{
+		ID:         meta.ID,
+		Version:    meta.Version,
+		Containers: tooling.Containers,
+		Editors:    tooling.Editors,
+		Endpoints:  tooling.Endpoints,
+	}
+	s.plugins = append(s.plugins, *plugin)
 	return nil
 }

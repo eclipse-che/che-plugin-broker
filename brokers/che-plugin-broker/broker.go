@@ -21,12 +21,13 @@ import (
 	"os"
 	"path/filepath"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/files"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
-	"gopkg.in/yaml.v2"
 )
 
 type ChePluginBroker struct {
@@ -71,7 +72,7 @@ func (cheBroker *ChePluginBroker) Start(metas []model.PluginMeta) {
 		cheBroker.broker.PrintFatal(err)
 	}
 
-	tooling, err := storage.Tooling()
+	tooling, err := storage.Plugins()
 	if err != nil {
 		cheBroker.broker.PubFailed(err.Error())
 		cheBroker.broker.PrintFatal(err.Error())
@@ -96,13 +97,13 @@ func (cheBroker *ChePluginBroker) processPlugin(meta model.PluginMeta) error {
 	cheBroker.broker.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
 	url := meta.URL
 
-	workDir, err := ioutil.TempDir("", "che-plugin-broker")
+	workDir, err := ioutil.TempDir("", "theia-plugin-broker")
 	if err != nil {
 		return err
 	}
 
-	archivePath := filepath.Join(workDir, "testArchive.tar.gz")
-	pluginPath := filepath.Join(workDir, "testArchive")
+	archivePath := filepath.Join(workDir, "pluginArchive.tar.gz")
+	pluginPath := filepath.Join(workDir, "plugin")
 
 	// Download an archive
 	cheBroker.broker.PrintDebug("Downloading archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
@@ -140,7 +141,7 @@ func (cheBroker *ChePluginBroker) resolveToolingConfig(meta *model.PluginMeta, w
 		return err
 	}
 
-	return storage.AddTooling(meta, tooling)
+	return storage.AddPlugin(meta, tooling)
 }
 
 func (cheBroker *ChePluginBroker) copyDependencies(workDir string) error {

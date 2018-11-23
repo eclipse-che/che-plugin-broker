@@ -67,7 +67,7 @@ func (broker *TheiaPluginBroker) Start(metas []model.PluginMeta) {
 		broker.broker.PrintFatal(err)
 	}
 
-	tooling, err := storage.Tooling()
+	tooling, err := storage.Plugins()
 	if err != nil {
 		broker.broker.PubFailed(err.Error())
 		broker.broker.PrintFatal(err.Error())
@@ -131,10 +131,11 @@ func (broker *TheiaPluginBroker) processPlugin(meta model.PluginMeta) error {
 		return broker.injectTheiaRemotePlugin(meta, unpackedPath, pluginImage, pj)
 	}
 }
+
 func (broker *TheiaPluginBroker) getPackageJson(pluginFolder string) (*packageJson, error) {
-	packageJsonPath := filepath.Join(pluginFolder, "package.json")
-	broker.broker.PrintDebug("Reading package.json of Theia plugin from '%s'", packageJsonPath)
-	f, err := ioutil.ReadFile(packageJsonPath)
+	packageJSONPath := filepath.Join(pluginFolder, "package.json")
+	broker.broker.PrintDebug("Reading package.json of Theia plugin from '%s'", packageJSONPath)
+	f, err := ioutil.ReadFile(packageJSONPath)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +160,7 @@ func (broker *TheiaPluginBroker) injectTheiaFile(meta model.PluginMeta, archiveP
 		return err
 	}
 	tooling := &model.ToolingConf{}
-	return storage.AddTooling(&meta, tooling)
+	return storage.AddPlugin(&meta, tooling)
 }
 
 func (broker *TheiaPluginBroker) injectTheiaRemotePlugin(meta model.PluginMeta, archiveFolder string, image string, pj *packageJson) error {
@@ -173,7 +174,7 @@ func (broker *TheiaPluginBroker) injectTheiaRemotePlugin(meta model.PluginMeta, 
 		Containers: []model.Container{*containerConfig(image)},
 	}
 	broker.addPortToTooling(tooling, pj)
-	return storage.AddTooling(&meta, tooling)
+	return storage.AddPlugin(&meta, tooling)
 }
 
 func containerConfig(image string) *model.Container {

@@ -28,10 +28,12 @@ import (
 	"github.com/eclipse/che-plugin-broker/storage"
 )
 
+// TheiaPluginBroker is used to process Theia .theia and remote plugins
 type TheiaPluginBroker struct {
 	broker *common.Broker
 }
 
+// NewBroker creates Che Theia plugin broker instance
 func NewBroker() *TheiaPluginBroker {
 	return &TheiaPluginBroker{common.NewBroker()}
 }
@@ -67,19 +69,19 @@ func (broker *TheiaPluginBroker) Start(metas []model.PluginMeta) {
 		broker.broker.PrintFatal(err)
 	}
 
-	tooling, err := storage.Plugins()
+	plugins, err := storage.Plugins()
 	if err != nil {
 		broker.broker.PubFailed(err.Error())
 		broker.broker.PrintFatal(err.Error())
 	}
-	toolingBytes, err := json.Marshal(tooling)
+	pluginsBytes, err := json.Marshal(plugins)
 	if err != nil {
 		broker.broker.PubFailed(err.Error())
 		broker.broker.PrintFatal(err.Error())
 	}
 
 	broker.broker.PrintInfo("All plugins have been successfully processed")
-	broker.broker.PubDone(string(toolingBytes))
+	broker.broker.PubDone(string(pluginsBytes))
 	broker.broker.CloseConsumers()
 }
 
@@ -92,7 +94,7 @@ func (broker *TheiaPluginBroker) processPlugin(meta model.PluginMeta) error {
 	broker.broker.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
 	url := meta.URL
 
-	workDir, err := ioutil.TempDir("", "che-plugin-broker")
+	workDir, err := ioutil.TempDir("", "theia-plugin-broker")
 	if err != nil {
 		return err
 	}
@@ -114,7 +116,7 @@ func (broker *TheiaPluginBroker) processPlugin(meta model.PluginMeta) error {
 		return err
 	}
 
-	pj, err := broker.getPackageJson(unpackedPath)
+	pj, err := broker.getPackageJSON(unpackedPath)
 	if err != nil {
 		return err
 	}
@@ -126,13 +128,12 @@ func (broker *TheiaPluginBroker) processPlugin(meta model.PluginMeta) error {
 	if pluginImage == "" {
 		// regular plugin
 		return broker.injectTheiaFile(meta, archivePath)
-	} else {
-		// remote plugin
-		return broker.injectTheiaRemotePlugin(meta, unpackedPath, pluginImage, pj)
 	}
+	// remote plugin
+	return broker.injectTheiaRemotePlugin(meta, unpackedPath, pluginImage, pj)
 }
 
-func (broker *TheiaPluginBroker) getPackageJson(pluginFolder string) (*packageJson, error) {
+func (broker *TheiaPluginBroker) getPackageJSON(pluginFolder string) (*packageJson, error) {
 	packageJSONPath := filepath.Join(pluginFolder, "package.json")
 	broker.broker.PrintDebug("Reading package.json of Theia plugin from '%s'", packageJSONPath)
 	f, err := ioutil.ReadFile(packageJSONPath)
@@ -147,9 +148,8 @@ func (broker *TheiaPluginBroker) getPackageJson(pluginFolder string) (*packageJs
 func (broker *TheiaPluginBroker) getPluginImage(pj *packageJson) (string, error) {
 	if pj.Engines.CheRuntimeContainer != "" {
 		return pj.Engines.CheRuntimeContainer, nil
-	} else {
-		return "", nil
 	}
+	return "", nil
 }
 
 func (broker *TheiaPluginBroker) injectTheiaFile(meta model.PluginMeta, archivePath string) error {

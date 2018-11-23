@@ -80,11 +80,12 @@ func AddPlugin(meta *model.PluginMeta, tooling *model.ToolingConf) error {
 	s.Lock()
 	defer s.Unlock()
 	plugin := &model.ChePlugin{
-		ID:         meta.ID,
-		Version:    meta.Version,
-		Containers: tooling.Containers,
-		Editors:    tooling.Editors,
-		Endpoints:  tooling.Endpoints,
+		ID:           meta.ID,
+		Version:      meta.Version,
+		Containers:   tooling.Containers,
+		Editors:      tooling.Editors,
+		Endpoints:    tooling.Endpoints,
+		WorkspaceEnv: tooling.WorkspaceEnv,
 	}
 	s.plugins = append(s.plugins, *plugin)
 	return nil

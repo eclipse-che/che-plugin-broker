@@ -30,10 +30,12 @@ import (
 	"github.com/eclipse/che-plugin-broker/storage"
 )
 
+// ChePluginBroker is used to process Che plugins
 type ChePluginBroker struct {
 	broker *common.Broker
 }
 
+// NewBroker creates Che plugin broker instance
 func NewBroker() *ChePluginBroker {
 	return &ChePluginBroker{common.NewBroker()}
 }
@@ -72,19 +74,19 @@ func (cheBroker *ChePluginBroker) Start(metas []model.PluginMeta) {
 		cheBroker.broker.PrintFatal(err)
 	}
 
-	tooling, err := storage.Plugins()
+	plugins, err := storage.Plugins()
 	if err != nil {
 		cheBroker.broker.PubFailed(err.Error())
 		cheBroker.broker.PrintFatal(err.Error())
 	}
-	toolingBytes, err := json.Marshal(tooling)
+	pluginsBytes, err := json.Marshal(plugins)
 	if err != nil {
 		cheBroker.broker.PubFailed(err.Error())
 		cheBroker.broker.PrintFatal(err.Error())
 	}
 
 	cheBroker.broker.PrintInfo("All plugins have been successfully processed")
-	cheBroker.broker.PubDone(string(toolingBytes))
+	cheBroker.broker.PubDone(string(pluginsBytes))
 	cheBroker.broker.CloseConsumers()
 }
 
@@ -97,7 +99,7 @@ func (cheBroker *ChePluginBroker) processPlugin(meta model.PluginMeta) error {
 	cheBroker.broker.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
 	url := meta.URL
 
-	workDir, err := ioutil.TempDir("", "theia-plugin-broker")
+	workDir, err := ioutil.TempDir("", "che-plugin-broker")
 	if err != nil {
 		return err
 	}
@@ -119,7 +121,7 @@ func (cheBroker *ChePluginBroker) processPlugin(meta model.PluginMeta) error {
 		return err
 	}
 
-	cheBroker.broker.PrintDebug("Resolving Che plugins for '%s:%s'", meta.ID, meta.Version)
+	cheBroker.broker.PrintDebug("Resolving '%s:%s'", meta.ID, meta.Version)
 	err = cheBroker.resolveToolingConfig(&meta, pluginPath)
 	if err != nil {
 		return err

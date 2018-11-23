@@ -13,9 +13,10 @@
 package storage
 
 import (
+	"testing"
+
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestSettingStatusOfStorage(t *testing.T) {
@@ -65,7 +66,7 @@ func TestAddingTollingToStorage(t *testing.T) {
 		Endpoints:  []model.Endpoint{{Name: "endpoint"}},
 	}
 
-	AddTooling(&meta, &conf)
+	AddPlugin(&meta, &conf)
 
 	actualNumber := len(s.plugins)
 	if actualNumber != 1 {
@@ -93,7 +94,7 @@ func TestGettingTollingFromStorage(t *testing.T) {
 		},
 	}
 
-	chePlugins, e := Tooling()
+	chePlugins, e := Plugins()
 
 	if e != nil {
 		t.Errorf("Error occurs during toolling receiving: %s", e)

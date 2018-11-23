@@ -66,6 +66,7 @@ func SetErr(err string) {
 	s.err = err
 }
 
+// TODO rename to Plugins
 // Tooling returns configuration of Che Plugins resolved during the broker execution.
 // At any particular point of time configuration might be incomplete if tooling resolution failed or not completed yet
 func Tooling() (*[]model.ChePlugin, error) {
@@ -74,8 +75,8 @@ func Tooling() (*[]model.ChePlugin, error) {
 	return &s.plugins, nil
 }
 
-// AddTooling adds configuration of model.ChePlugin to the results of broker execution
-func AddTooling(meta *model.PluginMeta, tooling *model.ChePlugin) error {
+// AddTooling adds configuration of model.ToolingConf to the results of broker execution
+func AddTooling(meta *model.PluginMeta, tooling *model.ToolingConf) error {
 	s.Lock()
 	defer s.Unlock()
 	plugin := &model.ChePlugin{

@@ -158,11 +158,8 @@ func (broker *TheiaPluginBroker) injectTheiaFile(meta model.PluginMeta, archiveP
 	if err != nil {
 		return err
 	}
-	tooling := &model.ChePlugin{
-		ID:   "fakeId" + randomNumberAsString(),
-		Name: "fakeName" + randomNumberAsString(),
-	}
-	return storage.AddTooling(tooling)
+	tooling := &model.ToolingConf{}
+	return storage.AddTooling(&meta, tooling)
 }
 
 func (broker *TheiaPluginBroker) injectTheiaRemotePlugin(meta model.PluginMeta, archiveFolder string, image string, pj *packageJson) error {
@@ -172,14 +169,11 @@ func (broker *TheiaPluginBroker) injectTheiaRemotePlugin(meta model.PluginMeta, 
 	if err != nil {
 		return err
 	}
-	tooling := &model.ChePlugin{
-		ID:         meta.ID,
-		Name:       meta.Name,
-		Version:    meta.Version,
+	tooling := &model.ToolingConf{
 		Containers: []model.Container{*containerConfig(image)},
 	}
 	broker.addPortToTooling(tooling, pj)
-	return storage.AddTooling(tooling)
+	return storage.AddTooling(&meta, tooling)
 }
 
 func containerConfig(image string) *model.Container {
@@ -200,7 +194,7 @@ func containerConfig(image string) *model.Container {
 	return &c
 }
 
-func (broker *TheiaPluginBroker) addPortToTooling(toolingConf *model.ChePlugin, pj *packageJson) {
+func (broker *TheiaPluginBroker) addPortToTooling(toolingConf *model.ToolingConf, pj *packageJson) {
 	port := findPort()
 	sPort := strconv.Itoa(port)
 	endpointName := "port" + sPort

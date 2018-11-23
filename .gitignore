@@ -1,5 +1,11 @@
 # Compiled Object files, Static and Dynamic libs (Shared Objects)
+
+# Ignore binaries with these names but not folders with the same names
 che-plugin-broker
+theia-plugin-broker
+!che-plugin-broker/
+!theia-plugin-broker/
+
 *.o
 *.a
 *.so

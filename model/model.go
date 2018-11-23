@@ -106,12 +106,6 @@ type Editor struct {
 	Plugins []string `json:"plugins" yaml:"plugins"`
 }
 
-type ToolingConf struct {
-	Endpoints  []Endpoint  `json:"endpoints" yaml:"endpoints"`
-	Containers []Container `json:"containers" yaml:"containers"`
-	Editors    []Editor    `json:"editors" yaml:"editors"`
-}
-
 type ChePlugin struct {
 	ID      string `json:"id" yaml:"id"`
 	Version string `json:"version" yaml:"version"`

@@ -74,8 +74,8 @@ func Tooling() (*[]model.ChePlugin, error) {
 	return &s.plugins, nil
 }
 
-// AddTooling adds configuration of model.ToolingConf to the results of broker execution
-func AddTooling(meta *model.PluginMeta, tooling *model.ToolingConf) error {
+// AddTooling adds configuration of model.ChePlugin to the results of broker execution
+func AddTooling(meta *model.PluginMeta, tooling *model.ChePlugin) error {
 	s.Lock()
 	defer s.Unlock()
 	plugin := &model.ChePlugin{

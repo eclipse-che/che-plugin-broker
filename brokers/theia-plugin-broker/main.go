@@ -16,6 +16,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/eclipse/che-plugin-broker/brokers/theia-plugin-broker/broker"
 	"github.com/eclipse/che-plugin-broker/cfg"
 	"github.com/eclipse/che-plugin-broker/common"
 )
@@ -27,7 +28,7 @@ func main() {
 	cfg.Print()
 
 	statusTun := common.ConnectOrFail(cfg.PushStatusesEndpoint, cfg.Token)
-	theiaBroker := NewBroker()
+	theiaBroker := broker.NewBroker()
 	theiaBroker.PushEvents(statusTun)
 
 	metas := cfg.ReadConfig()

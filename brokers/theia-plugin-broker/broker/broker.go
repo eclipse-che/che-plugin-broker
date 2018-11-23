@@ -10,7 +10,7 @@
 //   Red Hat, Inc. - initial API and implementation
 //
 
-package main
+package broker
 
 import (
 	"encoding/json"

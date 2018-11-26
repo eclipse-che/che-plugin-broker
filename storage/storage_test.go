@@ -15,8 +15,9 @@ package storage
 import (
 	"testing"
 
-	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/eclipse/che-plugin-broker/model"
 )
 
 func TestSettingStatusOfStorage(t *testing.T) {
@@ -54,7 +55,7 @@ func TestSettingStatusOfStorage(t *testing.T) {
 	}
 }
 
-func TestAddingTollingToStorage(t *testing.T) {
+func TestAddingPluginToStorage(t *testing.T) {
 	meta := model.PluginMeta{
 		ID:      "org.plugin.id",
 		Version: "1.0.0",
@@ -83,7 +84,7 @@ func TestAddingTollingToStorage(t *testing.T) {
 	assert.ElementsMatch(t, conf.Editors, plugin.Editors, "Plugin Editors are not expected")
 }
 
-func TestGettingTollingFromStorage(t *testing.T) {
+func TestGettingPluginsFromStorage(t *testing.T) {
 	s.plugins = []model.ChePlugin{
 		{
 			ID:         "org.plugin.id",

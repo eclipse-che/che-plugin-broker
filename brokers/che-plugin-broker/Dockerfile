@@ -13,13 +13,13 @@
 FROM golang:1.10-alpine as builder
 RUN apk update && apk add ca-certificates
 RUN adduser -D -g '' appuser
-WORKDIR $GOPATH/src/github.com/eclipse/che-plugin-broker/
-COPY . .
+COPY . /go/src/github.com/eclipse/che-plugin-broker/
 WORKDIR /go/src/github.com/eclipse/che-plugin-broker/brokers/che-plugin-broker/
 RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o che-plugin-broker main.go
 
 
 FROM scratch
+USER appuser
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /go/src/github.com/eclipse/che-plugin-broker/brokers/che-plugin-broker/che-plugin-broker /usr/local/bin

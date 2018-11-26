@@ -55,3 +55,12 @@ After you added a dependency you need to run the following command to download d
 ```shell
 dep ensure
 ```
+## Build of Docker images
+- build Che plugin broker
+```shell
+docker build -t eclipse/che-plugin-broker:latest -f brokers/che-plugin-broker/Dockerfile .
+```
+- build Theia plugin broker
+```shell
+docker build -t eclipse/theia-plugin-broker:latest -f brokers/theia-plugin-broker/Dockerfile .
+```

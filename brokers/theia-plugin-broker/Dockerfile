@@ -10,14 +10,18 @@
 #   Red Hat, Inc. - initial API and implementation
 #
 
-FROM golang:1.10.3 as builder
-WORKDIR /go/src/github.com/eclipse/che-plugin-broker/
+FROM golang:1.10-alpine as builder
+RUN apk update && apk add ca-certificates
+RUN adduser -D -g '' appuser
+WORKDIR $GOPATH/src/github.com/eclipse/che-plugin-broker/
 COPY . .
-WORKDIR /go/src/github.com/eclipse/che-plugin-broker/brokers/theia-plugin-broker/
+WORKDIR $GOPATH/src/github.com/eclipse/che-plugin-broker/brokers/theia-plugin-broker/
 RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o theia-plugin-broker main.go
 
 
-FROM alpine:3.7
-RUN apk add --no-cache ca-certificates
+FROM scratch
+COPY --from=builder /etc/passwd /etc/passwd
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /go/src/github.com/eclipse/che-plugin-broker/brokers/theia-plugin-broker/theia-plugin-broker /usr/local/bin
+USER appuser
 ENTRYPOINT ["theia-plugin-broker"]

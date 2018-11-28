@@ -67,7 +67,9 @@ func TestAddingPluginToStorage(t *testing.T) {
 		Endpoints:  []model.Endpoint{{Name: "endpoint"}},
 	}
 
-	AddPlugin(&meta, &conf)
+	if err := AddPlugin(&meta, &conf); err != nil {
+		t.Errorf("Adding plugin failed with error: %s", err)
+	}
 
 	actualNumber := len(s.plugins)
 	if actualNumber != 1 {

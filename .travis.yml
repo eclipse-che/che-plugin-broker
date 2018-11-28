@@ -17,7 +17,7 @@ script:
 - CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo ./...
 - golangci-lint run -v    # run a bunch of code checkers/linters in parallel
 - go test -v -race ./...  # Run all the tests with the race detector enabled
-- CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o che-plugin-broker cmd/che-plugin-broker/main.go
-- CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o theia-plugin-broker cmd/theia-plugin-broker/main.go
+- cd brokers/che-plugin-broker; CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o che-plugin-broker main.go
+- cd brokers/theia-plugin-broker; CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o theia-plugin-broker main.go
 notifications:
   email: false

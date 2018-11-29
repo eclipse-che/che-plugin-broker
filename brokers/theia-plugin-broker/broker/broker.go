@@ -179,7 +179,7 @@ func (broker *TheiaPluginBroker) injectTheiaRemotePlugin(meta model.PluginMeta, 
 
 func containerConfig(image string) *model.Container {
 	c := model.Container{
-		Name:  "theiaPluginSidecar" + randomNumberAsString(),
+		Name:  "theiapluginsidecar" + randomNumberAsString(),
 		Image: image,
 		Volumes: []model.Volume{
 			{

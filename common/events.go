@@ -22,14 +22,14 @@ import (
 	"github.com/eclipse/che-plugin-broker/model"
 )
 
-func (broker *Broker) PubStarted() {
+func (broker *brokerImpl) PubStarted() {
 	broker.bus.Pub(&model.StartedEvent{
 		Status:    model.StatusStarted,
 		RuntimeID: cfg.RuntimeID,
 	})
 }
 
-func (broker *Broker) PubFailed(err string) {
+func (broker *brokerImpl) PubFailed(err string) {
 	broker.bus.Pub(&model.ErrorEvent{
 		Status:    model.StatusFailed,
 		Error:     err,
@@ -37,7 +37,7 @@ func (broker *Broker) PubFailed(err string) {
 	})
 }
 
-func (broker *Broker) PubDone(tooling string) {
+func (broker *brokerImpl) PubDone(tooling string) {
 	broker.bus.Pub(&model.SuccessEvent{
 		Status:    model.StatusDone,
 		RuntimeID: cfg.RuntimeID,
@@ -45,7 +45,7 @@ func (broker *Broker) PubDone(tooling string) {
 	})
 }
 
-func (broker *Broker) PubLog(text string) {
+func (broker *brokerImpl) PubLog(text string) {
 	broker.bus.Pub(&model.PluginBrokerLogEvent{
 		RuntimeID: cfg.RuntimeID,
 		Text:      text,
@@ -53,7 +53,7 @@ func (broker *Broker) PubLog(text string) {
 	})
 }
 
-func (broker *Broker) PrintPlan(metas []model.PluginMeta) {
+func (broker *brokerImpl) PrintPlan(metas []model.PluginMeta) {
 	var buffer bytes.Buffer
 
 	buffer.WriteString("List of plugins and editors to install\n")
@@ -64,17 +64,17 @@ func (broker *Broker) PrintPlan(metas []model.PluginMeta) {
 	broker.PrintInfo(buffer.String())
 }
 
-func (broker *Broker) PrintDebug(format string, v ...interface{}) {
+func (broker *brokerImpl) PrintDebug(format string, v ...interface{}) {
 	log.Printf(format, v...)
 }
 
-func (broker *Broker) PrintInfo(format string, v ...interface{}) {
+func (broker *brokerImpl) PrintInfo(format string, v ...interface{}) {
 	message := fmt.Sprintf(format, v...)
 	broker.PubLog(message)
 	log.Print(message)
 }
 
-func (broker *Broker) PrintFatal(format string, v ...interface{}) {
+func (broker *brokerImpl) PrintFatal(format string, v ...interface{}) {
 	message := fmt.Sprintf(format, v...)
 	broker.PubLog(message)
 	log.Fatal(message)

@@ -30,12 +30,16 @@ import (
 
 // TheiaPluginBroker is used to process Theia .theia and remote plugins
 type TheiaPluginBroker struct {
-	*common.Broker
+	common.Broker
+	ioUtil files.IoUtil
 }
 
 // NewBroker creates Che Theia plugin broker instance
 func NewBroker() *TheiaPluginBroker {
-	return &TheiaPluginBroker{common.NewBroker()}
+	return &TheiaPluginBroker{
+		common.NewBroker(),
+		files.New(),
+	}
 }
 
 // Start executes plugins metas processing and sends data to Che master
@@ -104,14 +108,14 @@ func (broker *TheiaPluginBroker) processPlugin(meta model.PluginMeta) error {
 
 	// Download an archive
 	broker.PrintDebug("Downloading archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
-	err = files.Download(url, archivePath)
+	err = broker.ioUtil.Download(url, archivePath)
 	if err != nil {
 		return err
 	}
 
 	// Unzip it
 	broker.PrintDebug("Unzipping archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, unpackedPath)
-	err = files.Unzip(archivePath, unpackedPath)
+	err = broker.ioUtil.Unzip(archivePath, unpackedPath)
 	if err != nil {
 		return err
 	}
@@ -155,7 +159,7 @@ func (broker *TheiaPluginBroker) getPluginImage(pj *packageJson) (string, error)
 func (broker *TheiaPluginBroker) injectTheiaFile(meta model.PluginMeta, archivePath string) error {
 	broker.PrintDebug("Copying Theia plugin '%s:%s'", meta.ID, meta.Version)
 	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.theia", meta.ID, meta.Version))
-	err := files.CopyFile(archivePath, pluginPath)
+	err := broker.ioUtil.CopyFile(archivePath, pluginPath)
 	if err != nil {
 		return err
 	}
@@ -166,7 +170,7 @@ func (broker *TheiaPluginBroker) injectTheiaFile(meta model.PluginMeta, archiveP
 func (broker *TheiaPluginBroker) injectTheiaRemotePlugin(meta model.PluginMeta, archiveFolder string, image string, pj *packageJson) error {
 	pluginFolderPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
 	broker.PrintDebug("Copying Theia remote plugin '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, archiveFolder, pluginFolderPath)
-	err := files.CopyResource(archiveFolder, pluginFolderPath)
+	err := broker.ioUtil.CopyResource(archiveFolder, pluginFolderPath)
 	if err != nil {
 		return err
 	}

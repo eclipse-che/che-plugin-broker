@@ -30,15 +30,22 @@ import (
 	"github.com/eclipse/che-plugin-broker/storage"
 )
 
+const pluginFileName = "che-plugin.yaml"
+const depFileName = "che-dependency.yaml"
+const depFileBothLocationAndURLError = "Plugin dependency '%s:%s' contains both 'location' and 'url' fields while just one should be present"
+const depFileNoLocationURLError = "Plugin dependency '%s:%s' contains neither 'location' nor 'url' field"
+
 // ChePluginBroker is used to process Che plugins
 type ChePluginBroker struct {
-	*common.Broker
+	common.Broker
+	ioUtil files.IoUtil
 }
 
 // NewBroker creates Che plugin broker instance
 func NewBroker() *ChePluginBroker {
 	return &ChePluginBroker{
 		common.NewBroker(),
+		files.New(),
 	}
 }
 
@@ -54,7 +61,7 @@ func (cheBroker *ChePluginBroker) Start(metas []model.PluginMeta) {
 
 	// Clear any existing plugins from dir
 	log.Println("Cleaning /plugins dir")
-	err := files.ClearDir("/plugins")
+	err := cheBroker.ioUtil.ClearDir("/plugins")
 	if err != nil {
 		log.Printf("WARN: failed to clear /plugins directory: %s", err)
 	}
@@ -101,7 +108,7 @@ func (cheBroker *ChePluginBroker) processPlugin(meta model.PluginMeta) error {
 	cheBroker.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
 	url := meta.URL
 
-	workDir, err := ioutil.TempDir("", "che-plugin-broker")
+	workDir, err := cheBroker.ioUtil.TempDir("", "che-plugin-broker")
 	if err != nil {
 		return err
 	}
@@ -111,14 +118,14 @@ func (cheBroker *ChePluginBroker) processPlugin(meta model.PluginMeta) error {
 
 	// Download an archive
 	cheBroker.PrintDebug("Downloading archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
-	err = files.Download(url, archivePath)
+	err = cheBroker.ioUtil.Download(url, archivePath)
 	if err != nil {
 		return err
 	}
 
 	// Untar it
 	cheBroker.PrintDebug("Untarring archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
-	err = files.Untar(archivePath, pluginPath)
+	err = cheBroker.ioUtil.Untar(archivePath, pluginPath)
 	if err != nil {
 		return err
 	}
@@ -134,7 +141,7 @@ func (cheBroker *ChePluginBroker) processPlugin(meta model.PluginMeta) error {
 }
 
 func (cheBroker *ChePluginBroker) resolveToolingConfig(meta *model.PluginMeta, workDir string) error {
-	toolingConfPath := filepath.Join(workDir, "che-plugin.yaml")
+	toolingConfPath := filepath.Join(workDir, pluginFileName)
 	f, err := ioutil.ReadFile(toolingConfPath)
 	if err != nil {
 		return err
@@ -149,44 +156,52 @@ func (cheBroker *ChePluginBroker) resolveToolingConfig(meta *model.PluginMeta, w
 }
 
 func (cheBroker *ChePluginBroker) copyDependencies(workDir string) error {
-	depsConfPath := filepath.Join(workDir, "che-dependency.yaml")
-	if _, err := os.Stat(depsConfPath); os.IsNotExist(err) {
-		return nil
-	}
-
-	f, err := ioutil.ReadFile(depsConfPath)
-	if err != nil {
-		return err
-	}
-
-	deps := &model.CheDependencies{}
-	if err := yaml.Unmarshal(f, deps); err != nil {
+	deps, err := cheBroker.parseDepsFile(workDir)
+	if err != nil || deps == nil {
 		return err
 	}
 
 	for _, dep := range deps.Plugins {
 		switch {
 		case dep.Location != "" && dep.URL != "":
-			m := fmt.Sprintf("Plugin dependency '%s:%s' contains both 'location' and 'url' fields while just one should be present", dep.ID, dep.Version)
+			m := fmt.Sprintf(depFileBothLocationAndURLError, dep.ID, dep.Version)
 			return errors.New(m)
 		case dep.Location != "":
-			fileDest := files.ResolveDestPath(dep.Location, "/plugins")
+			fileDest := cheBroker.ioUtil.ResolveDestPath(dep.Location, "/plugins")
 			fileSrc := filepath.Join(workDir, dep.Location)
 			cheBroker.PrintDebug("Copying resource '%s' to '%s'", fileSrc, fileDest)
-			if err = files.CopyResource(fileSrc, fileDest); err != nil {
+			if err = cheBroker.ioUtil.CopyResource(fileSrc, fileDest); err != nil {
 				return err
 			}
 		case dep.URL != "":
-			fileDest := files.ResolveDestPathFromURL(dep.URL, "/plugins")
+			fileDest := cheBroker.ioUtil.ResolveDestPathFromURL(dep.URL, "/plugins")
 			cheBroker.PrintDebug("Downloading file '%s' to '%s'", dep.URL, fileDest)
-			if err = files.Download(dep.URL, fileDest); err != nil {
+			if err = cheBroker.ioUtil.Download(dep.URL, fileDest); err != nil {
 				return err
 			}
 		default:
-			m := fmt.Sprintf("Plugin dependency '%s:%s' contains neither 'location' nor 'url' field", dep.ID, dep.Version)
+			m := fmt.Sprintf(depFileNoLocationURLError, dep.ID, dep.Version)
 			return errors.New(m)
 		}
 	}
 
 	return nil
+}
+
+func (cheBroker *ChePluginBroker) parseDepsFile(workDir string) (*model.CheDependencies, error) {
+	depsConfPath := filepath.Join(workDir, depFileName)
+	if _, err := os.Stat(depsConfPath); os.IsNotExist(err) {
+		return nil, nil
+	}
+
+	f, err := ioutil.ReadFile(depsConfPath)
+	if err != nil {
+		return nil, err
+	}
+
+	deps := &model.CheDependencies{}
+	if err := yaml.Unmarshal(f, deps); err != nil {
+		return nil, err
+	}
+	return deps, nil
 }

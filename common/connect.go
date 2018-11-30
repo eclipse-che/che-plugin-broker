@@ -13,26 +13,46 @@
 package common
 
 import (
+	"log"
+
 	"github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-go-jsonrpc/event"
 	"github.com/eclipse/che-go-jsonrpc/jsonrpcws"
-	"log"
+	"github.com/eclipse/che-plugin-broker/model"
 )
 
-type Broker struct {
-   bus *event.Bus
+type Broker interface {
+	CloseConsumers()
+	Bus() *event.Bus
+	PushEvents(tun *jsonrpc.Tunnel, types ...string)
+	PubStarted()
+	PubFailed(err string)
+	PubDone(tooling string)
+	PubLog(text string)
+	PrintPlan(metas []model.PluginMeta)
+	PrintDebug(format string, v ...interface{})
+	PrintInfo(format string, v ...interface{})
+	PrintFatal(format string, v ...interface{})
 }
 
-func NewBroker() *Broker {
-	return &Broker{event.NewBus()}
+type brokerImpl struct {
+	bus *event.Bus
+}
+
+func NewBroker() Broker {
+	return &brokerImpl{event.NewBus()}
 }
 
 // PushEvents sets given tunnel as consumer of broker events.
-func (broker *Broker) PushEvents(tun *jsonrpc.Tunnel, types ...string) {
-	broker.bus.SubAny(&tunnelBroadcaster{tunnel: tun}, types...)
+func (broker brokerImpl) PushEvents(tun *jsonrpc.Tunnel, types ...string) {
+	broker.Bus().SubAny(&tunnelBroadcaster{tunnel: tun}, types...)
 }
 
-func (broker *Broker) CloseConsumers() {
+func (broker brokerImpl) Bus() *event.Bus {
+	return broker.bus
+}
+
+func (broker brokerImpl) CloseConsumers() {
 	for _, candidates := range broker.bus.Clear() {
 		for _, candidate := range candidates {
 			if broadcaster, ok := candidate.(*tunnelBroadcaster); ok {
@@ -42,11 +62,11 @@ func (broker *Broker) CloseConsumers() {
 	}
 }
 
-func (tb *tunnelBroadcaster) Close() { tb.tunnel.Close() }
-
 type tunnelBroadcaster struct {
 	tunnel *jsonrpc.Tunnel
 }
+
+func (tb *tunnelBroadcaster) Close() { tb.tunnel.Close() }
 
 func (tb *tunnelBroadcaster) Accept(e event.E) {
 	if err := tb.tunnel.Notify(e.Type(), e); err != nil {

@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"compress/gzip"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -26,7 +27,26 @@ import (
 	"strings"
 )
 
-func Download(URL string, destPath string) error {
+type IoUtil interface {
+	Download(URL string, destPath string) error
+	CopyResource(src string, dest string) error
+	CopyFile(src string, dest string) error
+	ResolveDestPath(filePath string, destDir string) string
+	ResolveDestPathFromURL(url string, destDir string) string
+	TempDir(string, string) (string, error)
+	Unzip(arch string, dest string) error
+	Untar(tarPath string, dest string) error
+	CreateFile(file string, tr io.Reader) error
+	ClearDir(dir string) error
+}
+
+type impl struct{}
+
+func New() IoUtil {
+	return &impl{}
+}
+
+func (util *impl) Download(URL string, destPath string) error {
 	out, err := os.Create(destPath)
 	if err != nil {
 		return err
@@ -47,12 +67,16 @@ func Download(URL string, destPath string) error {
 	return nil
 }
 
-func CopyResource(src string, dest string) error {
+func (util *impl) TempDir(baseDir string, prefix string) (dirPath string, err error) {
+	return ioutil.TempDir(baseDir, prefix)
+}
+
+func (util *impl) CopyResource(src string, dest string) error {
 	cmd := exec.Command("cp", "-r", src, dest)
 	return cmd.Run()
 }
 
-func CopyFile(src string, dest string) error {
+func (util *impl) CopyFile(src string, dest string) error {
 	to, err := os.Create(dest)
 	if err != nil {
 		return err
@@ -69,20 +93,20 @@ func CopyFile(src string, dest string) error {
 	return err
 }
 
-func ResolveDestPath(filePath string, destDir string) string {
+func (util *impl) ResolveDestPath(filePath string, destDir string) string {
 	destName := filepath.Base(filePath)
 	destPath := filepath.Join(destDir, destName)
 	return destPath
 }
 
-func ResolveDestPathFromURL(url string, destDir string) string {
+func (util *impl) ResolveDestPathFromURL(url string, destDir string) string {
 	tokens := strings.Split(url, "/")
 	fileName := tokens[len(tokens)-1]
 	destPath := filepath.Join(destDir, fileName)
 	return destPath
 }
 
-func Unzip(arch string, dest string) error {
+func (util *impl) Unzip(arch string, dest string) error {
 	r, err := zip.OpenReader(arch)
 	if err != nil {
 		return err
@@ -147,7 +171,7 @@ func Unzip(arch string, dest string) error {
 	return nil
 }
 
-func Untar(tarPath string, dest string) error {
+func (util *impl) Untar(tarPath string, dest string) error {
 	file, err := os.Open(tarPath)
 	if err != nil {
 		return err
@@ -184,10 +208,10 @@ func Untar(tarPath string, dest string) error {
 				return err
 			}
 		case tar.TypeReg:
-			if err := createContainingDir(tarEntry); err != nil {
+			if err := util.createContainingDir(tarEntry); err != nil {
 				return err
 			}
-			if err := createFile(tarEntry, tr); err != nil {
+			if err := util.CreateFile(tarEntry, tr); err != nil {
 				return err
 			}
 		default:
@@ -196,12 +220,12 @@ func Untar(tarPath string, dest string) error {
 	}
 }
 
-func createContainingDir(filePath string) error {
+func (util *impl) createContainingDir(filePath string) error {
 	dirPath := filepath.Dir(filePath)
 	return os.MkdirAll(dirPath, 0755)
 }
 
-func createFile(file string, tr io.Reader) error {
+func (util *impl) CreateFile(file string, tr io.Reader) error {
 	f, err := os.Create(file)
 	if err != nil {
 		return err
@@ -213,7 +237,7 @@ func createFile(file string, tr io.Reader) error {
 	return f.Sync()
 }
 
-func ClearDir(dir string) error {
+func (util *impl) ClearDir(dir string) error {
 	files, err := filepath.Glob(filepath.Join(dir, "*"))
 	if err != nil {
 		return err

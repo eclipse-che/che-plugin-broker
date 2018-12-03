@@ -13,20 +13,17 @@
 package broker
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	yaml "gopkg.in/yaml.v2"
 
+	tests "github.com/eclipse/che-plugin-broker/brokers_test"
 	"github.com/eclipse/che-plugin-broker/common"
 	cmock "github.com/eclipse/che-plugin-broker/common/mocks"
 	"github.com/eclipse/che-plugin-broker/files"
@@ -49,8 +46,8 @@ var (
 )
 
 func Test_process_plugin_error_if_archive_downloading_fails(t *testing.T) {
-	workDir := createTestWorkDir()
-	defer removeAll(workDir)
+	workDir := tests.CreateTestWorkDir()
+	defer tests.RemoveAll(workDir)
 	archivePath := filepath.Join(workDir, "pluginArchive.tar.gz")
 	meta := model.PluginMeta{
 		ID:      "test-id",
@@ -70,8 +67,8 @@ func Test_process_plugin_error_if_archive_downloading_fails(t *testing.T) {
 }
 
 func Test_process_plugin_error_if_archive_unpacking_fails(t *testing.T) {
-	workDir := createTestWorkDir()
-	defer removeAll(workDir)
+	workDir := tests.CreateTestWorkDir()
+	defer tests.RemoveAll(workDir)
 	archivePath := filepath.Join(workDir, "pluginArchive.tar.gz")
 	unarchivedPath := filepath.Join(workDir, "plugin")
 	meta := model.PluginMeta{
@@ -93,8 +90,8 @@ func Test_process_plugin_error_if_archive_unpacking_fails(t *testing.T) {
 }
 
 func Test_process_plugin_error_if_plugin_yaml_parsing_fails(t *testing.T) {
-	workDir := createTestWorkDir()
-	defer removeAll(workDir)
+	workDir := tests.CreateTestWorkDir()
+	defer tests.RemoveAll(workDir)
 	archivePath := filepath.Join(workDir, "pluginArchive.tar.gz")
 	unarchivedPath := filepath.Join(workDir, "plugin")
 	toolingConfPath := filepath.Join(unarchivedPath, pluginFileName)
@@ -113,8 +110,8 @@ func Test_process_plugin_error_if_plugin_yaml_parsing_fails(t *testing.T) {
 	uMock.On("TempDir", "", "che-plugin-broker").Return(workDir, nil).Once()
 	uMock.On("Download", "http://test.url", archivePath).Return(nil).Once()
 	uMock.On("Untar", archivePath, unarchivedPath).Once().Return(func(archive string, dest string) error {
-		createDirByPath(dest)
-		createFileWithContent(toolingConfPath, "illegal yaml content")
+		tests.CreateDirByPath(dest)
+		tests.CreateFileWithContent(toolingConfPath, "illegal yaml content")
 		return nil
 	})
 
@@ -126,8 +123,8 @@ func Test_process_plugin_error_if_plugin_yaml_parsing_fails(t *testing.T) {
 }
 
 func Test_process_plugin(t *testing.T) {
-	workDir := createTestWorkDir()
-	defer removeAll(workDir)
+	workDir := tests.CreateTestWorkDir()
+	defer tests.RemoveAll(workDir)
 	archivePath := filepath.Join(workDir, "pluginArchive.tar.gz")
 	unarchivedPath := filepath.Join(workDir, "plugin")
 	toolingConfPath := filepath.Join(unarchivedPath, pluginFileName)
@@ -207,8 +204,8 @@ func Test_process_plugin(t *testing.T) {
 	uMock.On("TempDir", "", "che-plugin-broker").Return(workDir, nil).Once()
 	uMock.On("Download", "http://test.url", archivePath).Return(nil).Once()
 	uMock.On("Untar", archivePath, unarchivedPath).Once().Return(func(archive string, dest string) error {
-		createDirByPath(dest)
-		createFileWithContent(toolingConfPath, toYamlQuiet(toolingConf))
+		tests.CreateDirByPath(dest)
+		tests.CreateFileWithContent(toolingConfPath, tests.ToYamlQuiet(toolingConf))
 		return nil
 	})
 
@@ -242,7 +239,7 @@ func Test_copy_dependencies_downloads_file_if_URL_is_present(t *testing.T) {
 		URL:     "http://domain.com/test.theia",
 	}
 	workDir := createDepFile(dep)
-	defer removeAll(workDir)
+	defer tests.RemoveAll(workDir)
 	uMock.On("ResolveDestPathFromURL", "http://domain.com/test.theia", "/plugins").Return("/plugins").Once()
 	uMock.On("Download", "http://domain.com/test.theia", "/plugins").Return(nil).Once()
 	bMock.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
@@ -261,7 +258,7 @@ func Test_copy_dependencies_copies_files_if_location_is_present(t *testing.T) {
 		Location: "test.theia",
 	}
 	workDir := createDepFile(dep)
-	defer removeAll(workDir)
+	defer tests.RemoveAll(workDir)
 	uMock.On("ResolveDestPath", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return("/plugins").Once()
 	uMock.On("CopyResource", filepath.Join(workDir, "test.theia"), "/plugins").Return(nil).Once()
 	bMock.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
@@ -285,7 +282,7 @@ func Test_copy_dependencies_processes_several_deps(t *testing.T) {
 		URL:     "http://domain.com/test.theia",
 	}
 	workDir := createDepFile(dep1, dep2)
-	defer removeAll(workDir)
+	defer tests.RemoveAll(workDir)
 	uMock.On("ResolveDestPathFromURL", "http://domain.com/test.theia", "/plugins").Return("/plugins").Once()
 	uMock.On("Download", "http://domain.com/test.theia", "/plugins").Return(nil).Once()
 	bMock.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
@@ -305,7 +302,7 @@ func Test_copy_dependencies_error_if_neither_URL_nor_location_are_present(t *tes
 		Version: "test-v",
 	}
 	workDir := createDepFile(dep)
-	defer removeAll(workDir)
+	defer tests.RemoveAll(workDir)
 
 	err := broker.copyDependencies(workDir)
 
@@ -320,7 +317,7 @@ func Test_copy_dependencies_error_if_location_and_URL_are_present(t *testing.T) 
 		URL:      "http://test.com/file.zip",
 	}
 	workDir := createDepFile(dep)
-	defer removeAll(workDir)
+	defer tests.RemoveAll(workDir)
 
 	err := broker.copyDependencies(workDir)
 
@@ -328,8 +325,8 @@ func Test_copy_dependencies_error_if_location_and_URL_are_present(t *testing.T) 
 }
 
 func Test_copy_dependencies_error_if_parsing_fails(t *testing.T) {
-	workDir := createTestWorkDir()
-	defer removeAll(workDir)
+	workDir := tests.CreateTestWorkDir()
+	defer tests.RemoveAll(workDir)
 	createDepFileWithIllegalContent(workDir)
 
 	err := broker.copyDependencies(workDir)
@@ -347,9 +344,9 @@ func Test_dep_file_not_exist(t *testing.T) {
 }
 
 func Test_dep_file_is_folder_error(t *testing.T) {
-	dir := createTestWorkDir()
-	createDir(dir, depFileName)
-	defer removeAll(dir)
+	dir := tests.CreateTestWorkDir()
+	tests.CreateDir(dir, depFileName)
+	defer tests.RemoveAll(dir)
 
 	got, err := broker.parseDepsFile(dir)
 
@@ -358,9 +355,9 @@ func Test_dep_file_is_folder_error(t *testing.T) {
 }
 
 func Test_dep_file_is_not_readable_error(t *testing.T) {
-	dir := createTestWorkDir()
-	createFile(dir, depFileName, 0337)
-	defer removeAll(dir)
+	dir := tests.CreateTestWorkDir()
+	tests.CreateFile(dir, depFileName, 0337)
+	defer tests.RemoveAll(dir)
 
 	got, err := broker.parseDepsFile(dir)
 
@@ -369,9 +366,9 @@ func Test_dep_file_is_not_readable_error(t *testing.T) {
 }
 
 func Test_dep_file_parsing_fails(t *testing.T) {
-	dir := createTestWorkDir()
+	dir := tests.CreateTestWorkDir()
 	createDepFileWithIllegalContent(dir)
-	defer removeAll(dir)
+	defer tests.RemoveAll(dir)
 
 	got, err := broker.parseDepsFile(dir)
 
@@ -387,7 +384,7 @@ func Test_get_dep_file(t *testing.T) {
 		URL:      "test-url",
 	}
 	workDir := createDepFile(dep)
-	defer removeAll(workDir)
+	defer tests.RemoveAll(workDir)
 	expected := &model.CheDependencies{
 		Plugins: []model.CheDependency{
 			*dep,
@@ -401,7 +398,7 @@ func Test_get_dep_file(t *testing.T) {
 }
 
 func createDepFile(deps ...*model.CheDependency) string {
-	workDir := createTestWorkDir()
+	workDir := tests.CreateTestWorkDir()
 	result := &model.CheDependencies{}
 	for _, dep := range deps {
 		result.Plugins = append(result.Plugins, *dep)
@@ -411,99 +408,16 @@ func createDepFile(deps ...*model.CheDependency) string {
 }
 
 func createDepFileWithContent(workDir string, obj interface{}) {
-	createFile(workDir, depFileName, 0665)
+	tests.CreateFile(workDir, depFileName, 0665)
 	bytes, err := yaml.Marshal(obj)
 	if err != nil {
 		log.Fatal(err)
 	}
-	writeContentBytes(workDir, depFileName, bytes)
+	tests.WriteContentBytes(workDir, depFileName, bytes)
 }
 
 func createDepFileWithIllegalContent(workDir string) {
 	path := filepath.Join(workDir, depFileName)
-	createFileByPath(path)
-	writeContent(path, "illegal content")
-}
-
-func createFileWithContent(path string, content string) {
-	createFileByPath(path)
-	writeContent(path, content)
-}
-
-func toYamlQuiet(obj interface{}) string {
-	fileContent, err := yaml.Marshal(obj)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return string(fileContent)
-}
-
-func removeAll(path string) {
-	err := os.RemoveAll(path)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func createTestWorkDir() string {
-	dir, err := ioutil.TempDir("", "test")
-	if err != nil {
-		log.Fatal(err)
-	}
-	return dir
-}
-
-func createDir(parent string, name string) string {
-	d := filepath.Join(parent, name)
-	return createDirByPath(d)
-}
-
-func createDirByPath(path string) string {
-	err := os.Mkdir(path, 0755)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return path
-}
-
-func createFileByPath(path string) {
-	to, err := os.Create(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer to.Close()
-
-	err = os.Chmod(path, 0655)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func createFile(parent string, name string, m os.FileMode) {
-	path := filepath.Join(parent, name)
-	to, err := os.Create(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer to.Close()
-
-	err = os.Chmod(path, m)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func writeContentBytes(parent string, name string, content []byte) {
-	path := filepath.Join(parent, name)
-	err := files.New().CreateFile(path, bytes.NewReader(content))
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func writeContent(path string, content string) {
-	err := files.New().CreateFile(path, strings.NewReader(content))
-	if err != nil {
-		log.Fatal(err)
-	}
+	tests.CreateFileByPath(path)
+	tests.WriteContent(path, "illegal content")
 }

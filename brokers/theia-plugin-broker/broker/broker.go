@@ -98,7 +98,7 @@ func (broker *TheiaPluginBroker) processPlugin(meta model.PluginMeta) error {
 	broker.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
 	url := meta.URL
 
-	workDir, err := ioutil.TempDir("", "theia-plugin-broker")
+	workDir, err := broker.ioUtil.TempDir("", "theia-plugin-broker")
 	if err != nil {
 		return err
 	}

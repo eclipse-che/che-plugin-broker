@@ -24,28 +24,29 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	tests "github.com/eclipse/che-plugin-broker/brokers_test"
-	"github.com/eclipse/che-plugin-broker/common"
 	cmock "github.com/eclipse/che-plugin-broker/common/mocks"
-	"github.com/eclipse/che-plugin-broker/files"
 	fmock "github.com/eclipse/che-plugin-broker/files/mocks"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
 )
 
 var (
-	broker = &TheiaPluginBroker{
-		common.NewBroker(),
-		files.New(),
-	}
+	broker     = NewBroker()
 	bMock      = &cmock.Broker{}
 	uMock      = &fmock.IoUtil{}
 	mockBroker = &TheiaPluginBroker{
 		bMock,
 		uMock,
+		storage.New(),
 	}
 )
 
 func Test_process_remote_plugin(t *testing.T) {
+	mockBroker = &TheiaPluginBroker{
+		bMock,
+		uMock,
+		storage.New(),
+	}
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)
 	archivePath := filepath.Join(workDir, "pluginArchive")
@@ -78,7 +79,7 @@ func Test_process_remote_plugin(t *testing.T) {
 	err := mockBroker.processPlugin(meta)
 
 	assert.Nil(t, err)
-	pluginsPointer, err := storage.Plugins()
+	pluginsPointer, err := mockBroker.storage.Plugins()
 	assert.NotNil(t, pluginsPointer)
 	plugins := *pluginsPointer
 	// get port since it is random and is used in names generation
@@ -147,6 +148,11 @@ func expectedPlugins(meta model.PluginMeta, port int, image string, cname string
 }
 
 func Test_process_regular_plugin(t *testing.T) {
+	mockBroker = &TheiaPluginBroker{
+		bMock,
+		uMock,
+		storage.New(),
+	}
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)
 	archivePath := filepath.Join(workDir, "pluginArchive")
@@ -185,7 +191,7 @@ func Test_process_regular_plugin(t *testing.T) {
 	err := mockBroker.processPlugin(meta)
 
 	assert.Nil(t, err)
-	plugins, err := storage.Plugins()
+	plugins, err := mockBroker.storage.Plugins()
 	assert.Equal(t, expectedPlugins, *plugins)
 	bMock.AssertExpectations(t)
 	uMock.AssertExpectations(t)

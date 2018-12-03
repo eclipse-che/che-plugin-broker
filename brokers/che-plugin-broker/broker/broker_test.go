@@ -24,24 +24,20 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	tests "github.com/eclipse/che-plugin-broker/brokers_test"
-	"github.com/eclipse/che-plugin-broker/common"
 	cmock "github.com/eclipse/che-plugin-broker/common/mocks"
-	"github.com/eclipse/che-plugin-broker/files"
 	fmock "github.com/eclipse/che-plugin-broker/files/mocks"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
 )
 
 var (
-	broker = &ChePluginBroker{
-		common.NewBroker(),
-		files.New(),
-	}
+	broker     = NewBroker()
 	bMock      = &cmock.Broker{}
 	uMock      = &fmock.IoUtil{}
 	mockBroker = &ChePluginBroker{
 		bMock,
 		uMock,
+		storage.New(),
 	}
 )
 
@@ -212,7 +208,7 @@ func Test_process_plugin(t *testing.T) {
 	err := mockBroker.processPlugin(meta)
 
 	assert.Nil(t, err)
-	plugins, err := storage.Plugins()
+	plugins, err := mockBroker.storage.Plugins()
 	assert.Equal(t, expectedPlugins, *plugins)
 	bMock.AssertExpectations(t)
 	uMock.AssertExpectations(t)

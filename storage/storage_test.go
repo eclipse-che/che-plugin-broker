@@ -20,6 +20,8 @@ import (
 	"github.com/eclipse/che-plugin-broker/model"
 )
 
+var s = New()
+
 func TestSettingStatusOfStorage(t *testing.T) {
 	tables := []struct {
 		initialStatus model.BrokerStatus
@@ -43,7 +45,7 @@ func TestSettingStatusOfStorage(t *testing.T) {
 	for _, table := range tables {
 		//storage1 := &Storage{status:table.initialStatus}
 		s.status = table.initialStatus
-		ok, currentValue := SetStatus(table.newStatus)
+		ok, currentValue := s.SetStatus(table.newStatus)
 
 		if ok != table.isChanged {
 			t.Errorf("Status expected not to be changed from %s to %s but it was", table.initialStatus, table.newStatus)
@@ -67,7 +69,7 @@ func TestAddingPluginToStorage(t *testing.T) {
 		Endpoints:  []model.Endpoint{{Name: "endpoint"}},
 	}
 
-	if err := AddPlugin(&meta, &conf); err != nil {
+	if err := s.AddPlugin(&meta, &conf); err != nil {
 		t.Errorf("Adding plugin failed with error: %s", err)
 	}
 
@@ -97,7 +99,7 @@ func TestGettingPluginsFromStorage(t *testing.T) {
 		},
 	}
 
-	chePlugins, e := Plugins()
+	chePlugins, e := s.Plugins()
 
 	if e != nil {
 		t.Errorf("Error occurs during toolling receiving: %s", e)

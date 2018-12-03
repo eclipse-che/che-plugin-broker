@@ -31,7 +31,8 @@ import (
 // TheiaPluginBroker is used to process Theia .theia and remote plugins
 type TheiaPluginBroker struct {
 	common.Broker
-	ioUtil files.IoUtil
+	ioUtil  files.IoUtil
+	storage *storage.Storage
 }
 
 // NewBroker creates Che Theia plugin broker instance
@@ -39,12 +40,13 @@ func NewBroker() *TheiaPluginBroker {
 	return &TheiaPluginBroker{
 		common.NewBroker(),
 		files.New(),
+		storage.New(),
 	}
 }
 
 // Start executes plugins metas processing and sends data to Che master
 func (broker *TheiaPluginBroker) Start(metas []model.PluginMeta) {
-	if ok, status := storage.SetStatus(model.StatusStarted); !ok {
+	if ok, status := broker.storage.SetStatus(model.StatusStarted); !ok {
 		m := fmt.Sprintf("Starting broker in state '%s' is not allowed", status)
 		broker.PubFailed(m)
 		broker.PrintFatal(m)
@@ -67,13 +69,13 @@ func (broker *TheiaPluginBroker) Start(metas []model.PluginMeta) {
 		}
 	}
 
-	if ok, status := storage.SetStatus(model.StatusDone); !ok {
+	if ok, status := broker.storage.SetStatus(model.StatusDone); !ok {
 		err := fmt.Sprintf("Setting '%s' broker status failed. Broker has '%s' state", model.StatusDone, status)
 		broker.PubFailed(err)
 		broker.PrintFatal(err)
 	}
 
-	plugins, err := storage.Plugins()
+	plugins, err := broker.storage.Plugins()
 	if err != nil {
 		broker.PubFailed(err.Error())
 		broker.PrintFatal(err.Error())
@@ -164,7 +166,7 @@ func (broker *TheiaPluginBroker) injectTheiaFile(meta model.PluginMeta, archiveP
 		return err
 	}
 	tooling := &model.ToolingConf{}
-	return storage.AddPlugin(&meta, tooling)
+	return broker.storage.AddPlugin(&meta, tooling)
 }
 
 func (broker *TheiaPluginBroker) injectTheiaRemotePlugin(meta model.PluginMeta, archiveFolder string, image string, pj *packageJson) error {
@@ -178,7 +180,7 @@ func (broker *TheiaPluginBroker) injectTheiaRemotePlugin(meta model.PluginMeta, 
 		Containers: []model.Container{*containerConfig(image)},
 	}
 	broker.addPortToTooling(tooling, pj)
-	return storage.AddPlugin(&meta, tooling)
+	return broker.storage.AddPlugin(&meta, tooling)
 }
 
 func containerConfig(image string) *model.Container {

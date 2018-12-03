@@ -38,7 +38,8 @@ const depFileNoLocationURLError = "Plugin dependency '%s:%s' contains neither 'l
 // ChePluginBroker is used to process Che plugins
 type ChePluginBroker struct {
 	common.Broker
-	ioUtil files.IoUtil
+	ioUtil  files.IoUtil
+	storage *storage.Storage
 }
 
 // NewBroker creates Che plugin broker instance
@@ -46,12 +47,13 @@ func NewBroker() *ChePluginBroker {
 	return &ChePluginBroker{
 		common.NewBroker(),
 		files.New(),
+		storage.New(),
 	}
 }
 
 // Start executes plugins metas processing and sends data to Che master
 func (cheBroker *ChePluginBroker) Start(metas []model.PluginMeta) {
-	if ok, status := storage.SetStatus(model.StatusStarted); !ok {
+	if ok, status := cheBroker.storage.SetStatus(model.StatusStarted); !ok {
 		m := fmt.Sprintf("Starting broker in state '%s' is not allowed", status)
 		cheBroker.PubFailed(m)
 		cheBroker.PrintFatal(m)
@@ -77,13 +79,13 @@ func (cheBroker *ChePluginBroker) Start(metas []model.PluginMeta) {
 		}
 	}
 
-	if ok, status := storage.SetStatus(model.StatusDone); !ok {
+	if ok, status := cheBroker.storage.SetStatus(model.StatusDone); !ok {
 		err := fmt.Sprintf("Setting '%s' broker status failed. Broker has '%s' state", model.StatusDone, status)
 		cheBroker.PubFailed(err)
 		cheBroker.PrintFatal(err)
 	}
 
-	plugins, err := storage.Plugins()
+	plugins, err := cheBroker.storage.Plugins()
 	if err != nil {
 		cheBroker.PubFailed(err.Error())
 		cheBroker.PrintFatal(err.Error())
@@ -152,7 +154,7 @@ func (cheBroker *ChePluginBroker) resolveToolingConfig(meta *model.PluginMeta, w
 		return err
 	}
 
-	return storage.AddPlugin(meta, tooling)
+	return cheBroker.storage.AddPlugin(meta, tooling)
 }
 
 func (cheBroker *ChePluginBroker) copyDependencies(workDir string) error {

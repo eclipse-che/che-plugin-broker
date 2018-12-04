@@ -17,7 +17,7 @@ plugin is considered non-remote
 - Copies .theia file to /plugins/ for a non-remote plugin case
 - Copies unzipped .theia to /plugins/ for a remote plugin case
 - Sends following sidecar config to Che workspace master:
- - with plojects volume
+ - with projects volume
  - with plugin volume
  - adds an endpoint with random port between 4000 and 6000 and name `port<port>`
  - adds env var to workspace-wide env vars with name 
@@ -35,11 +35,11 @@ CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo ./..
 ```
 - build Che plugin broker binary:
 ```shell
-CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o che-plugin-broker cmd/che-plugin-broker/main.go
+CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o che-plugin-broker brokers/che-plugin-broker/main.go
 ```
 - build Che Theia plugin broker binary:
 ```shell
-CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o theia-plugin-broker cmd/theia-plugin-broker/main.go
+CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o theia-plugin-broker brokers/theia-plugin-broker/main.go
 ```
 - run tests:
 ```shell
@@ -48,6 +48,10 @@ go test -v -race ./...
 - run linters:
 ```shell
 golangci-lint run -v
+```
+- run CI checks locally in Docker (includes build/test/linters):
+```shell
+docker build .
 ```
 ## Dependencies
 Dependencies in the project are managed by Go Dep.

@@ -29,7 +29,6 @@ func New() *Storage {
 type Storage struct {
 	sync.RWMutex
 	status  model.BrokerStatus
-	err     string
 	plugins []model.ChePlugin
 }
 

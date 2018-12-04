@@ -31,7 +31,6 @@ import (
 )
 
 var (
-	broker     = NewBroker()
 	bMock      = &cmock.Broker{}
 	uMock      = &fmock.IoUtil{}
 	mockBroker = &TheiaPluginBroker{
@@ -80,6 +79,7 @@ func Test_process_remote_plugin(t *testing.T) {
 
 	assert.Nil(t, err)
 	pluginsPointer, err := mockBroker.storage.Plugins()
+	assert.Nil(t, err)
 	assert.NotNil(t, pluginsPointer)
 	plugins := *pluginsPointer
 	// get port since it is random and is used in names generation
@@ -192,6 +192,7 @@ func Test_process_regular_plugin(t *testing.T) {
 
 	assert.Nil(t, err)
 	plugins, err := mockBroker.storage.Plugins()
+	assert.Nil(t, err)
 	assert.Equal(t, expectedPlugins, *plugins)
 	bMock.AssertExpectations(t)
 	uMock.AssertExpectations(t)

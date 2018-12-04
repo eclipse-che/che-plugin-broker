@@ -209,6 +209,7 @@ func Test_process_plugin(t *testing.T) {
 
 	assert.Nil(t, err)
 	plugins, err := mockBroker.storage.Plugins()
+	assert.Nil(t, err)
 	assert.Equal(t, expectedPlugins, *plugins)
 	bMock.AssertExpectations(t)
 	uMock.AssertExpectations(t)

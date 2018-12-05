@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	yaml "gopkg.in/yaml.v2"
 
-	tests "github.com/eclipse/che-plugin-broker/brokers_test"
+	tests "github.com/eclipse/che-plugin-broker/brokers/test"
 	cmock "github.com/eclipse/che-plugin-broker/common/mocks"
 	fmock "github.com/eclipse/che-plugin-broker/files/mocks"
 	"github.com/eclipse/che-plugin-broker/model"
@@ -41,7 +41,7 @@ var (
 	}
 )
 
-func Test_process_plugin_error_if_archive_downloading_fails(t *testing.T) {
+func TestProcessPluginErrorIfArchiveDownloadingFails(t *testing.T) {
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)
 	archivePath := filepath.Join(workDir, "pluginArchive.tar.gz")
@@ -62,7 +62,7 @@ func Test_process_plugin_error_if_archive_downloading_fails(t *testing.T) {
 	uMock.AssertExpectations(t)
 }
 
-func Test_process_plugin_error_if_archive_unpacking_fails(t *testing.T) {
+func TestProcessPluginErrorIfArchiveUnpackingFails(t *testing.T) {
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)
 	archivePath := filepath.Join(workDir, "pluginArchive.tar.gz")
@@ -85,7 +85,7 @@ func Test_process_plugin_error_if_archive_unpacking_fails(t *testing.T) {
 	uMock.AssertExpectations(t)
 }
 
-func Test_process_plugin_error_if_plugin_yaml_parsing_fails(t *testing.T) {
+func TestProcessPluginErrorIfPluginYamlParsingFails(t *testing.T) {
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)
 	archivePath := filepath.Join(workDir, "pluginArchive.tar.gz")
@@ -118,7 +118,7 @@ func Test_process_plugin_error_if_plugin_yaml_parsing_fails(t *testing.T) {
 	uMock.AssertExpectations(t)
 }
 
-func Test_process_plugin(t *testing.T) {
+func TestProcessPlugin(t *testing.T) {
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)
 	archivePath := filepath.Join(workDir, "pluginArchive.tar.gz")
@@ -215,7 +215,7 @@ func Test_process_plugin(t *testing.T) {
 	uMock.AssertExpectations(t)
 }
 
-func Test_start(t *testing.T) {
+func TestStart(t *testing.T) {
 	bMock.On("PubStarted").Once()
 	bMock.On("PubDone", mock.AnythingOfType("string")).Once()
 	bMock.On("PrintInfo", mock.AnythingOfType("string"))
@@ -229,7 +229,7 @@ func Test_start(t *testing.T) {
 	uMock.AssertExpectations(t)
 }
 
-func Test_copy_dependencies_downloads_file_if_URL_is_present(t *testing.T) {
+func TestCopyDependenciesDownloadsFileIfURLIsPresent(t *testing.T) {
 	dep := &model.CheDependency{
 		ID:      "test-id",
 		Version: "test-v",
@@ -248,7 +248,7 @@ func Test_copy_dependencies_downloads_file_if_URL_is_present(t *testing.T) {
 	uMock.AssertExpectations(t)
 }
 
-func Test_copy_dependencies_copies_files_if_location_is_present(t *testing.T) {
+func TestCopyDependenciesCopiesFilesIfLocationIsPresent(t *testing.T) {
 	dep := &model.CheDependency{
 		ID:       "test-id",
 		Version:  "test-v",
@@ -267,7 +267,7 @@ func Test_copy_dependencies_copies_files_if_location_is_present(t *testing.T) {
 	uMock.AssertExpectations(t)
 }
 
-func Test_copy_dependencies_processes_several_deps(t *testing.T) {
+func TestCopyDependenciesProcessesSeveralDeps(t *testing.T) {
 	dep1 := &model.CheDependency{
 		ID:       "test-id",
 		Version:  "test-v",
@@ -293,7 +293,7 @@ func Test_copy_dependencies_processes_several_deps(t *testing.T) {
 	uMock.AssertExpectations(t)
 }
 
-func Test_copy_dependencies_error_if_neither_URL_nor_location_are_present(t *testing.T) {
+func TestCopyDependenciesErrorIfNeitherURLNorLocationArePresent(t *testing.T) {
 	dep := &model.CheDependency{
 		ID:      "test-id",
 		Version: "test-v",
@@ -306,7 +306,7 @@ func Test_copy_dependencies_error_if_neither_URL_nor_location_are_present(t *tes
 	assert.Equal(t, fmt.Errorf(depFileNoLocationURLError, dep.ID, dep.Version), err)
 }
 
-func Test_copy_dependencies_error_if_location_and_URL_are_present(t *testing.T) {
+func TestCopyDependenciesErrorIfLocationAndURLArePresent(t *testing.T) {
 	dep := &model.CheDependency{
 		ID:       "test-id",
 		Version:  "test-v",
@@ -321,7 +321,7 @@ func Test_copy_dependencies_error_if_location_and_URL_are_present(t *testing.T) 
 	assert.Equal(t, fmt.Errorf(depFileBothLocationAndURLError, dep.ID, dep.Version), err)
 }
 
-func Test_copy_dependencies_error_if_parsing_fails(t *testing.T) {
+func TestCopyDependenciesErrorIfParsingFails(t *testing.T) {
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)
 	createDepFileWithIllegalContent(workDir)
@@ -331,7 +331,7 @@ func Test_copy_dependencies_error_if_parsing_fails(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func Test_dep_file_not_exist(t *testing.T) {
+func TestDepFileNotExist(t *testing.T) {
 	dir := "/tmp/thisFileShouldNotExist"
 
 	got, err := broker.parseDepsFile(dir)
@@ -340,7 +340,7 @@ func Test_dep_file_not_exist(t *testing.T) {
 	assert.Nil(t, got)
 }
 
-func Test_dep_file_is_folder_error(t *testing.T) {
+func TestDepFileIsFolderError(t *testing.T) {
 	dir := tests.CreateTestWorkDir()
 	tests.CreateDir(dir, depFileName)
 	defer tests.RemoveAll(dir)
@@ -351,7 +351,7 @@ func Test_dep_file_is_folder_error(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func Test_dep_file_is_not_readable_error(t *testing.T) {
+func TestDepFileIsNotReadableError(t *testing.T) {
 	dir := tests.CreateTestWorkDir()
 	tests.CreateFile(dir, depFileName, 0337)
 	defer tests.RemoveAll(dir)
@@ -362,7 +362,7 @@ func Test_dep_file_is_not_readable_error(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func Test_dep_file_parsing_fails(t *testing.T) {
+func TestDepFileParsingFails(t *testing.T) {
 	dir := tests.CreateTestWorkDir()
 	createDepFileWithIllegalContent(dir)
 	defer tests.RemoveAll(dir)
@@ -373,7 +373,7 @@ func Test_dep_file_parsing_fails(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func Test_get_dep_file(t *testing.T) {
+func TestGetDepFile(t *testing.T) {
 	dep := &model.CheDependency{
 		ID:       "test-id",
 		Version:  "test-version",

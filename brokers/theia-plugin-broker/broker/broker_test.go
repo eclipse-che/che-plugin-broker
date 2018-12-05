@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	tests "github.com/eclipse/che-plugin-broker/brokers_test"
+	tests "github.com/eclipse/che-plugin-broker/brokers/test"
 	cmock "github.com/eclipse/che-plugin-broker/common/mocks"
 	fmock "github.com/eclipse/che-plugin-broker/files/mocks"
 	"github.com/eclipse/che-plugin-broker/model"
@@ -40,7 +40,7 @@ var (
 	}
 )
 
-func Test_process_remote_plugin(t *testing.T) {
+func TestProcessRemotePlugin(t *testing.T) {
 	mockBroker = &TheiaPluginBroker{
 		bMock,
 		uMock,
@@ -147,7 +147,7 @@ func expectedPlugins(meta model.PluginMeta, port int, image string, cname string
 	return expectedPlugins
 }
 
-func Test_process_regular_plugin(t *testing.T) {
+func TestProcessRegularPlugin(t *testing.T) {
 	mockBroker = &TheiaPluginBroker{
 		bMock,
 		uMock,
@@ -198,7 +198,7 @@ func Test_process_regular_plugin(t *testing.T) {
 	uMock.AssertExpectations(t)
 }
 
-func Test_start(t *testing.T) {
+func TestStart(t *testing.T) {
 	bMock.On("PubStarted").Once()
 	bMock.On("PubDone", mock.AnythingOfType("string")).Once()
 	bMock.On("PrintInfo", mock.AnythingOfType("string"))
@@ -211,7 +211,7 @@ func Test_start(t *testing.T) {
 	uMock.AssertExpectations(t)
 }
 
-func Test_process_plugin_error_if_archive_unpacking_fails(t *testing.T) {
+func TestProcessPluginErrorIfArchiveUnpackingFails(t *testing.T) {
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)
 	archivePath := filepath.Join(workDir, "pluginArchive")
@@ -234,7 +234,7 @@ func Test_process_plugin_error_if_archive_unpacking_fails(t *testing.T) {
 	uMock.AssertExpectations(t)
 }
 
-func Test_process_plugin_error_if_archive_downloading_fails(t *testing.T) {
+func TestProcessPluginErrorIfArchiveDownloadingFails(t *testing.T) {
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)
 	archivePath := filepath.Join(workDir, "pluginArchive")
@@ -255,7 +255,7 @@ func Test_process_plugin_error_if_archive_downloading_fails(t *testing.T) {
 	uMock.AssertExpectations(t)
 }
 
-func Test_process_plugin_error_if_package_JSON_missing(t *testing.T) {
+func TestProcessPluginErrorIfPackageJSONMissing(t *testing.T) {
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)
 	archivePath := filepath.Join(workDir, "pluginArchive")
@@ -281,7 +281,7 @@ func Test_process_plugin_error_if_package_JSON_missing(t *testing.T) {
 	uMock.AssertExpectations(t)
 }
 
-func Test_process_plugin_error_if_package_JSON_parsing_fails(t *testing.T) {
+func TestProcessPluginErrorIfPackageJSONParsingFails(t *testing.T) {
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)
 	archivePath := filepath.Join(workDir, "pluginArchive")
@@ -309,7 +309,7 @@ func Test_process_plugin_error_if_package_JSON_parsing_fails(t *testing.T) {
 	uMock.AssertExpectations(t)
 }
 
-func Test_process_plugin_error_if_archive_copying_fails(t *testing.T) {
+func TestProcessPluginErrorIfArchiveCopyingFails(t *testing.T) {
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)
 	archivePath := filepath.Join(workDir, "pluginArchive")
@@ -346,7 +346,7 @@ func Test_process_plugin_error_if_archive_copying_fails(t *testing.T) {
 	uMock.AssertExpectations(t)
 }
 
-func Test_process_plugin_error_if_archive_folder_copying_fails(t *testing.T) {
+func TestProcessPluginErrorIfArchiveFolderCopyingFails(t *testing.T) {
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)
 	archivePath := filepath.Join(workDir, "pluginArchive")

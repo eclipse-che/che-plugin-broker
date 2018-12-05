@@ -59,6 +59,8 @@ After you added a dependency you need to run the following command to download d
 ```shell
 dep ensure
 ```
+`dep ensure` doesn't automatically change Gopkg.toml which contains dependencies constrants.
+So, when a dependency is introduced or changed it should be reflected in Gopkg.toml.
 ## Build of Docker images
 - build Che plugin broker
 ```shell

@@ -3,8 +3,8 @@
 ### che-plugin-broker
 Downloads tar.gz archive and:
 - Cleanups content of /plugins/ folder
-- Evaluates Che workspace sidecars config from che-plugin.yaml and data from config.json
-that are placed in workdir or other path if a corresponding broker argument is used.
+- Evaluates Che workspace sidecars config from che-plugin.yaml located in a plugin archive and data
+from config.json that is placed in workdir or different path if a corresponding broker argument is used.
 It contains data about Che plugin or editor from meta.yaml
 - Copies dependency file/folder specified in dependencies.yaml inside of a plugin archive
 

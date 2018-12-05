@@ -10,13 +10,12 @@
 #   Red Hat, Inc. - initial API and implementation
 #
 
-FROM golang:1.10.3 as builder
+FROM golang:1.10
+RUN wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.10.2
+RUN adduser --disabled-password --gecos '' appuser
+USER appuser
+COPY . /go/src/github.com/eclipse/che-plugin-broker/
 WORKDIR /go/src/github.com/eclipse/che-plugin-broker/
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o che-plugin-broker main.go
-
-
-FROM alpine:3.7
-RUN apk add --no-cache ca-certificates
-COPY --from=builder /go/src/github.com/eclipse/che-plugin-broker/che-plugin-broker /usr/local/bin
-ENTRYPOINT ["che-plugin-broker"]
+RUN  CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo ./...
+RUN golangci-lint run -v
+RUN go test -v -race ./...

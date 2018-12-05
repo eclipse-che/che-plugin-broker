@@ -107,9 +107,10 @@ type Editor struct {
 }
 
 type ToolingConf struct {
-	Endpoints  []Endpoint  `json:"endpoints" yaml:"endpoints"`
-	Containers []Container `json:"containers" yaml:"containers"`
-	Editors    []Editor    `json:"editors" yaml:"editors"`
+	Endpoints    []Endpoint  `json:"endpoints" yaml:"endpoints"`
+	Containers   []Container `json:"containers" yaml:"containers"`
+	Editors      []Editor    `json:"editors" yaml:"editors"`
+	WorkspaceEnv []EnvVar    `json:"workspace-env" yaml:"workspace-env"`
 }
 
 type ChePlugin struct {
@@ -119,9 +120,10 @@ type ChePlugin struct {
 	//while it is not respected by all of plugin
 	//See https://github.com/eclipse/che/blob/251e5e261bac2bf4c93f113e52fd18d26b5989ab/infrastructures/kubernetes/src/main/java/org/eclipse/che/workspace/infrastructure/kubernetes/wsplugins/KubernetesPluginsToolingValidator.java#L27
 	//Name       string      `json:"name" yaml:"name"`
-	Endpoints  []Endpoint  `json:"endpoints" yaml:"endpoints"`
-	Containers []Container `json:"containers" yaml:"containers"`
-	Editors    []Editor    `json:"editors" yaml:"editors"`
+	Endpoints    []Endpoint  `json:"endpoints" yaml:"endpoints"`
+	Containers   []Container `json:"containers" yaml:"containers"`
+	Editors      []Editor    `json:"editors" yaml:"editors"`
+	WorkspaceEnv []EnvVar    `json:"workspace-env" yaml:"workspace-env"`
 }
 
 type CheDependency struct {

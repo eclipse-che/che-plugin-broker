@@ -13,10 +13,14 @@
 package storage
 
 import (
-	"github.com/eclipse/che-plugin-broker/model"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/eclipse/che-plugin-broker/model"
 )
+
+var s = New()
 
 func TestSettingStatusOfStorage(t *testing.T) {
 	tables := []struct {
@@ -41,7 +45,7 @@ func TestSettingStatusOfStorage(t *testing.T) {
 	for _, table := range tables {
 		//storage1 := &Storage{status:table.initialStatus}
 		s.status = table.initialStatus
-		ok, currentValue := SetStatus(table.newStatus)
+		ok, currentValue := s.SetStatus(table.newStatus)
 
 		if ok != table.isChanged {
 			t.Errorf("Status expected not to be changed from %s to %s but it was", table.initialStatus, table.newStatus)
@@ -53,7 +57,7 @@ func TestSettingStatusOfStorage(t *testing.T) {
 	}
 }
 
-func TestAddingTollingToStorage(t *testing.T) {
+func TestAddingPluginToStorage(t *testing.T) {
 	meta := model.PluginMeta{
 		ID:      "org.plugin.id",
 		Version: "1.0.0",
@@ -65,7 +69,9 @@ func TestAddingTollingToStorage(t *testing.T) {
 		Endpoints:  []model.Endpoint{{Name: "endpoint"}},
 	}
 
-	AddTooling(&meta, &conf)
+	if err := s.AddPlugin(&meta, &conf); err != nil {
+		t.Errorf("Adding plugin failed with error: %s", err)
+	}
 
 	actualNumber := len(s.plugins)
 	if actualNumber != 1 {
@@ -82,7 +88,7 @@ func TestAddingTollingToStorage(t *testing.T) {
 	assert.ElementsMatch(t, conf.Editors, plugin.Editors, "Plugin Editors are not expected")
 }
 
-func TestGettingTollingFromStorage(t *testing.T) {
+func TestGettingPluginsFromStorage(t *testing.T) {
 	s.plugins = []model.ChePlugin{
 		{
 			ID:         "org.plugin.id",
@@ -93,7 +99,7 @@ func TestGettingTollingFromStorage(t *testing.T) {
 		},
 	}
 
-	chePlugins, e := Tooling()
+	chePlugins, e := s.Plugins()
 
 	if e != nil {
 		t.Errorf("Error occurs during toolling receiving: %s", e)

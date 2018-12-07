@@ -1,6 +1,6 @@
-# This repo contains implmentations of several Che plugin brokers
+## This repo contains implmentations of several Che plugin brokers
 
-### che-plugin-broker
+# che-plugin-broker
 Downloads tar.gz archive and:
 - Cleanups content of /plugins/ folder
 - Evaluates Che workspace sidecars config from che-plugin.yaml located in a plugin archive and data
@@ -8,7 +8,7 @@ from config.json that is placed in workdir or different path if a corresponding 
 It contains data about Che plugin or editor from meta.yaml
 - Copies dependency file/folder specified in dependencies.yaml inside of a plugin archive
 
-### theia-plugin-broker
+# theia-plugin-broker
 Downloads .theia archive and:
 - Unzip it to a temp folder
 - Check content of package.json file in it. If it contains {"engines.cheRuntimeContainer"} 
@@ -27,7 +27,24 @@ plugin is considered non-remote
  `THEIA_PLUGIN_ENDPOINT_PORT` and value `port`
 - Evaluates Che workspace sidecar config for running Theia plugin as Che remote plugin in a sidecar
 
-### Development
+# vscode-extension-broker
+Downloads VS Code extension from marketplace and:
+- Unzip it to a temp folder
+- Check content of package.json file in it.
+- Copies unzipped extension to /plugins/
+- Sends following sidecar config to Che workspace master:
+ - with projects volume
+ - with plugin volume
+ - adds an endpoint with random port between 4000 and 6000 and name `port<port>`
+ - adds env var to workspace-wide env vars with name 
+ `THEIA_PLUGIN_REMOTE_ENDPOINT_<plugin_publisher_and_name from package.json>` and value
+ `ws://port<port>:<port>`
+ - adds env var to sidecar env vars with name 
+ `THEIA_PLUGIN_ENDPOINT_PORT` and value `port`
+- Evaluates Che workspace sidecar config for running VS Code extension as Che Theia remote plugin in a sidecar
+
+
+# Development
 ## Build
 - build all the code:
 ```shell
@@ -40,6 +57,10 @@ CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o c
 - build Che Theia plugin broker binary:
 ```shell
 CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o theia-plugin-broker brokers/theia-plugin-broker/main.go
+```
+- build VS Code extension broker binary:
+```shell
+CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o vscode-extension-broker brokers/vscode/cmd/main.go
 ```
 - run tests:
 ```shell
@@ -68,5 +89,9 @@ docker build -t eclipse/che-plugin-broker:latest -f Dockerfile.cpb .
 ```
 - build Theia plugin broker
 ```shell
-docker build -t eclipse/theia-plugin-broker:latest -f Dockerfile.tpb .
+docker build -t eclipse/che-theia-plugin-broker:latest -f Dockerfile.tpb .
+```
+- build VS Code extension broker
+```shell
+docker build -t eclipse/che-vscode-extension-broker:latest -f Dockerfile.veb .
 ```

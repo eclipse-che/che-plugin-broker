@@ -3,6 +3,7 @@
 # Ignore binaries with these names but not folders with the same names
 che-plugin-broker
 theia-plugin-broker
+vscode-extension-broker
 !che-plugin-broker/
 !theia-plugin-broker/
 

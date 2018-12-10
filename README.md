@@ -51,7 +51,7 @@ golangci-lint run -v
 ```
 - run CI checks locally in Docker (includes build/test/linters):
 ```shell
-docker build .
+docker build -f Dockerfile.CI .
 ```
 ## Dependencies
 Dependencies in the project are managed by Go Dep.
@@ -64,9 +64,9 @@ So, when a dependency is introduced or changed it should be reflected in Gopkg.t
 ## Build of Docker images
 - build Che plugin broker
 ```shell
-docker build -t eclipse/che-plugin-broker:latest -f brokers/che-plugin-broker/Dockerfile .
+docker build -t eclipse/che-plugin-broker:latest -f Dockerfile.cpb .
 ```
 - build Theia plugin broker
 ```shell
-docker build -t eclipse/theia-plugin-broker:latest -f brokers/theia-plugin-broker/Dockerfile .
+docker build -t eclipse/theia-plugin-broker:latest -f Dockerfile.tpb .
 ```

@@ -54,10 +54,6 @@ func (broker *TheiaPluginBroker) Start(metas []model.PluginMeta) {
 	broker.PubStarted()
 	broker.PrintInfo("Started Plugin Broker")
 
-	// Do not do cleaning.
-	// Since we can start several brokers in parallel they should not concurrently clean up resources.
-	// Instead of that we need to move cleaning to another phase.
-
 	broker.PrintPlan(metas)
 
 	broker.PrintInfo("Starting plugins processing")

@@ -17,7 +17,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -60,13 +59,6 @@ func (cheBroker *ChePluginBroker) Start(metas []model.PluginMeta) {
 	}
 	cheBroker.PubStarted()
 	cheBroker.PrintInfo("Started Plugin Broker")
-
-	// Clear any existing plugins from dir
-	log.Println("Cleaning /plugins dir")
-	err := cheBroker.ioUtil.ClearDir("/plugins")
-	if err != nil {
-		log.Printf("WARN: failed to clear /plugins directory: %s", err)
-	}
 
 	cheBroker.PrintPlan(metas)
 

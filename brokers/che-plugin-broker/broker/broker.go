@@ -167,7 +167,7 @@ func (cheBroker *ChePluginBroker) processArchive(meta *model.PluginMeta, url str
 	if err != nil {
 		return err
 	}
-	
+
 	cheBroker.PrintDebug("Resolving '%s:%s'", meta.ID, meta.Version)
 	err = cheBroker.resolveToolingConfig(meta, pluginPath)
 	if err != nil {

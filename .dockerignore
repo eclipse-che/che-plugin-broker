@@ -1,3 +1,5 @@
 # Ignore binaries with these names but not folders with the same names
 */che-plugin-broker/che-plugin-broker
 */theia-plugin-broker/theia-plugin-broker
+*/init/init-plugin-broker
+*/init/init

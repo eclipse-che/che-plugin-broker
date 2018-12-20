@@ -130,7 +130,6 @@ func (cheBroker *ChePluginBroker) processYAML(meta *model.PluginMeta, url string
 	if err != nil {
 		return err
 	}
-	var pluginPath string
 
 	chePluginYamlPath := filepath.Join(workDir, pluginFileName)
 	cheBroker.PrintDebug("Downloading plugin definition '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, chePluginYamlPath)
@@ -138,9 +137,9 @@ func (cheBroker *ChePluginBroker) processYAML(meta *model.PluginMeta, url string
 	if err != nil {
 		return err
 	}
-	pluginPath = workDir
+
 	cheBroker.PrintDebug("Resolving '%s:%s'", meta.ID, meta.Version)
-	err = cheBroker.resolveToolingConfig(meta, pluginPath)
+	err = cheBroker.resolveToolingConfig(meta, workDir)
 	if err != nil {
 		return err
 	}
@@ -152,10 +151,8 @@ func (cheBroker *ChePluginBroker) processArchive(meta *model.PluginMeta, url str
 	if err != nil {
 		return err
 	}
-	var pluginPath string
-
 	archivePath := filepath.Join(workDir, "pluginArchive.tar.gz")
-	pluginPath = filepath.Join(workDir, "plugin")
+	pluginPath := filepath.Join(workDir, "plugin")
 
 	// Download an archive
 	cheBroker.PrintDebug("Downloading archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
@@ -180,7 +177,6 @@ func (cheBroker *ChePluginBroker) processArchive(meta *model.PluginMeta, url str
 }
 
 func getTypeOfURL(url string) PluginLinkType {
-
 	if strings.HasSuffix(url, pluginFileName) {
 		return Yaml
 	}

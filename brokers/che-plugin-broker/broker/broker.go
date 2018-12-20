@@ -36,6 +36,12 @@ const depFileName = "che-dependency.yaml"
 const depFileBothLocationAndURLError = "Plugin dependency '%s:%s' contains both 'location' and 'url' fields while just one should be present"
 const depFileNoLocationURLError = "Plugin dependency '%s:%s' contains neither 'location' nor 'url' field"
 
+type PluginLinkType int
+const (
+	Archive PluginLinkType = iota + 1
+	Yaml
+)
+
 // ChePluginBroker is used to process Che plugins
 type ChePluginBroker struct {
 	common.Broker
@@ -111,46 +117,74 @@ func (cheBroker *ChePluginBroker) processPlugin(meta model.PluginMeta) error {
 	cheBroker.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
 	url := meta.URL
 
+	switch getTypeOfURL(url) {
+	case Archive:
+		return cheBroker.processArchive(&meta, url)
+	case Yaml:
+		return cheBroker.processYAML(&meta, url)
+	}
+	return nil
+}
+func (cheBroker *ChePluginBroker) processYAML(meta *model.PluginMeta, url string) error {
 	workDir, err := cheBroker.ioUtil.TempDir("", "che-plugin-broker")
 	if err != nil {
 		return err
 	}
 	var pluginPath string
 
-	if strings.HasSuffix(url, pluginFileName) {
-		chePluginYamlPath := filepath.Join(workDir, pluginFileName)
-		cheBroker.PrintDebug("Downloading plugin definition '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, chePluginYamlPath)
-		err = cheBroker.ioUtil.Download(url, chePluginYamlPath)
-		if err != nil {
-			return err
-		}
-		pluginPath = workDir
-	} else {
-		archivePath := filepath.Join(workDir, "pluginArchive.tar.gz")
-		pluginPath = filepath.Join(workDir, "plugin")
-
-		// Download an archive
-		cheBroker.PrintDebug("Downloading archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
-		err = cheBroker.ioUtil.Download(url, archivePath)
-		if err != nil {
-			return err
-		}
-
-		// Untar it
-		cheBroker.PrintDebug("Untarring archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
-		err = cheBroker.ioUtil.Untar(archivePath, pluginPath)
-		if err != nil {
-			return err
-		}
+	chePluginYamlPath := filepath.Join(workDir, pluginFileName)
+	cheBroker.PrintDebug("Downloading plugin definition '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, chePluginYamlPath)
+	err = cheBroker.ioUtil.Download(url, chePluginYamlPath)
+	if err != nil {
+		return err
 	}
+	pluginPath = workDir
 	cheBroker.PrintDebug("Resolving '%s:%s'", meta.ID, meta.Version)
-	err = cheBroker.resolveToolingConfig(&meta, pluginPath)
+	err = cheBroker.resolveToolingConfig(meta, pluginPath)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (cheBroker *ChePluginBroker) processArchive(meta *model.PluginMeta, url string) error {
+	workDir, err := cheBroker.ioUtil.TempDir("", "che-plugin-broker")
+	if err != nil {
+		return err
+	}
+	var pluginPath string
+
+	archivePath := filepath.Join(workDir, "pluginArchive.tar.gz")
+	pluginPath = filepath.Join(workDir, "plugin")
+
+	// Download an archive
+	cheBroker.PrintDebug("Downloading archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
+	err = cheBroker.ioUtil.Download(url, archivePath)
 	if err != nil {
 		return err
 	}
 
+	// Untar it
+	cheBroker.PrintDebug("Untarring archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
+	err = cheBroker.ioUtil.Untar(archivePath, pluginPath)
+	if err != nil {
+		return err
+	}
+	cheBroker.PrintDebug("Resolving '%s:%s'", meta.ID, meta.Version)
+	err = cheBroker.resolveToolingConfig(meta, pluginPath)
+	if err != nil {
+		return err
+	}
 	cheBroker.PrintDebug("Copying dependencies for '%s:%s'", meta.ID, meta.Version)
 	return cheBroker.copyDependencies(pluginPath)
+}
+
+func getTypeOfURL(url string) PluginLinkType {
+
+	if strings.HasSuffix(url, pluginFileName) {
+		return Yaml
+	}
+	return Archive
 }
 
 func (cheBroker *ChePluginBroker) resolveToolingConfig(meta *model.PluginMeta, workDir string) error {

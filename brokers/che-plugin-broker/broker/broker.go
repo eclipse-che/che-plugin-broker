@@ -172,7 +172,7 @@ func (cheBroker *ChePluginBroker) processArchive(meta *model.PluginMeta, url str
 	if err != nil {
 		return err
 	}
-	
+
 	cheBroker.PrintDebug("Copying dependencies for '%s:%s'", meta.ID, meta.Version)
 	return cheBroker.copyDependencies(pluginPath)
 }

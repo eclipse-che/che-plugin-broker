@@ -20,6 +20,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 
@@ -114,24 +115,34 @@ func (cheBroker *ChePluginBroker) processPlugin(meta model.PluginMeta) error {
 	if err != nil {
 		return err
 	}
+	var pluginPath string
 
-	archivePath := filepath.Join(workDir, "pluginArchive.tar.gz")
-	pluginPath := filepath.Join(workDir, "plugin")
+	if strings.HasSuffix(url, pluginFileName) {
+		chePluginYamlPath := filepath.Join(workDir, pluginFileName)
+		cheBroker.PrintDebug("Downloading plugin definition '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, chePluginYamlPath)
+		err = cheBroker.ioUtil.Download(url, chePluginYamlPath)
+		if err != nil {
+			return err
+		}
+		pluginPath = workDir
+	} else {
+		archivePath := filepath.Join(workDir, "pluginArchive.tar.gz")
+		pluginPath = filepath.Join(workDir, "plugin")
 
-	// Download an archive
-	cheBroker.PrintDebug("Downloading archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
-	err = cheBroker.ioUtil.Download(url, archivePath)
-	if err != nil {
-		return err
+		// Download an archive
+		cheBroker.PrintDebug("Downloading archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
+		err = cheBroker.ioUtil.Download(url, archivePath)
+		if err != nil {
+			return err
+		}
+
+		// Untar it
+		cheBroker.PrintDebug("Untarring archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
+		err = cheBroker.ioUtil.Untar(archivePath, pluginPath)
+		if err != nil {
+			return err
+		}
 	}
-
-	// Untar it
-	cheBroker.PrintDebug("Untarring archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
-	err = cheBroker.ioUtil.Untar(archivePath, pluginPath)
-	if err != nil {
-		return err
-	}
-
 	cheBroker.PrintDebug("Resolving '%s:%s'", meta.ID, meta.Version)
 	err = cheBroker.resolveToolingConfig(&meta, pluginPath)
 	if err != nil {

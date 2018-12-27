@@ -114,10 +114,12 @@ func (cheBroker *ChePluginBroker) processPlugin(meta model.PluginMeta) error {
 		return cheBroker.processArchive(&meta, url)
 	case Yaml:
 		return cheBroker.processYAML(&meta, url)
+	default:
+		return errors.New("Unexpected url format " +url)
 	}
-	return nil
+
 }
- 
+
  func (cheBroker *ChePluginBroker) processYAML(meta *model.PluginMeta, url string) error {
 	workDir, err := cheBroker.ioUtil.TempDir("", "che-plugin-broker")
 	if err != nil {

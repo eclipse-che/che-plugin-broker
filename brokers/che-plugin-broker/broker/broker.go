@@ -125,7 +125,8 @@ func (cheBroker *ChePluginBroker) processPlugin(meta model.PluginMeta) error {
 	}
 	return nil
 }
-func (cheBroker *ChePluginBroker) processYAML(meta *model.PluginMeta, url string) error {
+ 
+ func (cheBroker *ChePluginBroker) processYAML(meta *model.PluginMeta, url string) error {
 	workDir, err := cheBroker.ioUtil.TempDir("", "che-plugin-broker")
 	if err != nil {
 		return err

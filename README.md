@@ -2,7 +2,6 @@
 
 # che-plugin-broker
 Downloads tar.gz archive and:
-- Cleanups content of /plugins/ folder
 - Evaluates Che workspace sidecars config from che-plugin.yaml located in a plugin archive and data
 from config.json that is placed in workdir or different path if a corresponding broker argument is used.
 It contains data about Che plugin or editor from meta.yaml
@@ -27,6 +26,10 @@ plugin is considered non-remote
  `THEIA_PLUGIN_ENDPOINT_PORT` and value `port`
 - Evaluates Che workspace sidecar config for running Theia plugin as Che remote plugin in a sidecar
 
+# init-plugin-broker
+Cleanups content of /plugins/ folder.
+Should be started before other brokers not to remove files they are adding to plugins folder.
+
 # vscode-extension-broker
 Downloads VS Code extension from marketplace and:
 - Unzip it to a temp folder
@@ -43,7 +46,6 @@ Downloads VS Code extension from marketplace and:
  `THEIA_PLUGIN_ENDPOINT_PORT` and value `port`
 - Evaluates Che workspace sidecar config for running VS Code extension as Che Theia remote plugin in a sidecar
 
-
 # Development
 ## Build
 - build all the code:
@@ -57,6 +59,10 @@ CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o c
 - build Che Theia plugin broker binary:
 ```shell
 CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o theia-plugin-broker brokers/theia-plugin-broker/main.go
+```
+- build Init plugin broker binary:
+```shell
+CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o init-plugin-broker brokers/init/main.go
 ```
 - build VS Code extension broker binary:
 ```shell
@@ -91,7 +97,12 @@ docker build -t eclipse/che-plugin-broker:latest -f Dockerfile.cpb .
 ```shell
 docker build -t eclipse/che-theia-plugin-broker:latest -f Dockerfile.tpb .
 ```
+- build Init plugin broker
+```shell
+docker build -t eclipse/init-plugin-broker:latest -f Dockerfile.ipb .
+```
 - build VS Code extension broker
 ```shell
 docker build -t eclipse/che-vscode-extension-broker:latest -f Dockerfile.veb .
 ```
+

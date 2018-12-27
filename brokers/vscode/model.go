@@ -12,24 +12,9 @@
 
 package vscode
 
-import (
-	"github.com/eclipse/che-plugin-broker/model"
-)
-
 type packageJSON struct {
 	Name      string `json:"name" yaml:"name"`
 	Publisher string `json:"publisher" yaml:"publisher"`
-}
-
-type PluginMeta struct {
-	model.PluginMeta
-
-	Attributes Attributes `json:"attributes" yaml:"attributes"`
-}
-
-type Attributes struct {
-	Image string `json:"container-image" yaml:"container-image"`
-	Ext   string `json:"extension" yaml:"extension"`
 }
 
 type marketplaceResponse struct {

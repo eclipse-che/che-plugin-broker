@@ -343,7 +343,6 @@ func TestStart(t *testing.T) {
 	bMock.On("PubStarted").Once()
 	bMock.On("PubDone", mock.AnythingOfType("string")).Once()
 	bMock.On("PrintInfo", mock.AnythingOfType("string"))
-	uMock.On("ClearDir", "/plugins").Return(nil).Once()
 	bMock.On("PrintPlan", mock.AnythingOfType("[]model.PluginMeta")).Once()
 	bMock.On("CloseConsumers").Once()
 

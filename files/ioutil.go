@@ -37,7 +37,6 @@ type IoUtil interface {
 	Unzip(arch string, dest string) error
 	Untar(tarPath string, dest string) error
 	CreateFile(file string, tr io.Reader) error
-	ClearDir(dir string) error
 }
 
 type impl struct{}
@@ -235,19 +234,4 @@ func (util *impl) CreateFile(file string, tr io.Reader) error {
 		return err
 	}
 	return f.Sync()
-}
-
-func (util *impl) ClearDir(dir string) error {
-	files, err := filepath.Glob(filepath.Join(dir, "*"))
-	if err != nil {
-		return err
-	}
-
-	for _, file := range files {
-		err = os.RemoveAll(file)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }

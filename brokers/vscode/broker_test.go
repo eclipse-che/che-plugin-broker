@@ -21,8 +21,6 @@ import (
 )
 
 func Test_findAssetURL(t *testing.T) {
-	type args struct {
-	}
 	tests := []struct {
 		name     string
 		response []byte

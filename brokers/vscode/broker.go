@@ -15,10 +15,8 @@ package vscode
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net/http"
 	"path/filepath"
@@ -32,7 +30,6 @@ import (
 	"github.com/eclipse/che-plugin-broker/storage"
 )
 
-const prefix = "vscode:extension/"
 const marketplace = "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery"
 const bodyFmt = `{"filters":[{"criteria":[{"filterType":7,"value":"%s"}],"pageNumber":1,"pageSize":1,"sortBy":0, "sortOrder":0 }],"assetTypes":["Microsoft.VisualStudio.Services.VSIXPackage"],"flags":131}`
 const assetType = "Microsoft.VisualStudio.Services.VSIXPackage"
@@ -104,14 +101,12 @@ func (broker *VSCodeExtensionBroker) PushEvents(tun *jsonrpc.Tunnel) {
 func (broker *VSCodeExtensionBroker) processPlugin(meta model.PluginMeta) error {
 	broker.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
 	if meta.Attributes == nil || meta.Attributes["extension"] == "" {
-		m := fmt.Sprintf("VS Code extension field 'extension' is missing in description of plugin %s:%s", meta.ID, meta.Version)
-		return errors.New(m)
+		return fmt.Errorf("VS Code extension field 'extension' is missing in description of plugin %s:%s", meta.ID, meta.Version)
 	}
 	url := meta.Attributes["extension"]
 	image := meta.Attributes["container-image"]
 	if image == "" {
-		m := fmt.Sprintf("VS Code extension field 'container-image' is missing in description of plugin %s:%s", meta.ID, meta.Version)
-		return errors.New(m)
+		return fmt.Errorf("VS Code extension field 'container-image' is missing in description of plugin %s:%s", meta.ID, meta.Version)
 	}
 
 	workDir, err := broker.ioUtil.TempDir("", "vscode-extension-broker")
@@ -237,36 +232,34 @@ func (broker *VSCodeExtensionBroker) download(extension string, dest string, met
 func fetchExtensionInfo(extension string, meta model.PluginMeta) ([]byte, error) {
 	re, err := regexp.Compile(`^vscode:extension/(.*)`)
 	if err != nil {
-		m := fmt.Sprintf("VS Code extension id '%s' parsing failed for plugin %s:%s", extension, meta.ID, meta.Version)
-		return nil, errors.New(m)
+		return nil, fmt.Errorf("VS Code extension id '%s' parsing failed for plugin %s:%s", extension, meta.ID, meta.Version)
 	}
 	groups := re.FindStringSubmatch(extension)
 	if len(groups) != 2 {
-		m := fmt.Sprintf("VS Code extension id '%s' parsing failed for plugin %s:%s", extension, meta.ID, meta.Version)
-		return nil, errors.New(m)
+		return nil, fmt.Errorf("VS Code extension id '%s' parsing failed for plugin %s:%s", extension, meta.ID, meta.Version)
 	}
 	extName := groups[1]
 	body := []byte(fmt.Sprintf(bodyFmt, extName))
 	req, err := http.NewRequest("POST", marketplace, bytes.NewBuffer(body))
+	if err != nil {
+		return nil, fmt.Errorf("VS Code extension id '%s' fetching failed for plugin %s:%s. Error: %s", extension, meta.ID, meta.Version, err)
+	}
 	req.Header.Set("Accept", "application/json;api-version=3.0-preview.1")
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		m := fmt.Sprintf("VS Code extension downloading failed %s:%s. Error: %s", meta.ID, meta.Version, err)
-		return nil, errors.New(m)
+		return nil, fmt.Errorf("VS Code extension downloading failed %s:%s. Error: %s", meta.ID, meta.Version, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		m := fmt.Sprintf("VS Code extension downloading failed %s:%s. Status: %q", meta.ID, meta.Version, resp.StatusCode)
-		return nil, errors.New(m)
+		return nil, fmt.Errorf("VS Code extension downloading failed %s:%s. Status: %q", meta.ID, meta.Version, resp.StatusCode)
 	}
 
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		m := fmt.Sprintf("VS Code extension downloading failed %s:%s. Error: %s", meta.ID, meta.Version, err)
-		return nil, errors.New(m)
+		return nil, fmt.Errorf("VS Code extension downloading failed %s:%s. Error: %s", meta.ID, meta.Version, err)
 	}
 
 	return body, nil
@@ -276,7 +269,7 @@ func findAssetURL(response []byte, meta model.PluginMeta) (string, error) {
 	obj := &marketplaceResponse{}
 	err := json.Unmarshal(response, obj)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("Failed to parse VS Code extension marketplace response for plugin %s:%s", meta.ID, meta.Version)
 	}
 	switch {
 	case len(obj.Results) == 0,
@@ -284,13 +277,12 @@ func findAssetURL(response []byte, meta model.PluginMeta) (string, error) {
 		len(obj.Results[0].Extensions[0].Versions) == 0,
 		len(obj.Results[0].Extensions[0].Versions[0].Files) == 0:
 
-		return "", errors.New("bad json")
+		return "", fmt.Errorf("Failed to parse VS Code extension marketplace response for plugin %s:%s", meta.ID, meta.Version)
 	}
 	for _, f := range obj.Results[0].Extensions[0].Versions[0].Files {
 		if f.AssetType == assetType {
-			log.Printf("URL:%s", f.Source)
 			return f.Source, nil
 		}
 	}
-	return "", errors.New("test")
+	return "", fmt.Errorf("VS Code extension archive information is not found in marketplace response for plugin %s:%s", meta.ID, meta.Version)
 }

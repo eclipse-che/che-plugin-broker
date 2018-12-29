@@ -25,26 +25,21 @@ func Test_findAssetURL(t *testing.T) {
 		name     string
 		response []byte
 		want     string
-		wantErr  bool
 		err      string
 	}{
 		{
-			wantErr:  true,
 			err:      "Failed to parse VS Code extension marketplace response for plugin tid:v",
 			response: []byte("{}"),
 		},
 		{
-			wantErr:  true,
 			err:      "Failed to parse VS Code extension marketplace response for plugin tid:v",
 			response: []byte(`{"results":[]}`),
 		},
 		{
-			wantErr:  true,
 			err:      "Failed to parse VS Code extension marketplace response for plugin tid:v",
 			response: []byte(`{"results":null}`),
 		},
 		{
-			wantErr: true,
 			err:     "Failed to parse VS Code extension marketplace response for plugin tid:v",
 			response: []byte(
 				`{
@@ -65,7 +60,6 @@ func Test_findAssetURL(t *testing.T) {
 			     }`),
 		},
 		{
-			wantErr: true,
 			err:     "Failed to parse VS Code extension marketplace response for plugin tid:v",
 			response: []byte(
 				`{
@@ -85,7 +79,6 @@ func Test_findAssetURL(t *testing.T) {
 			     }`),
 		},
 		{
-			wantErr: true,
 			err:     "Failed to parse VS Code extension marketplace response for plugin tid:v",
 			response: []byte(
 				`{
@@ -102,7 +95,6 @@ func Test_findAssetURL(t *testing.T) {
 			     }`),
 		},
 		{
-			wantErr: true,
 			err:     "Failed to parse VS Code extension marketplace response for plugin tid:v",
 			response: []byte(
 				`{
@@ -118,7 +110,6 @@ func Test_findAssetURL(t *testing.T) {
 			     }`),
 		},
 		{
-			wantErr: true,
 			err:     "Failed to parse VS Code extension marketplace response for plugin tid:v",
 			response: []byte(
 				`{
@@ -131,7 +122,6 @@ func Test_findAssetURL(t *testing.T) {
 			     }`),
 		},
 		{
-			wantErr: true,
 			err:     "Failed to parse VS Code extension marketplace response for plugin tid:v",
 			response: []byte(
 				`{
@@ -143,7 +133,6 @@ func Test_findAssetURL(t *testing.T) {
 			     }`),
 		},
 		{
-			wantErr: true,
 			err:     "VS Code extension archive information is not found in marketplace response for plugin tid:v",
 			response: []byte(
 				`{
@@ -202,10 +191,10 @@ func Test_findAssetURL(t *testing.T) {
 				Version: "v",
 			})
 			if err != nil {
-				if tt.wantErr {
+				if tt.err != "" {
 					assert.EqualError(t, err, tt.err)
 				} else {
-					t.Errorf("findAssetURL() error = %v, wantErr %v", err, tt.wantErr)
+					t.Errorf("findAssetURL() error = %v, wanted error %v", err, tt.err)
 					return
 				}
 			} else {

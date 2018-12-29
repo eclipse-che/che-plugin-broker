@@ -17,11 +17,11 @@ script:
 - CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo ./...
 - golangci-lint run -v    # run a bunch of code checkers/linters in parallel
 - go test -v -race ./...  # Run all the tests with the race detector enabled
-- cd brokers/che-plugin-broker
+- cd brokers/che-plugin-broker/cmd
 - CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o che-plugin-broker main.go
-- cd ../theia-plugin-broker
+- cd ../../theia/cmd
 - CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o theia-plugin-broker main.go
-- cd ../vscode/cmd
+- cd ../../vscode/cmd
 - CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o vscode-extension-broker main.go
 notifications:
   email: false

@@ -1,13 +1,13 @@
 # Compiled Object files, Static and Dynamic libs (Shared Objects)
 
 # Ignore binaries with these names but not folders with the same names
+**/cmd/che-plugin-broker
 che-plugin-broker
+!che-plugin-broker/
 theia-plugin-broker
 init-plugin-broker
-*/init/init
 vscode-extension-broker
-!che-plugin-broker/
-!theia-plugin-broker/
+**/cmd/cmd
 
 *.o
 *.a

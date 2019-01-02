@@ -118,7 +118,7 @@ func (broker *TheiaPluginBroker) processPlugin(meta model.PluginMeta) error {
 		return err
 	}
 
-	pj, err := broker.getPackageJSON(unpackedPath)
+	pj, err := GetPackageJSON(unpackedPath)
 	if err != nil {
 		return err
 	}
@@ -135,9 +135,8 @@ func (broker *TheiaPluginBroker) processPlugin(meta model.PluginMeta) error {
 	return broker.injectTheiaRemotePlugin(meta, unpackedPath, pluginImage, pj)
 }
 
-func (broker *TheiaPluginBroker) getPackageJSON(pluginFolder string) (*PackageJSON, error) {
+func GetPackageJSON(pluginFolder string) (*PackageJSON, error) {
 	packageJSONPath := filepath.Join(pluginFolder, "package.json")
-	broker.PrintDebug("Reading package.json of Theia plugin from '%s'", packageJSONPath)
 	f, err := ioutil.ReadFile(packageJSONPath)
 	if err != nil {
 		return nil, err
@@ -173,13 +172,13 @@ func (broker *TheiaPluginBroker) injectTheiaRemotePlugin(meta model.PluginMeta, 
 		return err
 	}
 	tooling := &model.ToolingConf{
-		Containers: []model.Container{*containerConfig(image)},
+		Containers: []model.Container{*ContainerConfig(image)},
 	}
 	AddPortToTooling(tooling, pj)
 	return broker.storage.AddPlugin(&meta, tooling)
 }
 
-func containerConfig(image string) *model.Container {
+func ContainerConfig(image string) *model.Container {
 	c := model.Container{
 		Name:  "theiapluginsidecar" + GetRndNumberAsString(),
 		Image: image,

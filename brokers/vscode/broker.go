@@ -130,7 +130,8 @@ func (broker *VSCodeExtensionBroker) processPlugin(meta model.PluginMeta) error 
 		return err
 	}
 
-	pj, err := broker.getPackageJSON(unpackedPath)
+	packageJSONParentPath := filepath.Join(unpackedPath, "extension")
+	pj, err := theia.GetPackageJSON(packageJSONParentPath)
 	if err != nil {
 		return err
 	}
@@ -141,18 +142,6 @@ func (broker *VSCodeExtensionBroker) processPlugin(meta model.PluginMeta) error 
 	return broker.injectRemotePlugin(meta, unpackedPath, image, pj)
 }
 
-func (broker *VSCodeExtensionBroker) getPackageJSON(pluginFolder string) (*theia.PackageJSON, error) {
-	packageJSONPath := filepath.Join(pluginFolder, "extension", "package.json")
-	broker.PrintDebug("Reading package.json of VS Code extension from '%s'", packageJSONPath)
-	f, err := ioutil.ReadFile(packageJSONPath)
-	if err != nil {
-		return nil, err
-	}
-	pj := &theia.PackageJSON{}
-	err = json.Unmarshal(f, pj)
-	return pj, err
-}
-
 func (broker *VSCodeExtensionBroker) injectRemotePlugin(meta model.PluginMeta, unpackedPath string, image string, pj *theia.PackageJSON) error {
 	pluginFolderPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
 	broker.PrintDebug("Copying VS Code extension '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, unpackedPath, pluginFolderPath)
@@ -161,28 +150,10 @@ func (broker *VSCodeExtensionBroker) injectRemotePlugin(meta model.PluginMeta, u
 		return err
 	}
 	tooling := &model.ToolingConf{
-		Containers: []model.Container{*containerConfig(image)},
+		Containers: []model.Container{*theia.ContainerConfig(image)},
 	}
 	theia.AddPortToTooling(tooling, pj)
 	return broker.Storage.AddPlugin(&meta, tooling)
-}
-
-func containerConfig(image string) *model.Container {
-	c := model.Container{
-		Name:  "vscodeextsidecar" + theia.GetRndNumberAsString(),
-		Image: image,
-		Volumes: []model.Volume{
-			{
-				Name:      "projects",
-				MountPath: "/projects",
-			},
-			{
-				Name:      "plugins",
-				MountPath: "/plugins",
-			},
-		},
-	}
-	return &c
 }
 
 func (broker *VSCodeExtensionBroker) download(extension string, dest string, meta model.PluginMeta) error {

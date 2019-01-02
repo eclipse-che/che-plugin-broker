@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 
@@ -33,6 +34,12 @@ const pluginFileName = "che-plugin.yaml"
 const depFileName = "che-dependency.yaml"
 const depFileBothLocationAndURLError = "Plugin dependency '%s:%s' contains both 'location' and 'url' fields while just one should be present"
 const depFileNoLocationURLError = "Plugin dependency '%s:%s' contains neither 'location' nor 'url' field"
+
+type PluginLinkType int
+const (
+	Archive PluginLinkType = iota + 1
+	Yaml
+)
 
 // ChePluginBroker is used to process Che plugins
 type ChePluginBroker struct {
@@ -102,11 +109,43 @@ func (cheBroker *ChePluginBroker) processPlugin(meta model.PluginMeta) error {
 	cheBroker.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
 	url := meta.URL
 
+	switch getTypeOfURL(url) {
+	case Archive:
+		return cheBroker.processArchive(&meta, url)
+	case Yaml:
+		return cheBroker.processYAML(&meta, url)
+	default:
+		return errors.New("Unexpected url format " +url)
+	}
+
+}
+
+ func (cheBroker *ChePluginBroker) processYAML(meta *model.PluginMeta, url string) error {
 	workDir, err := cheBroker.ioUtil.TempDir("", "che-plugin-broker")
 	if err != nil {
 		return err
 	}
 
+	chePluginYamlPath := filepath.Join(workDir, pluginFileName)
+	cheBroker.PrintDebug("Downloading plugin definition '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, chePluginYamlPath)
+	err = cheBroker.ioUtil.Download(url, chePluginYamlPath)
+	if err != nil {
+		return err
+	}
+
+	cheBroker.PrintDebug("Resolving '%s:%s'", meta.ID, meta.Version)
+	err = cheBroker.resolveToolingConfig(meta, workDir)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (cheBroker *ChePluginBroker) processArchive(meta *model.PluginMeta, url string) error {
+	workDir, err := cheBroker.ioUtil.TempDir("", "che-plugin-broker")
+	if err != nil {
+		return err
+	}
 	archivePath := filepath.Join(workDir, "pluginArchive.tar.gz")
 	pluginPath := filepath.Join(workDir, "plugin")
 
@@ -125,13 +164,20 @@ func (cheBroker *ChePluginBroker) processPlugin(meta model.PluginMeta) error {
 	}
 
 	cheBroker.PrintDebug("Resolving '%s:%s'", meta.ID, meta.Version)
-	err = cheBroker.resolveToolingConfig(&meta, pluginPath)
+	err = cheBroker.resolveToolingConfig(meta, pluginPath)
 	if err != nil {
 		return err
 	}
 
 	cheBroker.PrintDebug("Copying dependencies for '%s:%s'", meta.ID, meta.Version)
 	return cheBroker.copyDependencies(pluginPath)
+}
+
+func getTypeOfURL(url string) PluginLinkType {
+	if strings.HasSuffix(url, pluginFileName) {
+		return Yaml
+	}
+	return Archive
 }
 
 func (cheBroker *ChePluginBroker) resolveToolingConfig(meta *model.PluginMeta, workDir string) error {

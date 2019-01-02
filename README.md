@@ -97,7 +97,7 @@ golangci-lint run -v
 - run CI checks locally in Docker (includes build/test/linters):
 
 ```shell
-docker build -f Dockerfile.CI .
+docker build -f build/CI/Dockerfile .
 ```
 
 ### Dependencies
@@ -123,17 +123,17 @@ docker build -t eclipse/che-plugin-broker:latest -f Dockerfile.cpb .
 - build Theia plugin broker
 
 ```shell
-docker build -t eclipse/che-theia-plugin-broker:latest -f Dockerfile.tpb .
+docker build -t eclipse/che-theia-plugin-broker:latest -f build/theia/Dockerfile .
 ```
 
 - build Init plugin broker
 
 ```shell
-docker build -t eclipse/init-plugin-broker:latest -f Dockerfile.ipb .
+docker build -t eclipse/init-plugin-broker:latest -f build/init/Dockerfile .
 ```
 
 - build VS Code extension broker
 
 ```shell
-docker build -t eclipse/che-vscode-extension-broker:latest -f Dockerfile.veb .
+docker build -t eclipse/che-vscode-extension-broker:latest -f build/vscode/Dockerfile .
 ```

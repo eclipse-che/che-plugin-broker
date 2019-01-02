@@ -58,7 +58,7 @@ func (broker *VSCodeExtensionBroker) Start(metas []model.PluginMeta) {
 		broker.PrintFatal(m)
 	}
 	broker.PubStarted()
-	broker.PrintInfo("Started Plugin Broker")
+	broker.PrintInfo("Started VS Code Plugin Broker")
 
 	broker.PrintPlan(metas)
 
@@ -154,10 +154,10 @@ func (broker *VSCodeExtensionBroker) getPackageJSON(pluginFolder string) (*packa
 	return pj, err
 }
 
-func (broker *VSCodeExtensionBroker) injectRemotePlugin(meta model.PluginMeta, archiveFolder string, image string, pj *packageJSON) error {
+func (broker *VSCodeExtensionBroker) injectRemotePlugin(meta model.PluginMeta, unpackedPath string, image string, pj *packageJSON) error {
 	pluginFolderPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
-	broker.PrintDebug("Copying VS Code extension '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, archiveFolder, pluginFolderPath)
-	err := broker.ioUtil.CopyResource(archiveFolder, pluginFolderPath)
+	broker.PrintDebug("Copying VS Code extension '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, unpackedPath, pluginFolderPath)
+	err := broker.ioUtil.CopyResource(unpackedPath, pluginFolderPath)
 	if err != nil {
 		return err
 	}
@@ -253,11 +253,14 @@ func fetchExtensionInfo(extension string, meta model.PluginMeta) ([]byte, error)
 		return nil, fmt.Errorf("VS Code extension downloading failed %s:%s. Error: %s", meta.ID, meta.Version, err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("VS Code extension downloading failed %s:%s. Status: %q", meta.ID, meta.Version, resp.StatusCode)
-	}
-
 	body, err = ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		errMsg := "VS Code extension downloading failed %s:%s. Status: %q"
+		if err == nil {
+			errMsg = errMsg + ". Body: " + string(body)
+		}
+		return nil, fmt.Errorf(errMsg, meta.ID, meta.Version, resp.StatusCode)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("VS Code extension downloading failed %s:%s. Error: %s", meta.ID, meta.Version, err)
 	}

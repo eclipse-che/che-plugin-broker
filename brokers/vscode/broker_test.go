@@ -22,7 +22,6 @@ import (
 
 func Test_findAssetURL(t *testing.T) {
 	tests := []struct {
-		name     string
 		response []byte
 		want     string
 		err      string
@@ -40,7 +39,7 @@ func Test_findAssetURL(t *testing.T) {
 			response: []byte(`{"results":null}`),
 		},
 		{
-			err:     "Failed to parse VS Code extension marketplace response for plugin tid:v",
+			err: "Failed to parse VS Code extension marketplace response for plugin tid:v",
 			response: []byte(
 				`{
 				     "results":[
@@ -60,7 +59,7 @@ func Test_findAssetURL(t *testing.T) {
 			     }`),
 		},
 		{
-			err:     "Failed to parse VS Code extension marketplace response for plugin tid:v",
+			err: "Failed to parse VS Code extension marketplace response for plugin tid:v",
 			response: []byte(
 				`{
 				     "results":[
@@ -79,7 +78,7 @@ func Test_findAssetURL(t *testing.T) {
 			     }`),
 		},
 		{
-			err:     "Failed to parse VS Code extension marketplace response for plugin tid:v",
+			err: "Failed to parse VS Code extension marketplace response for plugin tid:v",
 			response: []byte(
 				`{
 				     "results":[
@@ -95,7 +94,7 @@ func Test_findAssetURL(t *testing.T) {
 			     }`),
 		},
 		{
-			err:     "Failed to parse VS Code extension marketplace response for plugin tid:v",
+			err: "Failed to parse VS Code extension marketplace response for plugin tid:v",
 			response: []byte(
 				`{
 				     "results":[
@@ -110,7 +109,7 @@ func Test_findAssetURL(t *testing.T) {
 			     }`),
 		},
 		{
-			err:     "Failed to parse VS Code extension marketplace response for plugin tid:v",
+			err: "Failed to parse VS Code extension marketplace response for plugin tid:v",
 			response: []byte(
 				`{
 				     "results":[
@@ -122,7 +121,7 @@ func Test_findAssetURL(t *testing.T) {
 			     }`),
 		},
 		{
-			err:     "Failed to parse VS Code extension marketplace response for plugin tid:v",
+			err: "Failed to parse VS Code extension marketplace response for plugin tid:v",
 			response: []byte(
 				`{
 				     "results":[
@@ -133,7 +132,7 @@ func Test_findAssetURL(t *testing.T) {
 			     }`),
 		},
 		{
-			err:     "VS Code extension archive information is not found in marketplace response for plugin tid:v",
+			err: "VS Code extension archive information is not found in marketplace response for plugin tid:v",
 			response: []byte(
 				`{
 				     "results":[
@@ -185,7 +184,7 @@ func Test_findAssetURL(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run("", func(t *testing.T) {
 			got, err := findAssetURL(tt.response, model.PluginMeta{
 				ID:      "tid",
 				Version: "v",

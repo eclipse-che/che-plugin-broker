@@ -34,7 +34,7 @@ func main() {
 	broker.PushEvents(statusTun, model.BrokerLogEventType)
 
 	// Clear any existing plugins from /plugins/
-	log.Println("Cleaning /plugins dir")
+	broker.PrintInfo("Cleaning /plugins dir")
 	files, err := filepath.Glob(filepath.Join("/plugins", "*"))
 	if err != nil {
 		// Send log about clearing failure but proceed.

@@ -58,7 +58,7 @@ func (cheBroker *ChePluginBroker) Start(metas []model.PluginMeta) {
 		cheBroker.PrintFatal(m)
 	}
 	cheBroker.PubStarted()
-	cheBroker.PrintInfo("Started Plugin Broker")
+	cheBroker.PrintInfo("Started Che Plugin Broker")
 
 	cheBroker.PrintPlan(metas)
 

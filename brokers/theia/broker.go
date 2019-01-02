@@ -52,7 +52,7 @@ func (broker *TheiaPluginBroker) Start(metas []model.PluginMeta) {
 		broker.PrintFatal(m)
 	}
 	broker.PubStarted()
-	broker.PrintInfo("Started Plugin Broker")
+	broker.PrintInfo("Started Theia Plugin Broker")
 
 	broker.PrintPlan(metas)
 

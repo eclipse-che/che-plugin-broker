@@ -12,7 +12,7 @@
 
 package theia
 
-type packageJson struct {
+type PackageJSON struct {
 	Name      string  `json:"name" yaml:"name"`
 	Publisher string  `json:"publisher" yaml:"publisher"`
 	Engines   engines `json:"engines" yaml:"engines"`

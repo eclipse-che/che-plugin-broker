@@ -135,19 +135,19 @@ func (broker *TheiaPluginBroker) processPlugin(meta model.PluginMeta) error {
 	return broker.injectTheiaRemotePlugin(meta, unpackedPath, pluginImage, pj)
 }
 
-func (broker *TheiaPluginBroker) getPackageJSON(pluginFolder string) (*packageJson, error) {
+func (broker *TheiaPluginBroker) getPackageJSON(pluginFolder string) (*PackageJSON, error) {
 	packageJSONPath := filepath.Join(pluginFolder, "package.json")
 	broker.PrintDebug("Reading package.json of Theia plugin from '%s'", packageJSONPath)
 	f, err := ioutil.ReadFile(packageJSONPath)
 	if err != nil {
 		return nil, err
 	}
-	pj := &packageJson{}
+	pj := &PackageJSON{}
 	err = json.Unmarshal(f, pj)
 	return pj, err
 }
 
-func (broker *TheiaPluginBroker) getPluginImage(pj *packageJson) (string, error) {
+func (broker *TheiaPluginBroker) getPluginImage(pj *PackageJSON) (string, error) {
 	if pj.Engines.CheRuntimeContainer != "" {
 		return pj.Engines.CheRuntimeContainer, nil
 	}
@@ -165,7 +165,7 @@ func (broker *TheiaPluginBroker) injectTheiaFile(meta model.PluginMeta, archiveP
 	return broker.storage.AddPlugin(&meta, tooling)
 }
 
-func (broker *TheiaPluginBroker) injectTheiaRemotePlugin(meta model.PluginMeta, archiveFolder string, image string, pj *packageJson) error {
+func (broker *TheiaPluginBroker) injectTheiaRemotePlugin(meta model.PluginMeta, archiveFolder string, image string, pj *PackageJSON) error {
 	pluginFolderPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
 	broker.PrintDebug("Copying Theia remote plugin '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, archiveFolder, pluginFolderPath)
 	err := broker.ioUtil.CopyResource(archiveFolder, pluginFolderPath)
@@ -175,13 +175,13 @@ func (broker *TheiaPluginBroker) injectTheiaRemotePlugin(meta model.PluginMeta, 
 	tooling := &model.ToolingConf{
 		Containers: []model.Container{*containerConfig(image)},
 	}
-	broker.addPortToTooling(tooling, pj)
+	AddPortToTooling(tooling, pj)
 	return broker.storage.AddPlugin(&meta, tooling)
 }
 
 func containerConfig(image string) *model.Container {
 	c := model.Container{
-		Name:  "theiapluginsidecar" + randomNumberAsString(),
+		Name:  "theiapluginsidecar" + GetRndNumberAsString(),
 		Image: image,
 		Volumes: []model.Volume{
 			{
@@ -197,8 +197,15 @@ func containerConfig(image string) *model.Container {
 	return &c
 }
 
-func (broker *TheiaPluginBroker) addPortToTooling(toolingConf *model.ToolingConf, pj *packageJson) {
-	port := findPort()
+// AddPortToTooling adds to tooling everything needed to start Theia remote plugin:
+// - Random port to the container (one and only)
+// - Endpoint matching the port
+// - Environment variable THEIA_PLUGIN_ENDPOINT_PORT to the container with the port as value
+// - Environment variable that start from THEIA_PLUGIN_REMOTE_ENDPOINT_ and ends with
+// plugin publisher and plugin name taken from packageJson and replacing all
+// chars matching [^a-z_0-9]+ with a dash character
+func AddPortToTooling(toolingConf *model.ToolingConf, pj *PackageJSON) {
+	port := GetRndPort()
 	sPort := strconv.Itoa(port)
 	endpointName := "port" + sPort
 	var re = regexp.MustCompile(`[^a-z_0-9]+`)
@@ -216,11 +223,13 @@ func (broker *TheiaPluginBroker) addPortToTooling(toolingConf *model.ToolingConf
 	toolingConf.WorkspaceEnv = append(toolingConf.WorkspaceEnv, model.EnvVar{Name: theiaEnvVar1, Value: theiaEnvVarValue})
 }
 
-func randomNumberAsString() string {
-	port := findPort()
+// GetRndNumberAsString returns stringified random port from range 4000-6000
+func GetRndNumberAsString() string {
+	port := GetRndPort()
 	return strconv.Itoa(port)
 }
 
-func findPort() int {
+// GetRndPort returns random port from range 4000-6000
+func GetRndPort() int {
 	return 4000 + rand.Intn(6000)
 }

@@ -28,6 +28,10 @@ func Test_findAssetURL(t *testing.T) {
 	}{
 		{
 			err:      "Failed to parse VS Code extension marketplace response for plugin tid:v",
+			response: []byte("{"),
+		},
+		{
+			err:      "Failed to parse VS Code extension marketplace response for plugin tid:v",
 			response: []byte("{}"),
 		},
 		{

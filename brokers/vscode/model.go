@@ -12,11 +12,6 @@
 
 package vscode
 
-type packageJSON struct {
-	Name      string `json:"name" yaml:"name"`
-	Publisher string `json:"publisher" yaml:"publisher"`
-}
-
 type marketplaceResponse struct {
 	Results []result
 }

@@ -17,13 +17,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"path/filepath"
 	"regexp"
-	"strconv"
 
 	"github.com/eclipse/che-go-jsonrpc"
+	"github.com/eclipse/che-plugin-broker/brokers/theia"
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/files"
 	"github.com/eclipse/che-plugin-broker/model"
@@ -142,19 +141,19 @@ func (broker *VSCodeExtensionBroker) processPlugin(meta model.PluginMeta) error 
 	return broker.injectRemotePlugin(meta, unpackedPath, image, pj)
 }
 
-func (broker *VSCodeExtensionBroker) getPackageJSON(pluginFolder string) (*packageJSON, error) {
+func (broker *VSCodeExtensionBroker) getPackageJSON(pluginFolder string) (*theia.PackageJSON, error) {
 	packageJSONPath := filepath.Join(pluginFolder, "extension", "package.json")
 	broker.PrintDebug("Reading package.json of VS Code extension from '%s'", packageJSONPath)
 	f, err := ioutil.ReadFile(packageJSONPath)
 	if err != nil {
 		return nil, err
 	}
-	pj := &packageJSON{}
+	pj := &theia.PackageJSON{}
 	err = json.Unmarshal(f, pj)
 	return pj, err
 }
 
-func (broker *VSCodeExtensionBroker) injectRemotePlugin(meta model.PluginMeta, unpackedPath string, image string, pj *packageJSON) error {
+func (broker *VSCodeExtensionBroker) injectRemotePlugin(meta model.PluginMeta, unpackedPath string, image string, pj *theia.PackageJSON) error {
 	pluginFolderPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
 	broker.PrintDebug("Copying VS Code extension '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, unpackedPath, pluginFolderPath)
 	err := broker.ioUtil.CopyResource(unpackedPath, pluginFolderPath)
@@ -164,13 +163,13 @@ func (broker *VSCodeExtensionBroker) injectRemotePlugin(meta model.PluginMeta, u
 	tooling := &model.ToolingConf{
 		Containers: []model.Container{*containerConfig(image)},
 	}
-	broker.addPortToTooling(tooling, pj)
+	theia.AddPortToTooling(tooling, pj)
 	return broker.Storage.AddPlugin(&meta, tooling)
 }
 
 func containerConfig(image string) *model.Container {
 	c := model.Container{
-		Name:  "vscodeextsidecar" + randomNumberAsString(),
+		Name:  "vscodeextsidecar" + theia.GetRndNumberAsString(),
 		Image: image,
 		Volumes: []model.Volume{
 			{
@@ -184,34 +183,6 @@ func containerConfig(image string) *model.Container {
 		},
 	}
 	return &c
-}
-
-func (broker *VSCodeExtensionBroker) addPortToTooling(toolingConf *model.ToolingConf, pj *packageJSON) {
-	port := findPort()
-	sPort := strconv.Itoa(port)
-	endpointName := "port" + sPort
-	var re = regexp.MustCompile(`[^a-z_0-9]+`)
-	prettyID := re.ReplaceAllString(pj.Publisher+"_"+pj.Name, `_`)
-	theiaEnvVar1 := "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID
-	theiaEnvVarValue := "ws://" + endpointName + ":" + sPort
-
-	toolingConf.Containers[0].Ports = append(toolingConf.Containers[0].Ports, model.ExposedPort{ExposedPort: port})
-	toolingConf.Endpoints = append(toolingConf.Endpoints, model.Endpoint{
-		Name:       endpointName,
-		Public:     false,
-		TargetPort: port,
-	})
-	toolingConf.Containers[0].Env = append(toolingConf.Containers[0].Env, model.EnvVar{Name: "THEIA_PLUGIN_ENDPOINT_PORT", Value: sPort})
-	toolingConf.WorkspaceEnv = append(toolingConf.WorkspaceEnv, model.EnvVar{Name: theiaEnvVar1, Value: theiaEnvVarValue})
-}
-
-func randomNumberAsString() string {
-	port := findPort()
-	return strconv.Itoa(port)
-}
-
-func findPort() int {
-	return 4000 + rand.Intn(6000)
 }
 
 func (broker *VSCodeExtensionBroker) download(extension string, dest string, meta model.PluginMeta) error {

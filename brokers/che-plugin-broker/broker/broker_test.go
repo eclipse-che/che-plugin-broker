@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 
 	tests "github.com/eclipse/che-plugin-broker/brokers/test"
 	cmock "github.com/eclipse/che-plugin-broker/common/mocks"
@@ -54,6 +54,27 @@ func TestProcessPluginErrorIfArchiveDownloadingFails(t *testing.T) {
 	bMock.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	bMock.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	uMock.On("Download", "http://test.url", archivePath).Return(errors.New("test")).Once()
+
+	err := mockBroker.processPlugin(meta)
+
+	assert.Equal(t, errors.New("test"), err)
+	bMock.AssertExpectations(t)
+	uMock.AssertExpectations(t)
+}
+
+func TestProcessPluginErrorIfYamlDownloadingFails(t *testing.T) {
+	workDir := tests.CreateTestWorkDir()
+	pluginYaml := filepath.Join(workDir, pluginFileName)
+	defer tests.RemoveAll(workDir)
+	meta := model.PluginMeta{
+		ID:      "test-id",
+		Version: "test-v",
+		URL:     "http://test.url/che-plugin.yaml",
+	}
+	uMock.On("TempDir", "", "che-plugin-broker").Return(workDir, nil).Once()
+	bMock.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
+	bMock.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
+	uMock.On("Download", "http://test.url/che-plugin.yaml", pluginYaml).Return(errors.New("test")).Once()
 
 	err := mockBroker.processPlugin(meta)
 
@@ -120,6 +141,11 @@ func TestProcessPluginErrorIfPluginYamlParsingFails(t *testing.T) {
 
 func TestProcessPlugin(t *testing.T) {
 	workDir := tests.CreateTestWorkDir()
+	mockBroker = &ChePluginBroker{
+		bMock,
+		uMock,
+		storage.New(),
+	}
 	defer tests.RemoveAll(workDir)
 	archivePath := filepath.Join(workDir, "pluginArchive.tar.gz")
 	unarchivedPath := filepath.Join(workDir, "plugin")
@@ -202,6 +228,104 @@ func TestProcessPlugin(t *testing.T) {
 	uMock.On("Untar", archivePath, unarchivedPath).Once().Return(func(archive string, dest string) error {
 		tests.CreateDirByPath(dest)
 		tests.CreateFileWithContent(toolingConfPath, tests.ToYamlQuiet(toolingConf))
+		return nil
+	})
+
+	err := mockBroker.processPlugin(meta)
+
+	assert.Nil(t, err)
+	plugins, err := mockBroker.storage.Plugins()
+	assert.Nil(t, err)
+	assert.Equal(t, expectedPlugins, *plugins)
+	bMock.AssertExpectations(t)
+	uMock.AssertExpectations(t)
+}
+
+func TestProcessPluginWithYaml(t *testing.T) {
+	workDir := tests.CreateTestWorkDir()
+	pluginYaml := filepath.Join(workDir, pluginFileName)
+	defer tests.RemoveAll(workDir)
+	mockBroker = &ChePluginBroker{
+		bMock,
+		uMock,
+		storage.New(),
+	}
+	meta := model.PluginMeta{
+		ID:          "test-id",
+		Version:     "test-v",
+		Description: "test description",
+		Icon:        "http://test.icon",
+		Name:        "test-name",
+		Title:       "Test title",
+		Type:        "test-type",
+		URL:         "http://test.url/che-plugin.yaml",
+	}
+	toolingConf := model.ToolingConf{
+		WorkspaceEnv: []model.EnvVar{
+			{
+				Name:  "envVar1",
+				Value: "value1",
+			},
+			{
+				Name:  "envVar2",
+				Value: "value2",
+			},
+		},
+		Editors: []model.Editor{},
+		Containers: []model.Container{
+			{
+				Name:        "cname",
+				Image:       "test/test:latest",
+				MemoryLimit: "150Mi",
+				Env: []model.EnvVar{
+					{
+						Name:  "envVar3",
+						Value: "value3",
+					},
+				},
+				EditorCommands: []model.EditorCommand{
+					{
+						Name:       "cmd1",
+						WorkingDir: "/home/test",
+						Command: []string{
+							"ping",
+							"google.com",
+						},
+					},
+				},
+				Volumes: []model.Volume{
+					{
+						Name:      "plugins",
+						MountPath: "/plugins",
+					},
+				},
+				Ports: []model.ExposedPort{
+					{
+						ExposedPort: 8080,
+					},
+					{
+						ExposedPort: 1000,
+					},
+				},
+			},
+		},
+		Endpoints: []model.Endpoint{},
+	}
+	expectedPlugins := []model.ChePlugin{
+		{
+			ID:           meta.ID,
+			Version:      meta.Version,
+			Endpoints:    toolingConf.Endpoints,
+			Containers:   toolingConf.Containers,
+			Editors:      toolingConf.Editors,
+			WorkspaceEnv: toolingConf.WorkspaceEnv,
+		},
+	}
+	bMock.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
+	bMock.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
+	uMock.On("TempDir", "", "che-plugin-broker").Return(workDir, nil).Once()
+	uMock.On("Download", "http://test.url/che-plugin.yaml", pluginYaml).Return(nil).Once().Return(func(URL string, destPath string) error {
+		tests.CreateFileWithContent(destPath, tests.ToYamlQuiet(toolingConf))
 		return nil
 	})
 

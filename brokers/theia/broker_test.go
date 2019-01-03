@@ -57,7 +57,7 @@ func TestProcessRemotePlugin(t *testing.T) {
 		URL:     "http://test.url",
 	}
 	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
-	packageJSON := packageJson{
+	packageJSON := PackageJSON{
 		Name:      "test-name",
 		Publisher: "test-publisher",
 		Engines: engines{
@@ -164,7 +164,7 @@ func TestProcessRegularPlugin(t *testing.T) {
 		URL:     "http://test.url",
 	}
 	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.theia", meta.ID, meta.Version))
-	packageJSON := packageJson{
+	packageJSON := PackageJSON{
 		Name:      "test-name",
 		Publisher: "test-publisher",
 		Engines: engines{
@@ -321,7 +321,7 @@ func TestProcessPluginErrorIfArchiveCopyingFails(t *testing.T) {
 		URL:     "http://test.url",
 	}
 	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.theia", meta.ID, meta.Version))
-	packageJSON := packageJson{
+	packageJSON := PackageJSON{
 		Name:      "test-name",
 		Publisher: "test-publisher",
 		Engines: engines{
@@ -358,7 +358,7 @@ func TestProcessPluginErrorIfArchiveFolderCopyingFails(t *testing.T) {
 		URL:     "http://test.url",
 	}
 	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
-	packageJSON := packageJson{
+	packageJSON := PackageJSON{
 		Name:      "test-name",
 		Publisher: "test-publisher",
 		Engines: engines{

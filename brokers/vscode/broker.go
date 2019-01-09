@@ -70,7 +70,7 @@ func (broker *VSCodeExtensionBroker) Start(metas []model.PluginMeta) {
 		}
 	}
 
-	if ok, status := broker.Storage.pluginsSetStatus(model.StatusDone); !ok {
+	if ok, status := broker.Storage.SetStatus(model.StatusDone); !ok {
 		err := fmt.Sprintf("Setting '%s' broker status failed. Broker has '%s' state", model.StatusDone, status)
 		broker.PubFailed(err)
 		broker.PrintFatal(err)

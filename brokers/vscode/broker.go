@@ -38,6 +38,7 @@ type VSCodeExtensionBroker struct {
 	common.Broker
 	ioUtil  files.IoUtil
 	Storage *storage.Storage
+	client  *http.Client
 }
 
 // NewBroker creates Che VS Code extension broker instance
@@ -46,16 +47,12 @@ func NewBroker() *VSCodeExtensionBroker {
 		common.NewBroker(),
 		files.New(),
 		storage.New(),
+		&http.Client{},
 	}
 }
 
 // Start executes plugins metas processing and sends data to Che master
 func (broker *VSCodeExtensionBroker) Start(metas []model.PluginMeta) {
-	if ok, status := broker.Storage.SetStatus(model.StatusStarted); !ok {
-		m := fmt.Sprintf("Starting broker in state '%s' is not allowed", status)
-		broker.PubFailed(m)
-		broker.PrintFatal(m)
-	}
 	broker.PubStarted()
 	broker.PrintInfo("Started VS Code Plugin Broker")
 
@@ -68,12 +65,6 @@ func (broker *VSCodeExtensionBroker) Start(metas []model.PluginMeta) {
 			broker.PubFailed(err.Error())
 			broker.PrintFatal(err.Error())
 		}
-	}
-
-	if ok, status := broker.Storage.SetStatus(model.StatusDone); !ok {
-		err := fmt.Sprintf("Setting '%s' broker status failed. Broker has '%s' state", model.StatusDone, status)
-		broker.PubFailed(err)
-		broker.PrintFatal(err)
 	}
 
 	plugins, err := broker.Storage.Plugins()
@@ -136,9 +127,6 @@ func (broker *VSCodeExtensionBroker) processPlugin(meta model.PluginMeta) error 
 		return err
 	}
 
-	if err != nil {
-		return err
-	}
 	return broker.injectRemotePlugin(meta, unpackedPath, image, pj)
 }
 
@@ -157,7 +145,7 @@ func (broker *VSCodeExtensionBroker) injectRemotePlugin(meta model.PluginMeta, u
 }
 
 func (broker *VSCodeExtensionBroker) download(extension string, dest string, meta model.PluginMeta) error {
-	response, err := fetchExtensionInfo(extension, meta)
+	response, err := broker.fetchExtensionInfo(extension, meta)
 	if err != nil {
 		return err
 	}
@@ -167,15 +155,11 @@ func (broker *VSCodeExtensionBroker) download(extension string, dest string, met
 		return err
 	}
 
-	err = broker.ioUtil.Download(URL, dest)
-	return err
+	return broker.ioUtil.Download(URL, dest)
 }
 
-func fetchExtensionInfo(extension string, meta model.PluginMeta) ([]byte, error) {
-	re, err := regexp.Compile(`^vscode:extension/(.*)`)
-	if err != nil {
-		return nil, fmt.Errorf("VS Code extension id '%s' parsing failed for plugin %s:%s", extension, meta.ID, meta.Version)
-	}
+func (broker *VSCodeExtensionBroker) fetchExtensionInfo(extension string, meta model.PluginMeta) ([]byte, error) {
+	re := regexp.MustCompile(`^vscode:extension/(.*)`)
 	groups := re.FindStringSubmatch(extension)
 	if len(groups) != 2 {
 		return nil, fmt.Errorf("VS Code extension id '%s' parsing failed for plugin %s:%s", extension, meta.ID, meta.Version)
@@ -189,22 +173,18 @@ func fetchExtensionInfo(extension string, meta model.PluginMeta) ([]byte, error)
 	req.Header.Set("Accept", "application/json;api-version=3.0-preview.1")
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := broker.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("VS Code extension downloading failed %s:%s. Error: %s", meta.ID, meta.Version, err)
 	}
 	defer resp.Body.Close()
 	body, err = ioutil.ReadAll(resp.Body)
-	if resp.StatusCode != 200 {
-		errMsg := "VS Code extension downloading failed %s:%s. Status: %q"
-		if err == nil {
-			errMsg = errMsg + ". Body: " + string(body)
-		}
-		return nil, fmt.Errorf(errMsg, meta.ID, meta.Version, resp.StatusCode)
-	}
 	if err != nil {
 		return nil, fmt.Errorf("VS Code extension downloading failed %s:%s. Error: %s", meta.ID, meta.Version, err)
+	}
+	if resp.StatusCode != 200 {
+		errMsg := "VS Code extension downloading failed %s:%s. Status: %v. Body: " + string(body)
+		return nil, fmt.Errorf(errMsg, meta.ID, meta.Version, resp.StatusCode)
 	}
 
 	return body, nil

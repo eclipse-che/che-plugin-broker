@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -36,6 +37,14 @@ func CreateTestWorkDir() string {
 
 func CreateDirByPath(path string) string {
 	err := os.Mkdir(path, 0755)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return path
+}
+
+func CreateDirs(path string) string {
+	err := os.MkdirAll(path, 0755)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -115,4 +124,20 @@ func ToJSONQuiet(obj interface{}) string {
 		log.Fatal(err)
 	}
 	return string(fileContent)
+}
+
+// RoundTripFunc is a function that responses to requests from the argument.
+// It is useful for testing purposes to check request or produce certain response
+type RoundTripFunc func(req *http.Request) *http.Response
+
+// Do no use it directly!
+// This is needed to make RoundTripF implement http.RoundTripper
+func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req), nil
+}
+
+func NewTestHTTPClient(fn RoundTripFunc) *http.Client {
+	return &http.Client{
+		Transport: RoundTripFunc(fn),
+	}
 }

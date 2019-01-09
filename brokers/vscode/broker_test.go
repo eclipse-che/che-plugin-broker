@@ -18,7 +18,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"testing"
 
@@ -37,8 +36,8 @@ import (
 )
 
 const (
-	extName       = "test-name"
-	extPublisher  = "test-publisher"
+	extName       = "Test-name"
+	extPublisher  = "Test-publisher"
 	vsixURL       = "http://test.url"
 	pluginID      = "tid"
 	pluginVersion = "tv"
@@ -515,8 +514,7 @@ func okMarketplaceResponse(req *http.Request) *http.Response {
 func expectedPlugins(port int, cname string) []model.ChePlugin {
 	sPort := strconv.Itoa(port)
 	endpointName := "port" + sPort
-	var re = regexp.MustCompile(`[^a-z_0-9]+`)
-	prettyID := re.ReplaceAllString(extPublisher+"_"+extName, `_`)
+	prettyID := "Test_publisher_Test_name"
 	expectedPlugins := []model.ChePlugin{
 		{
 			ID:      pluginID,

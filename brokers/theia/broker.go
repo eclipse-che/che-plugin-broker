@@ -207,7 +207,7 @@ func AddPortToTooling(toolingConf *model.ToolingConf, pj *PackageJSON) {
 	port := GetRndPort()
 	sPort := strconv.Itoa(port)
 	endpointName := "port" + sPort
-	var re = regexp.MustCompile(`[^a-z_0-9]+`)
+	var re = regexp.MustCompile(`[^a-zA-Z_0-9]+`)
 	prettyID := re.ReplaceAllString(pj.Publisher+"_"+pj.Name, `_`)
 	theiaEnvVar1 := "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID
 	theiaEnvVarValue := "ws://" + endpointName + ":" + sPort

@@ -56,7 +56,7 @@ func (broker *TheiaPluginBroker) Start(metas []model.PluginMeta) {
 
 	broker.PrintPlan(metas)
 
-	broker.PrintInfo("Starting plugins processing")
+	broker.PrintInfo("Starting Theia plugins processing")
 	for _, meta := range metas {
 		err := broker.processPlugin(meta)
 		if err != nil {

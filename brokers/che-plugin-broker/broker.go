@@ -69,7 +69,7 @@ func (cheBroker *ChePluginBroker) Start(metas []model.PluginMeta) {
 
 	cheBroker.PrintPlan(metas)
 
-	cheBroker.PrintInfo("Starting plugins processing")
+	cheBroker.PrintInfo("Starting common Che plugins processing")
 	for _, meta := range metas {
 		err := cheBroker.processPlugin(meta)
 		if err != nil {

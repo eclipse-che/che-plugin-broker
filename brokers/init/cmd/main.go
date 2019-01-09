@@ -33,6 +33,7 @@ func main() {
 	defer broker.CloseConsumers()
 	broker.PushEvents(statusTun, model.BrokerLogEventType)
 
+	broker.PrintInfo("Starting Init Plugin Broker")
 	// Clear any existing plugins from /plugins/
 	broker.PrintInfo("Cleaning /plugins dir")
 	files, err := filepath.Glob(filepath.Join("/plugins", "*"))

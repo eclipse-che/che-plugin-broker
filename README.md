@@ -129,7 +129,7 @@ docker build -t eclipse/che-theia-plugin-broker:latest -f build/theia/Dockerfile
 - build Init plugin broker
 
 ```shell
-docker build -t eclipse/init-plugin-broker:latest -f build/init/Dockerfile .
+docker build -t eclipse/che-init-plugin-broker:latest -f build/init/Dockerfile .
 ```
 
 - build VS Code extension broker

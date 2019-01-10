@@ -22,5 +22,5 @@ FROM alpine:3.7
 USER appuser
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder /go/src/github.com/eclipse/che-plugin-broker/brokers/che-plugin-broker/che-plugin-broker /
+COPY --from=builder /go/src/github.com/eclipse/che-plugin-broker/brokers/che-plugin-broker/cmd/che-plugin-broker /
 ENTRYPOINT ["/che-plugin-broker"]

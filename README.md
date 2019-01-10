@@ -117,7 +117,7 @@ So, when a dependency is introduced or changed it should be reflected in Gopkg.t
 - build Che plugin broker
 
 ```shell
-docker build -t eclipse/che-plugin-broker:latest -f Dockerfile.cpb .
+docker build -t eclipse/che-plugin-broker:latest -f build/che-plugin-broker/Dockerfile .
 ```
 
 - build Theia plugin broker
@@ -129,7 +129,7 @@ docker build -t eclipse/che-theia-plugin-broker:latest -f build/theia/Dockerfile
 - build Init plugin broker
 
 ```shell
-docker build -t eclipse/init-plugin-broker:latest -f build/init/Dockerfile .
+docker build -t eclipse/che-init-plugin-broker:latest -f build/init/Dockerfile .
 ```
 
 - build VS Code extension broker

@@ -46,7 +46,7 @@ Downloads VS Code extension from marketplace and:
  `THEIA_PLUGIN_ENDPOINT_PORT` and value `port`
   - with projects volume
   - with plugin volume
-- Sends following sidecar config to Che workspace master:
+- Sends sidecar config to Che workspace master
 
 ## Development
 

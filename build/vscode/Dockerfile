@@ -13,14 +13,14 @@
 FROM golang:1.10-alpine as builder
 RUN apk add --no-cache ca-certificates
 RUN adduser -D -g '' appuser
-WORKDIR /go/src/github.com/eclipse/che-plugin-broker/brokers/che-plugin-broker/
+WORKDIR /go/src/github.com/eclipse/che-plugin-broker/brokers/vscode/cmd/
 COPY . /go/src/github.com/eclipse/che-plugin-broker/
-RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o che-plugin-broker main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o vscode-extension-broker main.go
 
 
 FROM alpine:3.7
 USER appuser
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder /go/src/github.com/eclipse/che-plugin-broker/brokers/che-plugin-broker/che-plugin-broker /
-ENTRYPOINT ["/che-plugin-broker"]
+COPY --from=builder /go/src/github.com/eclipse/che-plugin-broker/brokers/vscode/cmd/vscode-extension-broker /
+ENTRYPOINT ["/vscode-extension-broker"]

@@ -65,11 +65,11 @@ func (cheBroker *ChePluginBroker) Start(metas []model.PluginMeta) {
 		cheBroker.PrintFatal(m)
 	}
 	cheBroker.PubStarted()
-	cheBroker.PrintInfo("Started Plugin Broker")
+	cheBroker.PrintInfo("Started Che Plugin Broker")
 
 	cheBroker.PrintPlan(metas)
 
-	cheBroker.PrintInfo("Starting plugins processing")
+	cheBroker.PrintInfo("Starting common Che plugins processing")
 	for _, meta := range metas {
 		err := cheBroker.processPlugin(meta)
 		if err != nil {

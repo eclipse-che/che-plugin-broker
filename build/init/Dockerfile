@@ -21,5 +21,5 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o 
 FROM scratch
 USER appuser
 COPY --from=builder /etc/passwd /etc/passwd
-COPY --from=builder /go/src/github.com/eclipse/che-plugin-broker/brokers/init/init-plugin-broker /
+COPY --from=builder /go/src/github.com/eclipse/che-plugin-broker/brokers/init/cmd/init-plugin-broker /
 ENTRYPOINT ["/init-plugin-broker"]

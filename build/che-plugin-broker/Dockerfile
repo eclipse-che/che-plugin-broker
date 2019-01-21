@@ -10,7 +10,7 @@
 #   Red Hat, Inc. - initial API and implementation
 #
 
-FROM golang:1.10-alpine as builder
+FROM golang:1.10-alpine3.8 as builder
 RUN apk add --no-cache ca-certificates
 RUN adduser -D -g '' appuser
 WORKDIR /go/src/github.com/eclipse/che-plugin-broker/brokers/che-plugin-broker/cmd/
@@ -18,7 +18,7 @@ COPY . /go/src/github.com/eclipse/che-plugin-broker/
 RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o che-plugin-broker main.go
 
 
-FROM alpine:3.7
+FROM alpine:3.8
 USER appuser
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/

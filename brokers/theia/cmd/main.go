@@ -27,9 +27,12 @@ func main() {
 	cfg.Parse()
 	cfg.Print()
 
-	statusTun := common.ConnectOrFail(cfg.PushStatusesEndpoint, cfg.Token)
 	theiaBroker := theia.NewBroker()
-	theiaBroker.PushEvents(statusTun)
+
+	if !cfg.DisablePushingToEndpoint {
+		statusTun := common.ConnectOrFail(cfg.PushStatusesEndpoint, cfg.Token)
+		theiaBroker.PushEvents(statusTun)
+	}
 
 	metas := cfg.ReadConfig()
 	theiaBroker.Start(metas)

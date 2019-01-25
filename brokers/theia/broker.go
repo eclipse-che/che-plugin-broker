@@ -83,7 +83,9 @@ func (broker *TheiaPluginBroker) Start(metas []model.PluginMeta) {
 	}
 
 	broker.PrintInfo("All plugins have been successfully processed")
-	broker.PubDone(string(pluginsBytes))
+	result := string(pluginsBytes)
+	broker.PrintDebug(result)
+	broker.PubDone(result)
 	broker.CloseConsumers()
 }
 

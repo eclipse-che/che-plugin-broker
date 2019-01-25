@@ -40,6 +40,9 @@ var (
 	// RuntimeID the id of workspace runtime this machine belongs to.
 	RuntimeID    model.RuntimeID
 	runtimeIDRaw string
+
+	// DisablePushingToEndpoint disables pushing anything to the endpoint
+	DisablePushingToEndpoint bool
 )
 
 func init() {
@@ -79,18 +82,27 @@ func init() {
 		"",
 		"The identifier of the runtime in format 'workspace:environment:ownerId'",
 	)
+	flag.BoolVar(
+		&DisablePushingToEndpoint,
+		"disable-push",
+		false,
+		"whether pushing of data to endpoint should be disabled. "+
+			"`false` by default. Existing for testing and debugging purposes",
+	)
 }
 
 // Parse parses configuration.
 func Parse() {
 	flag.Parse()
 
-	// push-endpoint
-	if len(PushStatusesEndpoint) == 0 {
-		log.Fatal("Push endpoint required(set it with -push-endpoint argument)")
-	}
-	if !strings.HasPrefix(PushStatusesEndpoint, "ws") {
-		log.Fatal("Push endpoint protocol must be either ws or wss")
+	if !DisablePushingToEndpoint {
+		// push-endpoint
+		if len(PushStatusesEndpoint) == 0 {
+			log.Fatal("Push endpoint required(set it with -push-endpoint argument)")
+		}
+		if !strings.HasPrefix(PushStatusesEndpoint, "ws") {
+			log.Fatal("Push endpoint protocol must be either ws or wss")
+		}
 	}
 
 	// auth-enabled - fetch CHE_MACHINE_TOKEN
@@ -112,13 +124,14 @@ func Parse() {
 // Print prints configuration.
 func Print() {
 	log.Print("Broker configuration")
-	log.Printf("  Push endpoint: %s", PushStatusesEndpoint)
-	log.Printf("  Auth enabled: %t", AuthEnabled)
+	if !DisablePushingToEndpoint {
+		log.Printf("  Push endpoint: %s", PushStatusesEndpoint)
+		log.Printf("  Auth enabled: %t", AuthEnabled)
+	}
 	log.Print("  Runtime ID:")
 	log.Printf("    Workspace: %s", RuntimeID.Workspace)
 	log.Printf("    Environment: %s", RuntimeID.Environment)
 	log.Printf("    OwnerId: %s", RuntimeID.OwnerId)
-
 }
 
 // ReadConfig reads content of file by path cfg.FilePath,

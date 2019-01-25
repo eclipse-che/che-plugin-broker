@@ -1,0 +1,32 @@
+[
+{
+    "id": "che-service-plugin",
+    "version": "0.0.1",
+    "type": "Che plugin",
+    "name": "Che Samples REST API Sidecar Plugin",
+    "title": "Che Samples REST API Sidecar Plugin",
+    "description": "Che Plug-in with Theia plug-in and container definition providing a service",
+    "icon": "https://www.eclipse.org/che/images/ico/16x16.png",
+    "url": "https://github.com/ws-skeleton/che-service-plugin/releases/download/untagged-5c4c888ff2de8ae7a5e2/che-service-plugin.tar.gz"
+},
+{
+    "id": "org.eclipse.che.editor.theia",
+    "version": "1.0.0",
+    "type": "Che Editor",
+    "name": "theia-ide",
+    "title": "Eclipse Theia for Eclipse Che",
+    "description": "Eclipse Theia",
+    "icon": "https://raw.githubusercontent.com/theia-ide/theia/master/logo/theia-logo-no-text-black.svg?sanitize=true",
+    "url": "https://github.com/ws-skeleton/che-editor-theia/releases/download/untagged-2218dafda12e0786aa79/che-editor-plugin.tar.gz"
+},
+{
+    "id": "org.eclipse.che.editor.theia",
+    "version": "1.0.0",
+    "type": "Che Editor",
+    "name": "theia-ide",
+    "title": "Eclipse Theia for Eclipse Che",
+    "description": "Eclipse Theia",
+    "icon": "https://raw.githubusercontent.com/theia-ide/theia/master/logo/theia-logo-no-text-black.svg?sanitize=true",
+    "url": "https://raw.githubusercontent.com/ws-skeleton/che-editor-theia/master/etc/che-plugin.yaml"
+}
+]

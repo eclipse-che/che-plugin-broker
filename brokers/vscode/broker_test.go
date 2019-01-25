@@ -69,6 +69,7 @@ func TestStart(t *testing.T) {
 	mocks := initMocks()
 
 	mocks.cb.On("PubStarted").Once()
+	mocks.cb.On("PrintDebug", mock.AnythingOfType("string"))
 	mocks.cb.On("PubDone", "null").Once()
 	mocks.cb.On("PrintInfo", mock.AnythingOfType("string"))
 	mocks.cb.On("PrintPlan", mock.AnythingOfType("[]model.PluginMeta")).Once()

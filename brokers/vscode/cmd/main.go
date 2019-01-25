@@ -27,9 +27,12 @@ func main() {
 	cfg.Parse()
 	cfg.Print()
 
-	statusTun := common.ConnectOrFail(cfg.PushStatusesEndpoint, cfg.Token)
 	broker := vscode.NewBroker()
-	broker.PushEvents(statusTun)
+
+	if !cfg.DisablePushingToEndpoint {
+		statusTun := common.ConnectOrFail(cfg.PushStatusesEndpoint, cfg.Token)
+		broker.PushEvents(statusTun)
+	}
 
 	metas := cfg.ReadConfig()
 	broker.Start(metas)

@@ -101,6 +101,7 @@ type Container struct {
 	Volumes        []Volume        `json:"volumes" yaml:"volumes"`
 	Ports          []ExposedPort   `json:"ports" yaml:"ports"`
 	MemoryLimit    string          `json:"memory-limit" yaml:"memory-limit"`
+	MountSources   bool            `json:"mountSources" yaml:"mountSources"`
 }
 
 type Editor struct {

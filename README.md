@@ -82,6 +82,8 @@ CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o i
 CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o vscode-extension-broker brokers/vscode/cmd/main.go
 ```
 
+### Run checks
+
 - run tests:
 
 ```shell
@@ -99,6 +101,19 @@ golangci-lint run -v
 ```shell
 docker build -f build/CI/Dockerfile .
 ```
+
+### Check brokers locally
+
+Prerequisites:
+
+    - Folder /plugins exists on the host and writable for the user
+
+- Go to a broker cmd directory, e.g. `brokers/vscode/cmd`
+- Compile binaries `go build main.go`
+- Run binary `./main -disable-push -runtime-id wsId:env:ownerId`
+- Check JSON with sidecar configuration in the very bottom of the output
+- Check that needed files are in `/plugins`
+- To cleanup `/plugins` folder **init** broker can be used
 
 ### Dependencies
 

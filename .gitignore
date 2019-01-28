@@ -8,6 +8,7 @@ theia-plugin-broker
 init-plugin-broker
 vscode-extension-broker
 **/cmd/cmd
+main
 
 *.o
 *.a

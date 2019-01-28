@@ -96,7 +96,9 @@ func (cheBroker *ChePluginBroker) Start(metas []model.PluginMeta) {
 	}
 
 	cheBroker.PrintInfo("All plugins have been successfully processed")
-	cheBroker.PubDone(string(pluginsBytes))
+	result := string(pluginsBytes)
+	cheBroker.PrintDebug(result)
+	cheBroker.PubDone(result)
 	cheBroker.CloseConsumers()
 }
 

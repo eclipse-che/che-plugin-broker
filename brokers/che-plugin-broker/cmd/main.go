@@ -27,9 +27,12 @@ func main() {
 	cfg.Parse()
 	cfg.Print()
 
-	statusTun := common.ConnectOrFail(cfg.PushStatusesEndpoint, cfg.Token)
 	cheBroker := broker.NewBroker()
-	cheBroker.PushEvents(statusTun)
+
+	if !cfg.DisablePushingToEndpoint {
+		statusTun := common.ConnectOrFail(cfg.PushStatusesEndpoint, cfg.Token)
+		cheBroker.PushEvents(statusTun)
+	}
 
 	metas := cfg.ReadConfig()
 	cheBroker.Start(metas)

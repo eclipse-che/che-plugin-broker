@@ -28,10 +28,13 @@ func main() {
 	cfg.Parse()
 	cfg.Print()
 
-	statusTun := common.ConnectOrFail(cfg.PushStatusesEndpoint, cfg.Token)
 	broker := common.NewBroker()
 	defer broker.CloseConsumers()
-	broker.PushEvents(statusTun, model.BrokerLogEventType)
+
+	if !cfg.DisablePushingToEndpoint {
+		statusTun := common.ConnectOrFail(cfg.PushStatusesEndpoint, cfg.Token)
+		broker.PushEvents(statusTun, model.BrokerLogEventType)
+	}
 
 	broker.PrintInfo("Starting Init Plugin Broker")
 	// Clear any existing plugins from /plugins/

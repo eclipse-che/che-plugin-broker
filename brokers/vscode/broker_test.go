@@ -182,7 +182,7 @@ func expectedPlugins() []model.ChePlugin {
 			},
 			Containers: []model.Container{
 				{
-					Name:  "theiapluginsidecarrandomContainerSuffix",
+					Name:  "pluginsidecarrandomContainerSuffix",
 					Image: image,
 					Volumes: []model.Volume{
 						{

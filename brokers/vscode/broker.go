@@ -16,17 +16,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"path/filepath"
-	"regexp"
-	"strconv"
-
 	"github.com/eclipse/che-go-jsonrpc"
+	"github.com/eclipse/che-plugin-broker/brokers/theia"
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/files"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
+	"io/ioutil"
+	"net/http"
+	"path/filepath"
+	"regexp"
 )
 
 const marketplace = "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery"
@@ -140,10 +139,7 @@ func (b *Broker) injectRemotePlugin(meta model.PluginMeta, unpackedPath string, 
 	if err != nil {
 		return err
 	}
-	tooling := &model.ToolingConf{
-		Containers: []model.Container{*b.ContainerConfig(image)},
-	}
-	b.addPortToTooling(tooling, pj)
+	tooling := theia.GenerateSidecarTooling(image, *pj, b.rand)
 	return b.Storage.AddPlugin(&meta, tooling)
 }
 
@@ -226,48 +222,4 @@ func (b *Broker) getPackageJSON(pluginFolder string) (*model.PackageJSON, error)
 	pj := &model.PackageJSON{}
 	err = json.Unmarshal(f, pj)
 	return pj, err
-}
-
-func (b *Broker) ContainerConfig(image string) *model.Container {
-	c := model.Container{
-		Name:  "theiapluginsidecar" + b.rand.String(6),
-		Image: image,
-		Volumes: []model.Volume{
-			{
-				Name:      "projects",
-				MountPath: "/projects",
-			},
-			{
-				Name:      "plugins",
-				MountPath: "/plugins",
-			},
-		},
-	}
-	return &c
-}
-
-// AddPortToTooling adds to tooling everything needed to start Theia remote plugin:
-// - Random port to the container (one and only)
-// - Endpoint matching the port
-// - Environment variable THEIA_PLUGIN_ENDPOINT_PORT to the container with the port as value
-// - Environment variable that start from THEIA_PLUGIN_REMOTE_ENDPOINT_ and ends with
-// plugin publisher and plugin name taken from packageJson and replacing all
-// chars matching [^a-z_0-9]+ with a dash character
-func (b *Broker) addPortToTooling(toolingConf *model.ToolingConf, pj *model.PackageJSON) {
-	port := b.rand.IntFromRange(4000, 10000)
-	sPort := strconv.Itoa(port)
-	endpointName := b.rand.String(10)
-	var re = regexp.MustCompile(`[^a-zA-Z_0-9]+`)
-	prettyID := re.ReplaceAllString(pj.Publisher+"_"+pj.Name, `_`)
-	theiaEnvVar1 := "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID
-	theiaEnvVarValue := "ws://" + endpointName + ":" + sPort
-
-	toolingConf.Containers[0].Ports = append(toolingConf.Containers[0].Ports, model.ExposedPort{ExposedPort: port})
-	toolingConf.Endpoints = append(toolingConf.Endpoints, model.Endpoint{
-		Name:       endpointName,
-		Public:     false,
-		TargetPort: port,
-	})
-	toolingConf.Containers[0].Env = append(toolingConf.Containers[0].Env, model.EnvVar{Name: "THEIA_PLUGIN_ENDPOINT_PORT", Value: sPort})
-	toolingConf.WorkspaceEnv = append(toolingConf.WorkspaceEnv, model.EnvVar{Name: theiaEnvVar1, Value: theiaEnvVarValue})
 }

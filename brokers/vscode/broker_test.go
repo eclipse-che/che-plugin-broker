@@ -18,7 +18,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,19 +46,23 @@ type mocks struct {
 	cb *cmock.Broker
 	u  *fmock.IoUtil
 	b  *Broker
+	randMock *cmock.Random
 }
 
 func initMocks() *mocks {
 	cb := &cmock.Broker{}
 	u := &fmock.IoUtil{}
+	randMock   := &cmock.Random{}
 	return &mocks{
 		cb: cb,
 		u:  u,
+		randMock: randMock,
 		b: &Broker{
-			cb,
-			u,
-			storage.New(),
-			test.NewTestHTTPClient(okMarketplaceResponse),
+			Broker:  cb,
+			ioUtil:  u,
+			Storage: storage.New(),
+			client:  test.NewTestHTTPClient(okMarketplaceResponse),
+			rand: randMock,
 		},
 	}
 }
@@ -99,7 +102,13 @@ func TestProcessPlugin(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	validatePluginConfig(t, m)
+	expected := expectedPlugins()
+	pluginsPointer, err := m.b.Storage.Plugins()
+	assert.Nil(t, err)
+	assert.NotNil(t, pluginsPointer)
+	plugins := *pluginsPointer
+	assert.Equal(t, expected, plugins)
+
 	m.cb.AssertExpectations(t)
 	m.u.AssertExpectations(t)
 }
@@ -158,18 +167,55 @@ func TestProcessPluginNoAttributes(t *testing.T) {
 	assert.EqualError(t, err, "VS Code extension field 'extension' is missing in description of plugin tid:tv")
 }
 
-func validatePluginConfig(t *testing.T, m *mocks) {
-	pluginsPointer, err := m.b.Storage.Plugins()
-	assert.Nil(t, err)
-	assert.NotNil(t, pluginsPointer)
-	plugins := *pluginsPointer
-	// get port since it is random and is used in names generation
-	port := plugins[0].Endpoints[0].TargetPort
-	assert.True(t, port >= 4000 && port <= 6000)
-	// name contains random part, so use it to expected object generation
-	containerName := plugins[0].Containers[0].Name
-	expected := expectedPlugins(port, containerName)
-	assert.Equal(t, expected, plugins)
+func expectedPlugins() []model.ChePlugin {
+	prettyID := "Test_publisher_Test_name"
+	expectedPlugins := []model.ChePlugin{
+		{
+			ID:      pluginID,
+			Version: pluginVersion,
+			Endpoints: []model.Endpoint{
+				{
+					Name:       "randomEndpointName",
+					Public:     false,
+					TargetPort: 4242,
+				},
+			},
+			Containers: []model.Container{
+				{
+					Name:  "theiapluginsidecarrandomContainerSuffix",
+					Image: image,
+					Volumes: []model.Volume{
+						{
+							Name:      "projects",
+							MountPath: "/projects",
+						},
+						{
+							Name:      "plugins",
+							MountPath: "/plugins",
+						},
+					},
+					Ports: []model.ExposedPort{
+						{
+							ExposedPort: 4242,
+						},
+					},
+					Env: []model.EnvVar{
+						{
+							Name:  "THEIA_PLUGIN_ENDPOINT_PORT",
+							Value: "4242",
+						},
+					},
+				},
+			},
+			WorkspaceEnv: []model.EnvVar{
+				{
+					Name:  "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID,
+					Value: "ws://randomEndpointName:4242",
+				},
+			},
+		},
+	}
+	return expectedPlugins
 }
 
 func setUp(workDir string, meta model.PluginMeta, m *mocks) {
@@ -191,6 +237,10 @@ func setUp(workDir string, meta model.PluginMeta, m *mocks) {
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	m.u.On("Download", vsixURL, archivePath).Return(nil).Once()
 	m.u.On("TempDir", "", "vscode-extension-broker").Return(workDir, nil).Once()
+	m.randMock.On("Int", 6).Return(42).Once()
+	m.randMock.On("IntFromRange", 4000, 10000).Return(4242).Once()
+	m.randMock.On("String", 10).Return("randomEndpointName").Once()
+	m.randMock.On("String", 6).Return("randomContainerSuffix").Once()
 }
 
 func TestFetchExtensionInfo(t *testing.T) {
@@ -267,10 +317,11 @@ func TestFetchExtensionInfo(t *testing.T) {
 				t.Fatal("Neither want nor error are defined")
 			}
 			var b = &Broker{
-				common.NewBroker(),
-				files.New(),
-				storage.New(),
-				test.NewTestHTTPClient(tt.roundTF),
+				Broker:  common.NewBroker(),
+				ioUtil:  files.New(),
+				Storage: storage.New(),
+				client:  test.NewTestHTTPClient(tt.roundTF),
+				rand : common.NewRand(),
 			}
 			got, err := b.fetchExtensionInfo(tt.ext, model.PluginMeta{
 				ID:      "tid",
@@ -509,57 +560,4 @@ func okMarketplaceResponse(req *http.Request) *http.Response {
 		StatusCode: 200,
 		Body:       ioutil.NopCloser(bytes.NewBufferString(JSON)),
 	}
-}
-
-func expectedPlugins(port int, cname string) []model.ChePlugin {
-	sPort := strconv.Itoa(port)
-	endpointName := "port" + sPort
-	prettyID := "Test_publisher_Test_name"
-	expectedPlugins := []model.ChePlugin{
-		{
-			ID:      pluginID,
-			Version: pluginVersion,
-			Endpoints: []model.Endpoint{
-				{
-					Name:       endpointName,
-					Public:     false,
-					TargetPort: port,
-				},
-			},
-			Containers: []model.Container{
-				{
-					Name:  cname,
-					Image: image,
-					Volumes: []model.Volume{
-						{
-							Name:      "projects",
-							MountPath: "/projects",
-						},
-						{
-							Name:      "plugins",
-							MountPath: "/plugins",
-						},
-					},
-					Ports: []model.ExposedPort{
-						{
-							ExposedPort: port,
-						},
-					},
-					Env: []model.EnvVar{
-						{
-							Name:  "THEIA_PLUGIN_ENDPOINT_PORT",
-							Value: sPort,
-						},
-					},
-				},
-			},
-			WorkspaceEnv: []model.EnvVar{
-				{
-					Name:  "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID,
-					Value: "ws://" + endpointName + ":" + sPort,
-				},
-			},
-		},
-	}
-	return expectedPlugins
 }

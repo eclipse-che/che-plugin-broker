@@ -17,7 +17,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"path/filepath"
 	"regexp"
@@ -40,15 +39,17 @@ type Broker struct {
 	ioUtil  files.IoUtil
 	Storage *storage.Storage
 	client  *http.Client
+	rand common.Random
 }
 
 // NewBroker creates Che VS Code extension broker instance
 func NewBroker() *Broker {
 	return &Broker{
-		common.NewBroker(),
-		files.New(),
-		storage.New(),
-		&http.Client{},
+		Broker:  common.NewBroker(),
+		ioUtil:  files.New(),
+		Storage: storage.New(),
+		client:  &http.Client{},
+		rand : common.NewRand(),
 	}
 }
 
@@ -229,7 +230,7 @@ func (b *Broker) getPackageJSON(pluginFolder string) (*model.PackageJSON, error)
 
 func (b *Broker) ContainerConfig(image string) *model.Container {
 	c := model.Container{
-		Name:  "vscodepluginsidecar" + b.getRndNumberAsString(),
+		Name:  "theiapluginsidecar" + b.rand.String(6),
 		Image: image,
 		Volumes: []model.Volume{
 			{
@@ -253,9 +254,9 @@ func (b *Broker) ContainerConfig(image string) *model.Container {
 // plugin publisher and plugin name taken from packageJson and replacing all
 // chars matching [^a-z_0-9]+ with a dash character
 func (b *Broker) addPortToTooling(toolingConf *model.ToolingConf, pj *model.PackageJSON) {
-	port := b.getRndPort()
+	port := b.rand.IntFromRange(4000, 10000)
 	sPort := strconv.Itoa(port)
-	endpointName := "port" + sPort
+	endpointName := b.rand.String(10)
 	var re = regexp.MustCompile(`[^a-zA-Z_0-9]+`)
 	prettyID := re.ReplaceAllString(pj.Publisher+"_"+pj.Name, `_`)
 	theiaEnvVar1 := "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID
@@ -269,13 +270,4 @@ func (b *Broker) addPortToTooling(toolingConf *model.ToolingConf, pj *model.Pack
 	})
 	toolingConf.Containers[0].Env = append(toolingConf.Containers[0].Env, model.EnvVar{Name: "THEIA_PLUGIN_ENDPOINT_PORT", Value: sPort})
 	toolingConf.WorkspaceEnv = append(toolingConf.WorkspaceEnv, model.EnvVar{Name: theiaEnvVar1, Value: theiaEnvVarValue})
-}
-
-func (b *Broker) getRndNumberAsString() string {
-	port := b.getRndPort() // TODO CHANge name to something meaningful and/OR random
-	return strconv.Itoa(port)
-}
-
-func (b *Broker) getRndPort() int {
-	return 4000 + rand.Intn(6000)
 }

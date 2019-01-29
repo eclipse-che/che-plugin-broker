@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,10 +32,12 @@ import (
 var (
 	bMock      = &cmock.Broker{}
 	uMock      = &fmock.IoUtil{}
+	randMock   = &cmock.Random{}
 	mockBroker = &Broker{
 		Broker:  bMock,
 		ioUtil:  uMock,
 		storage: storage.New(),
+		rand: randMock,
 	}
 )
 
@@ -45,6 +46,7 @@ func TestProcessRemotePlugin(t *testing.T) {
 		Broker:  bMock,
 		ioUtil:  uMock,
 		storage: storage.New(),
+		rand: randMock,
 	}
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)
@@ -76,6 +78,11 @@ func TestProcessRemotePlugin(t *testing.T) {
 		return nil
 	}).Once()
 	uMock.On("CopyResource", unarchivedPath, pluginPath).Return(nil).Once()
+	randMock.On("Int", 6).Return(42).Once()
+	randMock.On("IntFromRange", 4000, 10000).Return(4242).Once()
+	randMock.On("String", 10).Return("randomEndpointName").Once()
+	randMock.On("String", 6).Return("randomContainerSuffix").Once()
+	expected := expectedPlugins(meta, packageJSON.Engines.CheRuntimeContainer, packageJSON.Publisher, packageJSON.Name)
 
 	err := mockBroker.processPlugin(meta)
 
@@ -84,20 +91,12 @@ func TestProcessRemotePlugin(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, pluginsPointer)
 	plugins := *pluginsPointer
-	// get port since it is random and is used in names generation
-	port := plugins[0].Endpoints[0].TargetPort
-	assert.True(t, port >= 4000 && port <= 6000)
-	// name contains random part, so path it to expected object generation
-	containerName := plugins[0].Containers[0].Name
-	expected := expectedPlugins(meta, port, packageJSON.Engines.CheRuntimeContainer, containerName, packageJSON.Publisher, packageJSON.Name)
 	assert.Equal(t, expected, plugins)
 	bMock.AssertExpectations(t)
 	uMock.AssertExpectations(t)
 }
 
-func expectedPlugins(meta model.PluginMeta, port int, image string, cname string, publisher string, pubName string) []model.ChePlugin {
-	sPort := strconv.Itoa(port)
-	endpointName := "port" + sPort
+func expectedPlugins(meta model.PluginMeta, image string, publisher string, pubName string) []model.ChePlugin {
 	var re = regexp.MustCompile(`[^a-z_0-9]+`)
 	prettyID := re.ReplaceAllString(publisher+"_"+pubName, `_`)
 	expectedPlugins := []model.ChePlugin{
@@ -106,14 +105,14 @@ func expectedPlugins(meta model.PluginMeta, port int, image string, cname string
 			Version: meta.Version,
 			Endpoints: []model.Endpoint{
 				{
-					Name:       endpointName,
+					Name:       "randomEndpointName",
 					Public:     false,
-					TargetPort: port,
+					TargetPort: 4242,
 				},
 			},
 			Containers: []model.Container{
 				{
-					Name:  cname,
+					Name:  "theiapluginsidecarrandomContainerSuffix",
 					Image: image,
 					Volumes: []model.Volume{
 						{
@@ -127,13 +126,13 @@ func expectedPlugins(meta model.PluginMeta, port int, image string, cname string
 					},
 					Ports: []model.ExposedPort{
 						{
-							ExposedPort: port,
+							ExposedPort: 4242,
 						},
 					},
 					Env: []model.EnvVar{
 						{
 							Name:  "THEIA_PLUGIN_ENDPOINT_PORT",
-							Value: sPort,
+							Value: "4242",
 						},
 					},
 				},
@@ -141,7 +140,7 @@ func expectedPlugins(meta model.PluginMeta, port int, image string, cname string
 			WorkspaceEnv: []model.EnvVar{
 				{
 					Name:  "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID,
-					Value: "ws://" + endpointName + ":" + sPort,
+					Value: "ws://randomEndpointName:4242",
 				},
 			},
 		},
@@ -154,6 +153,7 @@ func TestProcessRegularPlugin(t *testing.T) {
 		Broker:  bMock,
 		ioUtil:  uMock,
 		storage: storage.New(),
+		rand: randMock,
 	}
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)

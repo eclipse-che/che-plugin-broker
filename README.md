@@ -16,7 +16,7 @@ Downloads .theia archive and:
 - Copies .theia file to /plugins/ for a non-remote plugin case
 - Copies unzipped .theia to /plugins/ for a remote plugin case
 - Evaluates Che workspace sidecar config for running Theia plugin as Che remote plugin in a sidecar:
-  - adds an endpoint with random port between 4000 and 6000 and name `port<port>`
+  - adds an endpoint with random port between 4000 and 10000 and name `port<port>`
   - adds env var to workspace-wide env vars with name `THEIA_PLUGIN_REMOTE_ENDPOINT_<plugin_publisher_and_name from package.json>` and value
  `ws://port<port>:<port>`
   - adds env var to sidecar env vars with name
@@ -38,7 +38,7 @@ Downloads VS Code extension from marketplace and:
 - Check content of package.json file in it.
 - Copies unzipped extension to /plugins/
 - Evaluates Che workspace sidecar config for running VS Code extension as Che Theia remote plugin in a sidecar:
-  - adds an endpoint with random port between 4000 and 6000 and name `port<port>`
+  - adds an endpoint with random port between 4000 and 10000 and name `port<port>`
   - adds env var to workspace-wide env vars with name
  `THEIA_PLUGIN_REMOTE_ENDPOINT_<plugin_publisher_and_name from package.json>` and value
  `ws://port<port>:<port>`

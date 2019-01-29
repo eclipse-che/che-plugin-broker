@@ -16,7 +16,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -33,6 +32,7 @@ type Broker struct {
 	common.Broker
 	ioUtil  files.IoUtil
 	storage *storage.Storage
+	rand common.Random
 }
 
 // NewBroker creates Che Theia plugin broker instance
@@ -41,6 +41,7 @@ func NewBroker() *Broker {
 		Broker:  common.NewBroker(),
 		ioUtil:  files.New(),
 		storage: storage.New(),
+		rand : common.NewRand(),
 	}
 }
 
@@ -182,7 +183,7 @@ func (b *Broker) injectTheiaRemotePlugin(meta model.PluginMeta, archiveFolder st
 
 func (b *Broker) containerConfig(image string) *model.Container {
 	c := model.Container{
-		Name:  "theiapluginsidecar" + b.getRndNumberAsString(),
+		Name:  "theiapluginsidecar" + b.rand.String(6),
 		Image: image,
 		Volumes: []model.Volume{
 			{
@@ -206,9 +207,9 @@ func (b *Broker) containerConfig(image string) *model.Container {
 // plugin publisher and plugin name taken from packageJson and replacing all
 // chars matching [^a-z_0-9]+ with a dash character
 func (b *Broker) addPortToTooling(toolingConf *model.ToolingConf, pj *PackageJSON) {
-	port := b.getRndPort()
+	port := b.rand.IntFromRange(4000, 10000)
 	sPort := strconv.Itoa(port)
-	endpointName := "port" + sPort
+	endpointName := b.rand.String(10)
 	var re = regexp.MustCompile(`[^a-zA-Z_0-9]+`)
 	prettyID := re.ReplaceAllString(pj.Publisher+"_"+pj.Name, `_`)
 	theiaEnvVar1 := "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID
@@ -222,13 +223,4 @@ func (b *Broker) addPortToTooling(toolingConf *model.ToolingConf, pj *PackageJSO
 	})
 	toolingConf.Containers[0].Env = append(toolingConf.Containers[0].Env, model.EnvVar{Name: "THEIA_PLUGIN_ENDPOINT_PORT", Value: sPort})
 	toolingConf.WorkspaceEnv = append(toolingConf.WorkspaceEnv, model.EnvVar{Name: theiaEnvVar1, Value: theiaEnvVarValue})
-}
-
-func (b *Broker) getRndNumberAsString() string {
-	port := b.getRndPort() // CHANge name to something meaningful and/OR random
-	return strconv.Itoa(port)
-}
-
-func (b *Broker) getRndPort() int {
-	return 4000 + rand.Intn(6000)
 }

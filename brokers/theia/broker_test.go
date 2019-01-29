@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012-2018 Red Hat, Inc.
+// Copyright (c) 2019 Red Hat, Inc.
 // This program and the accompanying materials are made
 // available under the terms of the Eclipse Public License 2.0
 // which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -33,18 +33,18 @@ import (
 var (
 	bMock      = &cmock.Broker{}
 	uMock      = &fmock.IoUtil{}
-	mockBroker = &TheiaPluginBroker{
-		bMock,
-		uMock,
-		storage.New(),
+	mockBroker = &Broker{
+		Broker:  bMock,
+		ioUtil:  uMock,
+		storage: storage.New(),
 	}
 )
 
 func TestProcessRemotePlugin(t *testing.T) {
-	mockBroker = &TheiaPluginBroker{
-		bMock,
-		uMock,
-		storage.New(),
+	mockBroker = &Broker{
+		Broker:  bMock,
+		ioUtil:  uMock,
+		storage: storage.New(),
 	}
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)
@@ -58,8 +58,10 @@ func TestProcessRemotePlugin(t *testing.T) {
 	}
 	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
 	packageJSON := PackageJSON{
-		Name:      "test-name",
-		Publisher: "test-publisher",
+		PackageJSON: model.PackageJSON{
+			Name:      "test-name",
+			Publisher: "test-publisher",
+		},
 		Engines: engines{
 			CheRuntimeContainer: "test/test:latest",
 		},
@@ -148,10 +150,10 @@ func expectedPlugins(meta model.PluginMeta, port int, image string, cname string
 }
 
 func TestProcessRegularPlugin(t *testing.T) {
-	mockBroker = &TheiaPluginBroker{
-		bMock,
-		uMock,
-		storage.New(),
+	mockBroker = &Broker{
+		Broker:  bMock,
+		ioUtil:  uMock,
+		storage: storage.New(),
 	}
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)
@@ -165,8 +167,10 @@ func TestProcessRegularPlugin(t *testing.T) {
 	}
 	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.theia", meta.ID, meta.Version))
 	packageJSON := PackageJSON{
-		Name:      "test-name",
-		Publisher: "test-publisher",
+		PackageJSON: model.PackageJSON{
+			Name:      "test-name",
+			Publisher: "test-publisher",
+		},
 		Engines: engines{
 			CheRuntimeContainer: "",
 		},
@@ -322,8 +326,10 @@ func TestProcessPluginErrorIfArchiveCopyingFails(t *testing.T) {
 	}
 	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.theia", meta.ID, meta.Version))
 	packageJSON := PackageJSON{
-		Name:      "test-name",
-		Publisher: "test-publisher",
+		PackageJSON: model.PackageJSON{
+			Name:      "test-name",
+			Publisher: "test-publisher",
+		},
 		Engines: engines{
 			CheRuntimeContainer: "",
 		},
@@ -359,8 +365,10 @@ func TestProcessPluginErrorIfArchiveFolderCopyingFails(t *testing.T) {
 	}
 	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
 	packageJSON := PackageJSON{
-		Name:      "test-name",
-		Publisher: "test-publisher",
+		PackageJSON: model.PackageJSON{
+			Name:      "test-name",
+			Publisher: "test-publisher",
+		},
 		Engines: engines{
 			CheRuntimeContainer: "test/test:latest",
 		},

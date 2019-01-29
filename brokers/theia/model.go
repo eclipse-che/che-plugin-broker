@@ -12,9 +12,10 @@
 
 package theia
 
+import "github.com/eclipse/che-plugin-broker/model"
+
 type PackageJSON struct {
-	Name      string  `json:"name" yaml:"name"`
-	Publisher string  `json:"publisher" yaml:"publisher"`
+	model.PackageJSON
 	Engines   engines `json:"engines" yaml:"engines"`
 }
 

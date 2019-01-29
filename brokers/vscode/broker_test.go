@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012-2018 Red Hat, Inc.
+// Copyright (c) 2019 Red Hat, Inc.
 // This program and the accompanying materials are made
 // available under the terms of the Eclipse Public License 2.0
 // which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -26,7 +26,6 @@ import (
 
 	"github.com/eclipse/che-plugin-broker/brokers/test"
 	tests "github.com/eclipse/che-plugin-broker/brokers/test"
-	"github.com/eclipse/che-plugin-broker/brokers/theia"
 	"github.com/eclipse/che-plugin-broker/common"
 	cmock "github.com/eclipse/che-plugin-broker/common/mocks"
 	"github.com/eclipse/che-plugin-broker/files"
@@ -47,7 +46,7 @@ const (
 type mocks struct {
 	cb *cmock.Broker
 	u  *fmock.IoUtil
-	b  *VSCodeExtensionBroker
+	b  *Broker
 }
 
 func initMocks() *mocks {
@@ -56,7 +55,7 @@ func initMocks() *mocks {
 	return &mocks{
 		cb: cb,
 		u:  u,
-		b: &VSCodeExtensionBroker{
+		b: &Broker{
 			cb,
 			u,
 			storage.New(),
@@ -178,7 +177,7 @@ func setUp(workDir string, meta model.PluginMeta, m *mocks) {
 	unarchivedPath := filepath.Join(workDir, "plugin")
 	packageJSONPath := filepath.Join(unarchivedPath, "extension", "package.json")
 	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
-	packageJSON := theia.PackageJSON{
+	packageJSON := model.PackageJSON{
 		Name:      extName,
 		Publisher: extPublisher,
 	}
@@ -195,7 +194,7 @@ func setUp(workDir string, meta model.PluginMeta, m *mocks) {
 }
 
 func TestFetchExtensionInfo(t *testing.T) {
-	tests := []struct {
+	cases := []struct {
 		want    []byte
 		ext     string
 		err     string
@@ -262,12 +261,12 @@ func TestFetchExtensionInfo(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
+	for _, tt := range cases {
 		t.Run("", func(t *testing.T) {
 			if tt.want == nil && tt.err == "" {
 				t.Fatal("Neither want nor error are defined")
 			}
-			var b = &VSCodeExtensionBroker{
+			var b = &Broker{
 				common.NewBroker(),
 				files.New(),
 				storage.New(),
@@ -294,7 +293,7 @@ func TestFetchExtensionInfo(t *testing.T) {
 }
 
 func TestFindAssetURL(t *testing.T) {
-	tests := []struct {
+	cases := []struct {
 		response []byte
 		want     string
 		err      string
@@ -460,7 +459,7 @@ func TestFindAssetURL(t *testing.T) {
 			     }`),
 		},
 	}
-	for _, tt := range tests {
+	for _, tt := range cases {
 		t.Run("", func(t *testing.T) {
 			if tt.want == "" && tt.err == "" {
 				t.Fatal("Neither want nor error are defined")

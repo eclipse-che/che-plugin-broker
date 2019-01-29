@@ -22,13 +22,16 @@ const lettersNum = len(letterBytes)
 
 // Random generates random numbers and strings
 type Random interface {
+	// Int returns int from range 0..n
 	Int(n int) int
+
+	// IntFromRange returns int from range from..to
 	IntFromRange(from int, to int) int
+
+	// String returns string of specified length with random lower-case letters
 	String(length int) string
 }
 
-// TODO docs
-// TODO add mocks
 type RandomImpl struct {
 	rand    *rand.Rand
 }

@@ -50,6 +50,14 @@ Downloads VS Code extension from marketplace and:
 
 ## Development
 
+Mocks are generated from interfaces using library [mockery](https://github.com/vektra/mockery)
+To add new mock implementation for an interface or regenerate to an existing one use following
+command when current dir is location of the folder containing the interface:
+
+```shell
+mockery -name=NameOfAnInterfaceToMock
+```
+
 ### Build
 
 - build all the code:

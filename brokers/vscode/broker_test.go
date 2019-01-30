@@ -88,7 +88,7 @@ func TestProcessPlugin(t *testing.T) {
 		Version: pluginVersion,
 		Attributes: map[string]string{
 			"extension":       "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
-			"container-image": image,
+			"containerImage": image,
 		},
 	}
 
@@ -111,7 +111,7 @@ func TestProcessPluginNoExtension(t *testing.T) {
 		ID:      pluginID,
 		Version: pluginVersion,
 		Attributes: map[string]string{
-			"container-image": image,
+			"containerImage": image,
 		},
 	}
 
@@ -140,7 +140,7 @@ func TestProcessPluginNoImage(t *testing.T) {
 
 	err := m.b.processPlugin(meta)
 
-	assert.EqualError(t, err, "VS Code extension field 'container-image' is missing in description of plugin tid:tv")
+	assert.EqualError(t, err, "VS Code extension field 'containerImage' is missing in description of plugin tid:tv")
 }
 
 func TestProcessPluginNoAttributes(t *testing.T) {

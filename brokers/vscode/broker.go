@@ -96,9 +96,9 @@ func (broker *VSCodeExtensionBroker) processPlugin(meta model.PluginMeta) error 
 		return fmt.Errorf("VS Code extension field 'extension' is missing in description of plugin %s:%s", meta.ID, meta.Version)
 	}
 	url := meta.Attributes["extension"]
-	image := meta.Attributes["container-image"]
+	image := meta.Attributes["containerImage"]
 	if image == "" {
-		return fmt.Errorf("VS Code extension field 'container-image' is missing in description of plugin %s:%s", meta.ID, meta.Version)
+		return fmt.Errorf("VS Code extension field 'containerImage' is missing in description of plugin %s:%s", meta.ID, meta.Version)
 	}
 
 	workDir, err := broker.ioUtil.TempDir("", "vscode-extension-broker")

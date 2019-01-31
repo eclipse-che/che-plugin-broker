@@ -80,7 +80,7 @@ type EnvVar struct {
 
 type EditorCommand struct {
 	Name       string   `json:"name" yaml:"name"`
-	WorkingDir string   `json:"working-dir" yaml:"working-dir"`
+	WorkingDir string   `json:"workingDir" yaml:"workingDir"`
 	Command    []string `json:"command" yaml:"command"`
 }
 
@@ -97,10 +97,10 @@ type Container struct {
 	Name           string          `json:"name" yaml:"name"`
 	Image          string          `json:"image" yaml:"image"`
 	Env            []EnvVar        `json:"env" yaml:"env"`
-	EditorCommands []EditorCommand `json:"editor-commands" yaml:"editor-commands"`
+	EditorCommands []EditorCommand `json:"editorCommands" yaml:"editorCommands"`
 	Volumes        []Volume        `json:"volumes" yaml:"volumes"`
 	Ports          []ExposedPort   `json:"ports" yaml:"ports"`
-	MemoryLimit    string          `json:"memory-limit" yaml:"memory-limit"`
+	MemoryLimit    string          `json:"memoryLimit" yaml:"memoryLimit"`
 	MountSources   bool            `json:"mountSources" yaml:"mountSources"`
 }
 
@@ -113,7 +113,7 @@ type ToolingConf struct {
 	Endpoints    []Endpoint  `json:"endpoints" yaml:"endpoints"`
 	Containers   []Container `json:"containers" yaml:"containers"`
 	Editors      []Editor    `json:"editors" yaml:"editors"`
-	WorkspaceEnv []EnvVar    `json:"workspace-env" yaml:"workspace-env"`
+	WorkspaceEnv []EnvVar    `json:"workspaceEnv" yaml:"workspaceEnv"`
 }
 
 type ChePlugin struct {
@@ -126,7 +126,7 @@ type ChePlugin struct {
 	Endpoints    []Endpoint  `json:"endpoints" yaml:"endpoints"`
 	Containers   []Container `json:"containers" yaml:"containers"`
 	Editors      []Editor    `json:"editors" yaml:"editors"`
-	WorkspaceEnv []EnvVar    `json:"workspace-env" yaml:"workspace-env"`
+	WorkspaceEnv []EnvVar    `json:"workspaceEnv" yaml:"workspaceEnv"`
 }
 
 type CheDependency struct {

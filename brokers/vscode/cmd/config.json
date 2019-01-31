@@ -9,7 +9,7 @@
     "icon": "https://www.eclipse.org/che/images/ico/16x16.png",
     "attributes": {
 	"extension": "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
-	"container-image": "garagatyi/remotetheia:kubectl"
+	"containerImage": "garagatyi/remotetheia:kubectl"
     }
 }
 ]

@@ -176,7 +176,7 @@ func (b *Broker) fetchExtensionInfo(extension string, meta model.PluginMeta) ([]
 	if err != nil {
 		return nil, fmt.Errorf("VS Code extension downloading failed %s:%s. Error: %s", meta.ID, meta.Version, err)
 	}
-	defer ignoreError(resp.Body.Close())
+	defer resp.Body.Close()
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("VS Code extension downloading failed %s:%s. Error: %s", meta.ID, meta.Version, err)
@@ -188,8 +188,6 @@ func (b *Broker) fetchExtensionInfo(extension string, meta model.PluginMeta) ([]
 
 	return body, nil
 }
-
-func ignoreError(err error) {}
 
 func findAssetURL(response []byte, meta model.PluginMeta) (string, error) {
 	obj := &marketplaceResponse{}

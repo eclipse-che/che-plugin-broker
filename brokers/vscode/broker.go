@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Red Hat, Inc.
+// Copyright (c) 2018-2019 Red Hat, Inc.
 // This program and the accompanying materials are made
 // available under the terms of the Eclipse Public License 2.0
 // which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -16,16 +16,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"path/filepath"
+	"regexp"
+
 	"github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-plugin-broker/brokers/theia"
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/files"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
-	"io/ioutil"
-	"net/http"
-	"path/filepath"
-	"regexp"
 )
 
 const marketplace = "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery"

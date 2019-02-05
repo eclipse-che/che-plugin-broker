@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Red Hat, Inc.
+// Copyright (c) 2018-2019 Red Hat, Inc.
 // This program and the accompanying materials are made
 // available under the terms of the Eclipse Public License 2.0
 // which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -15,13 +15,14 @@ package theia
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
+
 	"github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/files"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
-	"io/ioutil"
-	"path/filepath"
 )
 
 // Broker is used to process .theia and remote plugins
@@ -29,7 +30,7 @@ type Broker struct {
 	common.Broker
 	ioUtil  files.IoUtil
 	storage *storage.Storage
-	rand common.Random
+	rand    common.Random
 }
 
 // NewBroker creates Che Theia plugin broker instance
@@ -38,7 +39,7 @@ func NewBroker() *Broker {
 		Broker:  common.NewBroker(),
 		ioUtil:  files.New(),
 		storage: storage.New(),
-		rand : common.NewRand(),
+		rand:    common.NewRand(),
 	}
 }
 

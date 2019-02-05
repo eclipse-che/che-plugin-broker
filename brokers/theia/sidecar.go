@@ -13,10 +13,11 @@
 package theia
 
 import (
-	"github.com/eclipse/che-plugin-broker/common"
-	"github.com/eclipse/che-plugin-broker/model"
 	"regexp"
 	"strconv"
+
+	"github.com/eclipse/che-plugin-broker/common"
+	"github.com/eclipse/che-plugin-broker/model"
 )
 
 func GenerateSidecarTooling(image string, pj model.PackageJSON, rand common.Random) *model.ToolingConf {
@@ -59,8 +60,8 @@ func addPortToTooling(toolingConf *model.ToolingConf, pj model.PackageJSON, rand
 	endpointName := rand.String(10)
 	var re = regexp.MustCompile(`[^a-zA-Z_0-9]+`)
 	prettyID := re.ReplaceAllString(pj.Publisher+"_"+pj.Name, `_`)
-	theiaEnvVar1 := "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID
-	theiaEnvVarValue := "ws://" + endpointName + ":" + sPort
+	sidecarTheiaEnvVarName := "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID
+	sidecarTheiaEnvVarValue := "ws://" + endpointName + ":" + sPort
 
 	toolingConf.Containers[0].Ports = append(toolingConf.Containers[0].Ports, model.ExposedPort{ExposedPort: port})
 	toolingConf.Endpoints = append(toolingConf.Endpoints, model.Endpoint{
@@ -69,5 +70,5 @@ func addPortToTooling(toolingConf *model.ToolingConf, pj model.PackageJSON, rand
 		TargetPort: port,
 	})
 	toolingConf.Containers[0].Env = append(toolingConf.Containers[0].Env, model.EnvVar{Name: "THEIA_PLUGIN_ENDPOINT_PORT", Value: sPort})
-	toolingConf.WorkspaceEnv = append(toolingConf.WorkspaceEnv, model.EnvVar{Name: theiaEnvVar1, Value: theiaEnvVarValue})
+	toolingConf.WorkspaceEnv = append(toolingConf.WorkspaceEnv, model.EnvVar{Name: sidecarTheiaEnvVarName, Value: sidecarTheiaEnvVarValue})
 }

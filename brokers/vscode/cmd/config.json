@@ -1,5 +1,5 @@
 [
-{
+  {
     "id": "org.eclipse.che.vscode.k8s",
     "version": "1.0.0",
     "type": "VS Code extension",
@@ -8,11 +8,23 @@
     "description": "k8s extension",
     "icon": "https://www.eclipse.org/che/images/ico/16x16.png",
     "attributes": {
-	"extension": "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
-	"containerImage": "garagatyi/remotetheia:kubectl"
+      "extension": "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+      "containerImage": "garagatyi/remotetheia:kubectl"
     }
-},
-{
+  },
+  {
+    "id": "org.eclipse.che.vscode.local.k8s",
+    "version": "1.0.0",
+    "type": "VS Code local extension",
+    "name": "k8s-local-plugin",
+    "title": "k8s local extension",
+    "description": "k8s local extension",
+    "icon": "https://www.eclipse.org/che/images/ico/16x16.png",
+    "attributes": {
+      "extension": "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools"
+    }
+  },
+  {
     "id": "ms-vscode.typescript",
     "version": "1.0.0",
     "type": "VS Code extension",
@@ -22,7 +34,17 @@
     "icon": "https://www.eclipse.org/che/images/ico/16x16.png",
     "url": "https://github.com/tolusha/ms-code.typescript/releases/download/1.0.0/che-typescript-language.vsix",
     "attributes": {
-	"containerImage": "garagatyi/remotetheia:kubectl"
+      "containerImage": "garagatyi/remotetheia:kubectl"
     }
-}
+  },
+  {
+    "id": "ms-vscode.typescript.local",
+    "version": "1.0.0",
+    "type": "VS Code extension local",
+    "name": "Typescript",
+    "title": "Typescript language features local",
+    "description": "Typescript language features local",
+    "icon": "https://www.eclipse.org/che/images/ico/16x16.png",
+    "url": "https://github.com/tolusha/ms-code.typescript/releases/download/1.0.0/che-typescript-language.vsix"
+  }
 ]

@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/eclipse/che-go-jsonrpc"
+	jsonrpc "github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-plugin-broker/brokers/theia"
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/files"
@@ -39,7 +39,7 @@ type Broker struct {
 	ioUtil  files.IoUtil
 	Storage *storage.Storage
 	client  *http.Client
-	rand common.Random
+	rand    common.Random
 }
 
 // NewBroker creates Che VS Code extension broker instance
@@ -49,7 +49,7 @@ func NewBroker() *Broker {
 		ioUtil:  files.New(),
 		Storage: storage.New(),
 		client:  &http.Client{},
-		rand : common.NewRand(),
+		rand:    common.NewRand(),
 	}
 }
 
@@ -94,10 +94,19 @@ func (b *Broker) PushEvents(tun *jsonrpc.Tunnel) {
 
 func (b *Broker) processPlugin(meta model.PluginMeta) error {
 	b.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
-	if meta.Attributes == nil || meta.Attributes["extension"] == "" {
-		return fmt.Errorf("VS Code extension field 'extension' is missing in description of plugin %s:%s", meta.ID, meta.Version)
+	if meta.Attributes == nil {
+		return fmt.Errorf("'attributes' are not found in VS Code extension description of the plugin %s:%s", meta.ID, meta.Version)
 	}
-	url := meta.Attributes["extension"]
+
+	url := meta.URL
+	extension := meta.Attributes["extension"]
+
+	if url == "" && extension == "" {
+		return fmt.Errorf("Neither 'extension' no 'url' attributes found in VS Code extension description of the plugin %s:%s", meta.ID, meta.Version)
+	} else if url != "" && extension != "" {
+		return fmt.Errorf("VS Code extension description of the plugin %s:%s might contain either 'extension' or 'url' attributes, but both of them are found", meta.ID, meta.Version)
+	}
+
 	image := meta.Attributes["containerImage"]
 	if image == "" {
 		return fmt.Errorf("VS Code extension field 'containerImage' is missing in description of plugin %s:%s", meta.ID, meta.Version)
@@ -112,14 +121,22 @@ func (b *Broker) processPlugin(meta model.PluginMeta) error {
 	unpackedPath := filepath.Join(workDir, "plugin")
 
 	// Download an archive
-	b.PrintDebug("Downloading archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
-	err = b.download(url, archivePath, meta)
-	if err != nil {
-		return err
+	if url != "" {
+		b.PrintDebug("Downloading archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
+		err = b.ioUtil.Download(url, archivePath)
+		if err != nil {
+			return err
+		}
+	} else {
+		b.PrintDebug("Downloading extension '%s' for plugin '%s:%s' to '%s'", extension, meta.ID, meta.Version, archivePath)
+		err = b.download(extension, archivePath, meta)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Unzip it
-	b.PrintDebug("Unzipping archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, unpackedPath)
+	b.PrintDebug("Unzipping archive '%s' for plugin '%s:%s' to '%s'", archivePath, meta.ID, meta.Version, unpackedPath)
 	err = b.ioUtil.Unzip(archivePath, unpackedPath)
 	if err != nil {
 		return err

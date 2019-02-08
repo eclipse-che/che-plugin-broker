@@ -14,6 +14,7 @@ package vscode
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -37,32 +38,33 @@ const (
 	extName       = "Test-name"
 	extPublisher  = "Test-publisher"
 	vsixURL       = "http://test.url"
+	vsixBrokenURL = "http://broken.test.url"
 	pluginID      = "tid"
 	pluginVersion = "tv"
 	image         = "test/test:tag"
 )
 
 type mocks struct {
-	cb *cmock.Broker
-	u  *fmock.IoUtil
-	b  *Broker
+	cb       *cmock.Broker
+	u        *fmock.IoUtil
+	b        *Broker
 	randMock *cmock.Random
 }
 
 func initMocks() *mocks {
 	cb := &cmock.Broker{}
 	u := &fmock.IoUtil{}
-	randMock   := &cmock.Random{}
+	randMock := &cmock.Random{}
 	return &mocks{
-		cb: cb,
-		u:  u,
+		cb:       cb,
+		u:        u,
 		randMock: randMock,
 		b: &Broker{
 			Broker:  cb,
 			ioUtil:  u,
 			Storage: storage.New(),
 			client:  test.NewTestHTTPClient(okMarketplaceResponse),
-			rand: randMock,
+			rand:    randMock,
 		},
 	}
 }
@@ -83,19 +85,19 @@ func TestStart(t *testing.T) {
 	mocks.u.AssertExpectations(t)
 }
 
-func TestProcessPlugin(t *testing.T) {
+func TestProcessPluginWithExtension(t *testing.T) {
 	m := initMocks()
 	meta := model.PluginMeta{
 		ID:      pluginID,
 		Version: pluginVersion,
 		Attributes: map[string]string{
-			"extension":       "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+			"extension":      "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
 			"containerImage": image,
 		},
 	}
 
 	workDir := tests.CreateTestWorkDir()
-	setUp(workDir, meta, m)
+	setUpSuccessfulCase(workDir, meta, m)
 	defer tests.RemoveAll(workDir)
 
 	err := m.b.processPlugin(meta)
@@ -113,7 +115,91 @@ func TestProcessPlugin(t *testing.T) {
 	m.u.AssertExpectations(t)
 }
 
-func TestProcessPluginNoExtension(t *testing.T) {
+func TestProcessPluginWithUrl(t *testing.T) {
+	m := initMocks()
+	meta := model.PluginMeta{
+		ID:      pluginID,
+		Version: pluginVersion,
+		URL:     vsixURL,
+		Attributes: map[string]string{
+			"containerImage": image,
+		},
+	}
+
+	workDir := tests.CreateTestWorkDir()
+	setUpSuccessfulCase(workDir, meta, m)
+	defer tests.RemoveAll(workDir)
+
+	err := m.b.processPlugin(meta)
+
+	assert.Nil(t, err)
+
+	expected := expectedPlugins()
+	pluginsPointer, err := m.b.Storage.Plugins()
+	assert.Nil(t, err)
+	assert.NotNil(t, pluginsPointer)
+	plugins := *pluginsPointer
+	assert.Equal(t, expected, plugins)
+
+	m.cb.AssertExpectations(t)
+	m.u.AssertExpectations(t)
+}
+
+func TestProcessPluginBrokenUrl(t *testing.T) {
+	m := initMocks()
+	meta := model.PluginMeta{
+		ID:      pluginID,
+		Version: pluginVersion,
+		URL:     vsixBrokenURL,
+		Attributes: map[string]string{
+			"containerImage": image,
+		},
+	}
+
+	workDir := tests.CreateTestWorkDir()
+
+	setUpDownloadFailureCase(workDir, meta, m)
+	defer tests.RemoveAll(workDir)
+	err := m.b.processPlugin(meta)
+
+	assert.NotNil(t, err)
+	assert.EqualError(t, err, "Failed to download plugin")
+
+	pluginsPointer, err := m.b.Storage.Plugins()
+	assert.Nil(t, err)
+	assert.NotNil(t, pluginsPointer)
+	plugins := *pluginsPointer
+	assert.Equal(t, 0, len(plugins))
+
+	m.cb.AssertExpectations(t)
+	m.u.AssertExpectations(t)
+
+	m.u.AssertNotCalled(t, "Unzip", mock.AnythingOfType("string"), mock.AnythingOfType("string"))
+	m.u.AssertNotCalled(t, "CopyResource", mock.AnythingOfType("string"), mock.AnythingOfType("string"))
+}
+
+func TestProcessPluginWithExtensionAndUrl(t *testing.T) {
+	m := initMocks()
+	meta := model.PluginMeta{
+		ID:      pluginID,
+		Version: pluginVersion,
+		URL:     vsixURL,
+		Attributes: map[string]string{
+			"extension":      "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+			"containerImage": image,
+		},
+	}
+
+	workDir := tests.CreateTestWorkDir()
+	setUpSuccessfulCase(workDir, meta, m)
+	defer tests.RemoveAll(workDir)
+
+	err := m.b.processPlugin(meta)
+
+	assert.EqualError(t, err, "VS Code extension description of the plugin tid:tv might contain either 'extension' or 'url' attributes, but both of them are found")
+}
+
+func TestProcessPluginNoExtensionNoUrl(t *testing.T) {
 	m := initMocks()
 	meta := model.PluginMeta{
 		ID:      pluginID,
@@ -124,12 +210,12 @@ func TestProcessPluginNoExtension(t *testing.T) {
 	}
 
 	workDir := tests.CreateTestWorkDir()
-	setUp(workDir, meta, m)
+	setUpSuccessfulCase(workDir, meta, m)
 	defer tests.RemoveAll(workDir)
 
 	err := m.b.processPlugin(meta)
 
-	assert.EqualError(t, err, "VS Code extension field 'extension' is missing in description of plugin tid:tv")
+	assert.EqualError(t, err, "Neither 'extension' no 'url' attributes found in VS Code extension description of the plugin tid:tv")
 }
 
 func TestProcessPluginNoImage(t *testing.T) {
@@ -143,7 +229,7 @@ func TestProcessPluginNoImage(t *testing.T) {
 	}
 
 	workDir := tests.CreateTestWorkDir()
-	setUp(workDir, meta, m)
+	setUpSuccessfulCase(workDir, meta, m)
 	defer tests.RemoveAll(workDir)
 
 	err := m.b.processPlugin(meta)
@@ -159,12 +245,12 @@ func TestProcessPluginNoAttributes(t *testing.T) {
 	}
 
 	workDir := tests.CreateTestWorkDir()
-	setUp(workDir, meta, m)
+	setUpSuccessfulCase(workDir, meta, m)
 	defer tests.RemoveAll(workDir)
 
 	err := m.b.processPlugin(meta)
 
-	assert.EqualError(t, err, "VS Code extension field 'extension' is missing in description of plugin tid:tv")
+	assert.EqualError(t, err, "'attributes' are not found in VS Code extension description of the plugin tid:tv")
 }
 
 func expectedPlugins() []model.ChePlugin {
@@ -218,7 +304,7 @@ func expectedPlugins() []model.ChePlugin {
 	return expectedPlugins
 }
 
-func setUp(workDir string, meta model.PluginMeta, m *mocks) {
+func setUpSuccessfulCase(workDir string, meta model.PluginMeta, m *mocks) {
 	archivePath := filepath.Join(workDir, "pluginArchive")
 	unarchivedPath := filepath.Join(workDir, "plugin")
 	packageJSONPath := filepath.Join(unarchivedPath, "extension", "package.json")
@@ -236,6 +322,18 @@ func setUp(workDir string, meta model.PluginMeta, m *mocks) {
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	m.u.On("Download", vsixURL, archivePath).Return(nil).Once()
+	m.u.On("TempDir", "", "vscode-extension-broker").Return(workDir, nil).Once()
+	m.randMock.On("Int", 6).Return(42).Once()
+	m.randMock.On("IntFromRange", 4000, 10000).Return(4242).Once()
+	m.randMock.On("String", 10).Return("randomEndpointName").Once()
+	m.randMock.On("String", 6).Return("randomContainerSuffix").Once()
+}
+
+func setUpDownloadFailureCase(workDir string, meta model.PluginMeta, m *mocks) {
+	archivePath := filepath.Join(workDir, "pluginArchive")
+	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
+	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
+	m.u.On("Download", vsixBrokenURL, archivePath).Return(errors.New("Failed to download plugin")).Once()
 	m.u.On("TempDir", "", "vscode-extension-broker").Return(workDir, nil).Once()
 	m.randMock.On("Int", 6).Return(42).Once()
 	m.randMock.On("IntFromRange", 4000, 10000).Return(4242).Once()
@@ -321,7 +419,7 @@ func TestFetchExtensionInfo(t *testing.T) {
 				ioUtil:  files.New(),
 				Storage: storage.New(),
 				client:  test.NewTestHTTPClient(tt.roundTF),
-				rand : common.NewRand(),
+				rand:    common.NewRand(),
 			}
 			got, err := b.fetchExtensionInfo(tt.ext, model.PluginMeta{
 				ID:      "tid",

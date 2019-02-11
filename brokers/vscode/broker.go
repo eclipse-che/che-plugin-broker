@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	jsonrpc "github.com/eclipse/che-go-jsonrpc"
+	"github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-plugin-broker/brokers/theia"
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/files"
@@ -94,22 +94,17 @@ func (b *Broker) PushEvents(tun *jsonrpc.Tunnel) {
 
 func (b *Broker) processPlugin(meta model.PluginMeta) error {
 	b.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
-	if meta.Attributes == nil {
-		return fmt.Errorf("'attributes' are not found in VS Code extension description of the plugin %s:%s", meta.ID, meta.Version)
-	}
 
 	url := meta.URL
-	extension := meta.Attributes["extension"]
+	extension := ""
+	if meta.Attributes != nil {
+		extension = meta.Attributes["extension"]
+	}
 
 	if url == "" && extension == "" {
 		return fmt.Errorf("Neither 'extension' no 'url' attributes found in VS Code extension description of the plugin %s:%s", meta.ID, meta.Version)
 	} else if url != "" && extension != "" {
 		return fmt.Errorf("VS Code extension description of the plugin %s:%s might contain either 'extension' or 'url' attributes, but both of them are found", meta.ID, meta.Version)
-	}
-
-	image := meta.Attributes["containerImage"]
-	if image == "" {
-		return fmt.Errorf("VS Code extension field 'containerImage' is missing in description of plugin %s:%s", meta.ID, meta.Version)
 	}
 
 	workDir, err := b.ioUtil.TempDir("", "vscode-extension-broker")
@@ -118,7 +113,6 @@ func (b *Broker) processPlugin(meta model.PluginMeta) error {
 	}
 
 	archivePath := filepath.Join(workDir, "pluginArchive")
-	unpackedPath := filepath.Join(workDir, "plugin")
 
 	// Download an archive
 	if url != "" {
@@ -135,9 +129,31 @@ func (b *Broker) processPlugin(meta model.PluginMeta) error {
 		}
 	}
 
+	image := meta.Attributes["containerImage"]
+	if image == "" {
+		// regular plugin
+		return b.injectLocalPlugin(meta, archivePath)
+	}
+	// remote plugin
+	return b.injectRemotePlugin(meta, image, archivePath, workDir)
+}
+
+func (b *Broker) injectLocalPlugin(meta model.PluginMeta, archivePath string) error {
+	b.PrintDebug("Copying VS Code extension '%s:%s'", meta.ID, meta.Version)
+	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.vsix", meta.ID, meta.Version))
+	err := b.ioUtil.CopyFile(archivePath, pluginPath)
+	if err != nil {
+		return err
+	}
+	tooling := &model.ToolingConf{}
+	return b.Storage.AddPlugin(&meta, tooling)
+}
+
+func (b *Broker) injectRemotePlugin(meta model.PluginMeta, image string, archivePath string, workDir string) error {
 	// Unzip it
+	unpackedPath := filepath.Join(workDir, "plugin")
 	b.PrintDebug("Unzipping archive '%s' for plugin '%s:%s' to '%s'", archivePath, meta.ID, meta.Version, unpackedPath)
-	err = b.ioUtil.Unzip(archivePath, unpackedPath)
+	err := b.ioUtil.Unzip(archivePath, unpackedPath)
 	if err != nil {
 		return err
 	}
@@ -147,13 +163,9 @@ func (b *Broker) processPlugin(meta model.PluginMeta) error {
 		return err
 	}
 
-	return b.injectRemotePlugin(meta, unpackedPath, image, pj)
-}
-
-func (b *Broker) injectRemotePlugin(meta model.PluginMeta, unpackedPath string, image string, pj *model.PackageJSON) error {
 	pluginFolderPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
 	b.PrintDebug("Copying VS Code extension '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, unpackedPath, pluginFolderPath)
-	err := b.ioUtil.CopyResource(unpackedPath, pluginFolderPath)
+	err = b.ioUtil.CopyResource(unpackedPath, pluginFolderPath)
 	if err != nil {
 		return err
 	}

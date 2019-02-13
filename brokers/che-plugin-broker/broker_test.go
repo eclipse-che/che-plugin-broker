@@ -476,7 +476,7 @@ func TestDepFileIsFolderError(t *testing.T) {
 
 func TestDepFileIsNotReadableError(t *testing.T) {
 	dir := tests.CreateTestWorkDir()
-	tests.CreateFile(dir, depFileName, 0333)
+	tests.CreateFile(dir, depFileName, 0111)
 	defer tests.RemoveAll(dir)
 
 	got, err := broker.parseDepsFile(dir)

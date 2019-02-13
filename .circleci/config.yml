@@ -33,3 +33,4 @@ jobs:
       - run: cd ../../vscode/cmd
       - run: CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o vscode-extension-broker main.go
       - run: cd ../../init/cmd
+      - run: CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o init-plugin-broker main.go

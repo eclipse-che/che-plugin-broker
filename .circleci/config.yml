@@ -22,7 +22,8 @@ jobs:
       - checkout
 
       # specify any bash command here prefixed with `run: `
-      - run: wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $GOPATH/bin/ -d v1.10.2
+      - run: wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -d v1.10.2
+      - run: sudo cp ./bin/golangci-lint $GOPATH/bin/
       - run: CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo ./...
       - run: go test -v -race ./...
       - run: golangci-lint run -v

@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/eclipse/che-plugin-broker.svg?style=svg)](https://circleci.com/gh/eclipse/che-plugin-broker)
+
 # This repo contains implementations of several Che plugin brokers
 
 ## che-plugin-broker

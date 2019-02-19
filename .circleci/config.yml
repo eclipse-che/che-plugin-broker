@@ -7,6 +7,7 @@ jobs:
     docker:
       # specify the version
       - image: golang:1.10
+        user: 1000
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images

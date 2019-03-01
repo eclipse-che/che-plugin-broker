@@ -15,11 +15,13 @@ package vscode
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"regexp"
+	"time"
 
 	"github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-plugin-broker/brokers/theia"
@@ -116,13 +118,15 @@ func (b *Broker) processPlugin(meta model.PluginMeta) error {
 
 	// Download an archive
 	if url != "" {
-		b.PrintDebug("Downloading archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
+		b.PrintDebug("Downloading VS Code extension archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
+		b.PrintInfo("Downloading VS Code extension for plugin '%s:%s'", meta.ID, meta.Version)
 		err = b.downloadArchive(url, archivePath)
 		if err != nil {
 			return err
 		}
 	} else {
-		b.PrintDebug("Downloading extension '%s' for plugin '%s:%s' to '%s'", extension, meta.ID, meta.Version, archivePath)
+		b.PrintDebug("Downloading VS Code extension '%s' for plugin '%s:%s' to '%s'", extension, meta.ID, meta.Version, archivePath)
+		b.PrintInfo("Downloading VS Code extension for plugin '%s:%s'", meta.ID, meta.Version)
 		err = b.downloadExtension(extension, archivePath, meta)
 		if err != nil {
 			return err
@@ -188,7 +192,30 @@ func (b *Broker) downloadExtension(extension string, dest string, meta model.Plu
 }
 
 func (b *Broker) downloadArchive(URL string, dest string) error {
-	return b.ioUtil.Download(URL, dest)
+	err := b.ioUtil.Download(URL, dest)
+	retries := 5
+	for i := 1; i <= retries && isRateLimitError(err); i++ {
+		b.PrintInfo("VS Code marketplace access rate limit reached. Download of VS Code extension is blocked from current IP address. Retry #%v from 5 in 1 minute", i)
+		time.Sleep(1 * time.Minute)
+		err = b.ioUtil.Download(URL, dest)
+	}
+
+	if isRateLimitError(err) {
+		err = errors.New("VS Code marketplace access rate limit reached. Download of VS Code extension is blocked from current IP address. 5 retries failed in 5 minutes. Giving up")
+	}
+
+	return err
+}
+
+func isRateLimitError(err error) bool {
+	if err == nil {
+		return false
+	}
+	herr, ok := err.(*files.HTTPError)
+	if ok {
+		return herr.StatusCode == http.StatusTooManyRequests
+	}
+	return false
 }
 
 func (b *Broker) fetchExtensionInfo(extension string, meta model.PluginMeta) ([]byte, error) {

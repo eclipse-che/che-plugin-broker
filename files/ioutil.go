@@ -17,6 +17,7 @@ import (
 	"archive/zip"
 	"bufio"
 	"compress/gzip"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -57,6 +58,10 @@ func (util *impl) Download(URL string, destPath string) error {
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return NewHTTPError(resp, fmt.Sprintf("Downloading %s failed. Status code %v", URL, resp.StatusCode))
+	}
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {

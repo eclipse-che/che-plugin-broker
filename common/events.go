@@ -65,7 +65,9 @@ func (broker *brokerImpl) PrintPlan(metas []model.PluginMeta) {
 }
 
 func (broker *brokerImpl) PrintDebug(format string, v ...interface{}) {
-	log.Printf(format, v...)
+	if !cfg.PrintEventsOnly {
+		log.Printf(format, v...)
+	}
 }
 
 func (broker *brokerImpl) PrintInfo(format string, v ...interface{}) {

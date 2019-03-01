@@ -43,6 +43,11 @@ var (
 
 	// DisablePushingToEndpoint disables pushing anything to the endpoint
 	DisablePushingToEndpoint bool
+
+	// PrintOnlyEvents disable output of broker logs and instead prints events that supposed
+	// to be sent to endpoint. This helps imitate what info about plugin brokering
+	// a user would see
+	PrintEventsOnly bool
 )
 
 func init() {
@@ -73,7 +78,7 @@ func init() {
 		&AuthEnabled,
 		"enable-auth",
 		defaultAuthEnabled,
-		"whether authenticate requests on workspace master before allowing them to proceed."+
+		"Whether authenticate requests on workspace master before allowing them to proceed."+
 			"By default the value from 'CHE_AUTH_ENABLED' environment variable is used or `false` if it is missing",
 	)
 	flag.StringVar(
@@ -86,8 +91,15 @@ func init() {
 		&DisablePushingToEndpoint,
 		"disable-push",
 		false,
-		"whether pushing of data to endpoint should be disabled. "+
-			"`false` by default. Existing for testing and debugging purposes",
+		"Whether pushing of data and logs to endpoint should be disabled. "+
+			"`false` by default. Needed for testing and debugging purposes",
+	)
+	flag.BoolVar(
+		&PrintEventsOnly,
+		"print-events-only",
+		false,
+		"Output events that are usually sent Che master instead of regular logs to imitate what a user can see."+
+			"`false` by default. Needed for testing and debugging purposes",
 	)
 }
 
@@ -123,6 +135,9 @@ func Parse() {
 
 // Print prints configuration.
 func Print() {
+	if PrintEventsOnly {
+		return
+	}
 	log.Print("Broker configuration")
 	if !DisablePushingToEndpoint {
 		log.Printf("  Push endpoint: %s", PushStatusesEndpoint)

@@ -61,7 +61,7 @@ func CreateFileByPath(path string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer to.Close()
+	defer files.Close(to)
 
 	err = os.Chmod(path, 0655)
 	if err != nil {
@@ -75,7 +75,7 @@ func CreateFile(parent string, name string, m os.FileMode) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer to.Close()
+	defer files.Close(to)
 
 	err = os.Chmod(path, m)
 	if err != nil {

@@ -237,7 +237,7 @@ func (b *Broker) fetchExtensionInfo(extension string, meta model.PluginMeta) ([]
 	if err != nil {
 		return nil, fmt.Errorf("VS Code extension downloading failed %s:%s. Error: %s", meta.ID, meta.Version, err)
 	}
-	defer resp.Body.Close()
+	defer files.Close(resp.Body)
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("VS Code extension downloading failed %s:%s. Error: %s", meta.ID, meta.Version, err)

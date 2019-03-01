@@ -117,13 +117,13 @@ func (b *Broker) processPlugin(meta model.PluginMeta) error {
 	// Download an archive
 	if url != "" {
 		b.PrintDebug("Downloading archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
-		err = b.ioUtil.Download(url, archivePath)
+		err = b.downloadArchive(url, archivePath)
 		if err != nil {
 			return err
 		}
 	} else {
 		b.PrintDebug("Downloading extension '%s' for plugin '%s:%s' to '%s'", extension, meta.ID, meta.Version, archivePath)
-		err = b.download(extension, archivePath, meta)
+		err = b.downloadExtension(extension, archivePath, meta)
 		if err != nil {
 			return err
 		}
@@ -173,7 +173,7 @@ func (b *Broker) injectRemotePlugin(meta model.PluginMeta, image string, archive
 	return b.Storage.AddPlugin(&meta, tooling)
 }
 
-func (b *Broker) download(extension string, dest string, meta model.PluginMeta) error {
+func (b *Broker) downloadExtension(extension string, dest string, meta model.PluginMeta) error {
 	response, err := b.fetchExtensionInfo(extension, meta)
 	if err != nil {
 		return err
@@ -184,6 +184,10 @@ func (b *Broker) download(extension string, dest string, meta model.PluginMeta) 
 		return err
 	}
 
+	return b.downloadArchive(URL, dest)
+}
+
+func (b *Broker) downloadArchive(URL string, dest string) error {
 	return b.ioUtil.Download(URL, dest)
 }
 

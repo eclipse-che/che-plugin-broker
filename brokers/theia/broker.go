@@ -20,15 +20,15 @@ import (
 
 	"github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-plugin-broker/common"
-	"github.com/eclipse/che-plugin-broker/files"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
+	"github.com/eclipse/che-plugin-broker/utils"
 )
 
 // Broker is used to process .theia and remote plugins
 type Broker struct {
 	common.Broker
-	ioUtil  files.IoUtil
+	ioUtil  utils.IoUtil
 	storage *storage.Storage
 	rand    common.Random
 }
@@ -37,7 +37,7 @@ type Broker struct {
 func NewBroker() *Broker {
 	return &Broker{
 		Broker:  common.NewBroker(),
-		ioUtil:  files.New(),
+		ioUtil:  utils.New(),
 		storage: storage.New(),
 		rand:    common.NewRand(),
 	}

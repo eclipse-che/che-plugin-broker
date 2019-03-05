@@ -26,9 +26,9 @@ import (
 	"github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-plugin-broker/brokers/theia"
 	"github.com/eclipse/che-plugin-broker/common"
-	"github.com/eclipse/che-plugin-broker/files"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
+	"github.com/eclipse/che-plugin-broker/utils"
 )
 
 const marketplace = "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery"
@@ -38,7 +38,7 @@ const assetType = "Microsoft.VisualStudio.Services.VSIXPackage"
 // Broker is used to process VS Code extensions to run them as Che plugins
 type Broker struct {
 	common.Broker
-	ioUtil  files.IoUtil
+	ioUtil  utils.IoUtil
 	Storage *storage.Storage
 	client  *http.Client
 	rand    common.Random
@@ -48,7 +48,7 @@ type Broker struct {
 func NewBroker() *Broker {
 	return &Broker{
 		Broker:  common.NewBroker(),
-		ioUtil:  files.New(),
+		ioUtil:  utils.New(),
 		Storage: storage.New(),
 		client:  &http.Client{},
 		rand:    common.NewRand(),
@@ -211,7 +211,7 @@ func isRateLimitError(err error) bool {
 	if err == nil {
 		return false
 	}
-	herr, ok := err.(*files.HTTPError)
+	herr, ok := err.(*utils.HTTPError)
 	if ok {
 		return herr.StatusCode == http.StatusTooManyRequests
 	}
@@ -237,7 +237,7 @@ func (b *Broker) fetchExtensionInfo(extension string, meta model.PluginMeta) ([]
 	if err != nil {
 		return nil, fmt.Errorf("VS Code extension downloading failed %s:%s. Error: %s", meta.ID, meta.Version, err)
 	}
-	defer files.Close(resp.Body)
+	defer utils.Close(resp.Body)
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("VS Code extension downloading failed %s:%s. Error: %s", meta.ID, meta.Version, err)

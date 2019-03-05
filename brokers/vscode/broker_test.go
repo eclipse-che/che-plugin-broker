@@ -16,6 +16,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/eclipse/che-plugin-broker/utils"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -25,10 +26,9 @@ import (
 	tests "github.com/eclipse/che-plugin-broker/brokers/test"
 	"github.com/eclipse/che-plugin-broker/common"
 	cmock "github.com/eclipse/che-plugin-broker/common/mocks"
-	"github.com/eclipse/che-plugin-broker/files"
-	fmock "github.com/eclipse/che-plugin-broker/files/mocks"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
+	fmock "github.com/eclipse/che-plugin-broker/utils/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -414,7 +414,7 @@ func TestFetchExtensionInfo(t *testing.T) {
 			}
 			var b = &Broker{
 				Broker:  common.NewBroker(),
-				ioUtil:  files.New(),
+				ioUtil:  utils.New(),
 				Storage: storage.New(),
 				client:  test.NewTestHTTPClient(tt.roundTF),
 				rand:    common.NewRand(),

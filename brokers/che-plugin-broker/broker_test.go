@@ -25,15 +25,15 @@ import (
 
 	tests "github.com/eclipse/che-plugin-broker/brokers/test"
 	cmock "github.com/eclipse/che-plugin-broker/common/mocks"
-	fmock "github.com/eclipse/che-plugin-broker/files/mocks"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
+	umock "github.com/eclipse/che-plugin-broker/utils/mocks"
 )
 
 var (
 	broker     = NewBroker()
 	bMock      = &cmock.Broker{}
-	uMock      = &fmock.IoUtil{}
+	uMock      = &umock.IoUtil{}
 	mockBroker = &ChePluginBroker{
 		bMock,
 		uMock,

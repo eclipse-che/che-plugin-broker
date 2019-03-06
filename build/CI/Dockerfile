@@ -10,8 +10,8 @@
 #   Red Hat, Inc. - initial API and implementation
 #
 
-FROM golang:1.10
-RUN wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.10.2
+FROM golang:1.12
+RUN wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.15.0
 RUN adduser --disabled-password --gecos '' appuser
 USER appuser
 COPY . /go/src/github.com/eclipse/che-plugin-broker/

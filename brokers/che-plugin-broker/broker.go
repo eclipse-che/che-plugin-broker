@@ -25,9 +25,9 @@ import (
 
 	"github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-plugin-broker/common"
-	"github.com/eclipse/che-plugin-broker/files"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
+	"github.com/eclipse/che-plugin-broker/utils"
 )
 
 const pluginFileName = "che-plugin.yaml"
@@ -44,7 +44,7 @@ const (
 // ChePluginBroker is used to process Che plugins
 type ChePluginBroker struct {
 	common.Broker
-	ioUtil  files.IoUtil
+	ioUtil  utils.IoUtil
 	storage *storage.Storage
 }
 
@@ -52,7 +52,7 @@ type ChePluginBroker struct {
 func NewBroker() *ChePluginBroker {
 	return &ChePluginBroker{
 		common.NewBroker(),
-		files.New(),
+		utils.New(),
 		storage.New(),
 	}
 }

@@ -24,7 +24,7 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
-	"github.com/eclipse/che-plugin-broker/files"
+	"github.com/eclipse/che-plugin-broker/utils"
 )
 
 func CreateTestWorkDir() string {
@@ -61,7 +61,7 @@ func CreateFileByPath(path string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer to.Close()
+	defer utils.Close(to)
 
 	err = os.Chmod(path, 0655)
 	if err != nil {
@@ -75,7 +75,7 @@ func CreateFile(parent string, name string, m os.FileMode) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer to.Close()
+	defer utils.Close(to)
 
 	err = os.Chmod(path, m)
 	if err != nil {
@@ -97,14 +97,14 @@ func RemoveAll(path string) {
 
 func WriteContentBytes(parent string, name string, content []byte) {
 	path := filepath.Join(parent, name)
-	err := files.New().CreateFile(path, bytes.NewReader(content))
+	err := utils.New().CreateFile(path, bytes.NewReader(content))
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
 func WriteContent(path string, content string) {
-	err := files.New().CreateFile(path, strings.NewReader(content))
+	err := utils.New().CreateFile(path, strings.NewReader(content))
 	if err != nil {
 		log.Fatal(err)
 	}

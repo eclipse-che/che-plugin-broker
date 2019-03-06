@@ -15,18 +15,20 @@ package vscode
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"regexp"
+	"time"
 
 	"github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-plugin-broker/brokers/theia"
 	"github.com/eclipse/che-plugin-broker/common"
-	"github.com/eclipse/che-plugin-broker/files"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
+	"github.com/eclipse/che-plugin-broker/utils"
 )
 
 const marketplace = "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery"
@@ -36,7 +38,7 @@ const assetType = "Microsoft.VisualStudio.Services.VSIXPackage"
 // Broker is used to process VS Code extensions to run them as Che plugins
 type Broker struct {
 	common.Broker
-	ioUtil  files.IoUtil
+	ioUtil  utils.IoUtil
 	Storage *storage.Storage
 	client  *http.Client
 	rand    common.Random
@@ -46,7 +48,7 @@ type Broker struct {
 func NewBroker() *Broker {
 	return &Broker{
 		Broker:  common.NewBroker(),
-		ioUtil:  files.New(),
+		ioUtil:  utils.New(),
 		Storage: storage.New(),
 		client:  &http.Client{},
 		rand:    common.NewRand(),
@@ -116,14 +118,16 @@ func (b *Broker) processPlugin(meta model.PluginMeta) error {
 
 	// Download an archive
 	if url != "" {
-		b.PrintDebug("Downloading archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
-		err = b.ioUtil.Download(url, archivePath)
+		b.PrintDebug("Downloading VS Code extension archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
+		b.PrintInfo("Downloading VS Code extension for plugin '%s:%s'", meta.ID, meta.Version)
+		err = b.downloadArchive(url, archivePath)
 		if err != nil {
 			return err
 		}
 	} else {
-		b.PrintDebug("Downloading extension '%s' for plugin '%s:%s' to '%s'", extension, meta.ID, meta.Version, archivePath)
-		err = b.download(extension, archivePath, meta)
+		b.PrintDebug("Downloading VS Code extension '%s' for plugin '%s:%s' to '%s'", extension, meta.ID, meta.Version, archivePath)
+		b.PrintInfo("Downloading VS Code extension for plugin '%s:%s'", meta.ID, meta.Version)
+		err = b.downloadExtension(extension, archivePath, meta)
 		if err != nil {
 			return err
 		}
@@ -173,7 +177,7 @@ func (b *Broker) injectRemotePlugin(meta model.PluginMeta, image string, archive
 	return b.Storage.AddPlugin(&meta, tooling)
 }
 
-func (b *Broker) download(extension string, dest string, meta model.PluginMeta) error {
+func (b *Broker) downloadExtension(extension string, dest string, meta model.PluginMeta) error {
 	response, err := b.fetchExtensionInfo(extension, meta)
 	if err != nil {
 		return err
@@ -184,7 +188,34 @@ func (b *Broker) download(extension string, dest string, meta model.PluginMeta) 
 		return err
 	}
 
-	return b.ioUtil.Download(URL, dest)
+	return b.downloadArchive(URL, dest)
+}
+
+func (b *Broker) downloadArchive(URL string, dest string) error {
+	err := b.ioUtil.Download(URL, dest)
+	retries := 5
+	for i := 1; i <= retries && isRateLimitError(err); i++ {
+		b.PrintInfo("VS Code marketplace access rate limit reached. Download of VS Code extension is blocked from current IP address. Retry #%v from 5 in 1 minute", i)
+		time.Sleep(1 * time.Minute)
+		err = b.ioUtil.Download(URL, dest)
+	}
+
+	if isRateLimitError(err) {
+		err = errors.New("VS Code marketplace access rate limit reached. Download of VS Code extension is blocked from current IP address. 5 retries failed in 5 minutes. Giving up")
+	}
+
+	return err
+}
+
+func isRateLimitError(err error) bool {
+	if err == nil {
+		return false
+	}
+	herr, ok := err.(*utils.HTTPError)
+	if ok {
+		return herr.StatusCode == http.StatusTooManyRequests
+	}
+	return false
 }
 
 func (b *Broker) fetchExtensionInfo(extension string, meta model.PluginMeta) ([]byte, error) {
@@ -206,7 +237,7 @@ func (b *Broker) fetchExtensionInfo(extension string, meta model.PluginMeta) ([]
 	if err != nil {
 		return nil, fmt.Errorf("VS Code extension downloading failed %s:%s. Error: %s", meta.ID, meta.Version, err)
 	}
-	defer resp.Body.Close()
+	defer utils.Close(resp.Body)
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("VS Code extension downloading failed %s:%s. Error: %s", meta.ID, meta.Version, err)

@@ -1,0 +1,109 @@
+[
+  {
+    "name": "Node Debug",
+    "id": "ms-vscode.node-debug2",
+    "type": "VS Code extension",
+    "version": "1.31.6",
+    "title": "Node.js debugging support",
+    "description": "Node Debug is the debugger for Node.js versions >= 8.0. Together with Node Debug (legacy) forms the Node.js debugging experience. https://marketplace.visualstudio.com/items?itemName=ms-vscode.node-debug2",
+    "category": "Debugger",
+    "publisher": "Red Hat, Inc.",
+    "repository": "https://github.com/Microsoft/vscode-node-debug2",
+    "firstPublicationDate": "2019-02-19",
+    "latestUpdateDate": "2019-02-24",
+    "icon": "https://www.eclipse.org/che/images/logo-eclipseche.svg",
+    "url": "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/ms-vscode/vsextensions/node-debug2/1.31.6/vspackage",
+    "attributes": {
+      "containerImage": "eclipse/che-theia-endpoint-runtime:nightly"
+    }
+  },
+  {
+    "name": "Node Debug (legacy)",
+    "id": "ms-vscode.node-debug",
+    "type": "VS Code extension",
+    "version": "1.32.1",
+    "title": "Node.js debugging support (legacy)",
+    "description": "Node debug (legacy) is the debugger for Node.js versions < 8.0. Together with Node Debug forms the Node.js debugging experience. https://marketplace.visualstudio.com/items?itemName=ms-vscode.node-debug",
+    "category": "Debugger",
+    "publisher": "Red Hat, Inc.",
+    "repository": "https://github.com/Microsoft/vscode-node-debug",
+    "firstPublicationDate": "2019-02-19",
+    "latestUpdateDate": "2019-02-24",
+    "icon": "https://www.eclipse.org/che/images/logo-eclipseche.svg",
+    "url": "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/ms-vscode/vsextensions/node-debug/1.32.1/vspackage",
+    "attributes": {
+      "containerImage": "eclipse/che-theia-endpoint-runtime:nightly"
+    }
+  },
+  {
+    "name": "Typescript",
+    "id": "ms-vscode.typescript",
+    "type": "VS Code extension",
+    "version": "1.30.2",
+    "title": "Typescript language features",
+    "description": "Typescript language features",
+    "category": "Language",
+    "publisher": "Red Hat, Inc.",
+    "repository": "https://github.com/Microsoft/vscode",
+    "firstPublicationDate": "2019-02-19",
+    "latestUpdateDate": "2019-02-24",
+    "icon": "https://www.eclipse.org/che/images/logo-eclipseche.svg",
+    "url": "https://github.com/che-incubator/ms-code.typescript/releases/download/v1.30.2/che-typescript-language.vsix",
+    "attributes": {
+      "containerImage": "eclipse/che-theia-endpoint-runtime:nightly"
+    }
+  },
+  {
+    "name": "XML",
+    "id": "redhat.vscode-xml",
+    "type": "VS Code extension",
+    "version": "0.3.0",
+    "title": "XML Language Support by Red Hat",
+    "description": "This VS Code extension provides support for creating and editing XML documents, based on the LSP4XML language server, running with Java.",
+    "category": "Language",
+    "publisher": "Red Hat, Inc.",
+    "repository": "https://github.com/redhat-developer/vscode-xml",
+    "firstPublicationDate": "2019-02-20",
+    "latestUpdateDate": "2019-02-24",
+    "icon": "https://www.eclipse.org/che/images/logo-eclipseche.svg",
+    "url": "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/redhat/vsextensions/vscode-xml/0.3.0/vspackage",
+    "attributes": {
+      "containerImage": "eclipse/che-remote-plugin-runner-java8:nightly"
+    }
+  },
+  {
+    "name": "YAML",
+    "id": "redhat.vscode-yaml",
+    "type": "VS Code extension",
+    "version": "0.3.0",
+    "title": "YAML Language Support by Red Hat, with built-in Kubernetes and Kedge syntax support",
+    "description": "Provides comprehensive YAML Language support to Visual Studio Code, via the yaml-language-server, with built-in Kubernetes and Kedge syntax support.",
+    "category": "Language",
+    "publisher": "Red Hat, Inc.",
+    "repository": "https://github.com/redhat-developer/vscode-yaml",
+    "firstPublicationDate": "2019-02-20",
+    "latestUpdateDate": "2019-02-24",
+    "icon": "https://www.eclipse.org/che/images/logo-eclipseche.svg",
+    "url": "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/redhat/vsextensions/vscode-yaml/0.3.0/vspackage",
+    "attributes": {
+      "containerImage": "eclipse/che-theia-endpoint-runtime:nightly"
+    }
+  },
+  {
+    "id": "org.eclipse.che.vscode-sonarlint",
+    "version": "0.0.1",
+    "type": "VS Code extension",
+    "name": "vscode-sonarlint",
+    "title": "Sonarlint code intelligence",
+    "description": "VS Code extension that provides sonarlint features",
+    "icon": "https://www.eclipse.org/che/images/logo-eclipseche.svg",
+    "attributes": {
+      "extension": "vscode:extension/SonarSource.sonarlint-vscode",
+      "containerImage": "garagatyi/remotetheia:java"
+    },
+    "firstPublicationDate": "2019-02-05",
+    "category": "Linter",
+    "publisher": "SonarSource",
+    "repository": "https://www.sonarlint.org/"
+  }
+]

@@ -10,13 +10,14 @@
 //   Red Hat, Inc. - initial API and implementation
 //
 
-package files
+package utils
 
 import (
 	"archive/tar"
 	"archive/zip"
 	"bufio"
 	"compress/gzip"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -45,25 +46,32 @@ func New() IoUtil {
 	return &impl{}
 }
 
+// Download downloads file by provided URL and places its content to provided destPath.
+// Returns error in a case of any problems.
+// Returns HTTPError if downloading is caused by non 2xx response from a service accessed by URL
 func (util *impl) Download(URL string, destPath string) error {
 	out, err := os.Create(destPath)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer Close(out)
 
 	resp, err := http.Get(URL)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer Close(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return NewHTTPError(resp, fmt.Sprintf("Downloading %s failed. Status code %v", URL, resp.StatusCode))
+	}
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	return out.Sync()
 }
 
 func (util *impl) TempDir(baseDir string, prefix string) (dirPath string, err error) {
@@ -80,16 +88,20 @@ func (util *impl) CopyFile(src string, dest string) error {
 	if err != nil {
 		return err
 	}
-	defer to.Close()
+	defer Close(to)
 
 	from, err := os.Open(src)
 	if err != nil {
 		return err
 	}
-	defer from.Close()
+	defer Close(from)
 
 	_, err = io.Copy(to, from)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return to.Sync()
 }
 
 func (util *impl) ResolveDestPath(filePath string, destDir string) string {
@@ -110,11 +122,7 @@ func (util *impl) Unzip(arch string, dest string) error {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if err := r.Close(); err != nil {
-			panic(err)
-		}
-	}()
+	defer Close(r)
 
 	if err := os.MkdirAll(dest, 0755); err != nil {
 		return err
@@ -135,9 +143,7 @@ func (util *impl) Unzip(arch string, dest string) error {
 		path := filepath.Join(dest, f.Name)
 
 		if f.FileInfo().IsDir() {
-			if err := os.MkdirAll(path, 0755); err != nil {
-				return err
-			}
+			return os.MkdirAll(path, 0755)
 		} else {
 			if err := os.MkdirAll(filepath.Dir(path), 0775); err != nil {
 				return err
@@ -156,8 +162,9 @@ func (util *impl) Unzip(arch string, dest string) error {
 			if err != nil {
 				return err
 			}
+
+			return f.Sync()
 		}
-		return nil
 	}
 
 	for _, f := range r.File {
@@ -179,7 +186,7 @@ func (util *impl) Untar(tarPath string, dest string) error {
 	if err != nil {
 		return err
 	}
-	defer gzr.Close()
+	defer Close(gzr)
 
 	tr := tar.NewReader(gzr)
 
@@ -229,9 +236,16 @@ func (util *impl) CreateFile(file string, tr io.Reader) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer Close(f)
 	if _, err := io.Copy(f, tr); err != nil {
 		return err
 	}
 	return f.Sync()
+}
+
+func Close(c io.Closer) {
+	err := c.Close()
+	if err != nil {
+		log.Println(err)
+	}
 }

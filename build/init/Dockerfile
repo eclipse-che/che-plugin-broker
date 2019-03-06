@@ -10,7 +10,7 @@
 #   Red Hat, Inc. - initial API and implementation
 #
 
-FROM golang:1.10-alpine as builder
+FROM golang:1.12-alpine3.9 as builder
 RUN apk add --no-cache ca-certificates
 RUN adduser -D -g '' appuser
 WORKDIR /go/src/github.com/eclipse/che-plugin-broker/brokers/init/cmd/

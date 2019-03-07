@@ -14,10 +14,12 @@ package vscode
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"path/filepath"
 	"regexp"
@@ -192,12 +194,18 @@ func (b *Broker) downloadExtension(extension string, dest string, meta model.Plu
 }
 
 func (b *Broker) downloadArchive(URL string, dest string) error {
-	err := b.ioUtil.Download(URL, dest)
+	headers := make(map[string]string)
+	id := uuid()
+	headers["X-Market-User-Id"] = id
+	headers["User-Agent"] = "VSCode 1.31.1"
+	headers["X-Market-Client-Id"] = "VSCode 1.31.1"
+
+	err := b.ioUtil.Download(URL, dest, headers)
 	retries := 5
 	for i := 1; i <= retries && isRateLimitError(err); i++ {
 		b.PrintInfo("VS Code marketplace access rate limit reached. Download of VS Code extension is blocked from current IP address. Retry #%v from 5 in 1 minute", i)
-		time.Sleep(1 * time.Minute)
-		err = b.ioUtil.Download(URL, dest)
+		time.Sleep(1 * time.Second)
+		err = b.ioUtil.Download(URL, dest, nil)
 	}
 
 	if isRateLimitError(err) {
@@ -213,6 +221,7 @@ func isRateLimitError(err error) bool {
 	}
 	herr, ok := err.(*utils.HTTPError)
 	if ok {
+		log.Println(herr.Body)
 		return herr.StatusCode == http.StatusTooManyRequests
 	}
 	return false
@@ -281,4 +290,13 @@ func (b *Broker) getPackageJSON(pluginFolder string) (*model.PackageJSON, error)
 	pj := &model.PackageJSON{}
 	err = json.Unmarshal(f, pj)
 	return pj, err
+}
+
+func uuid() string {
+	b := make([]byte, 20)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(fmt.Sprintf("Generating client UUID failed. Error: %s", err))
+	}
+	return fmt.Sprintf("%X-%X-%X-%X-%X", b[0:4], b[4:8], b[8:12], b[12:16], b[16:])
 }

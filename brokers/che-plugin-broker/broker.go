@@ -130,7 +130,7 @@ func (cheBroker *ChePluginBroker) processPlugin(meta model.PluginMeta) error {
 
 	chePluginYamlPath := filepath.Join(workDir, pluginFileName)
 	cheBroker.PrintDebug("Downloading plugin definition '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, chePluginYamlPath)
-	err = cheBroker.ioUtil.Download(url, chePluginYamlPath)
+	err = cheBroker.ioUtil.Download(url, chePluginYamlPath, nil)
 	if err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func (cheBroker *ChePluginBroker) processArchive(meta *model.PluginMeta, url str
 
 	// Download an archive
 	cheBroker.PrintDebug("Downloading archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
-	err = cheBroker.ioUtil.Download(url, archivePath)
+	err = cheBroker.ioUtil.Download(url, archivePath, nil)
 	if err != nil {
 		return err
 	}
@@ -218,7 +218,7 @@ func (cheBroker *ChePluginBroker) copyDependencies(workDir string) error {
 		case dep.URL != "":
 			fileDest := cheBroker.ioUtil.ResolveDestPathFromURL(dep.URL, "/plugins")
 			cheBroker.PrintDebug("Downloading file '%s' to '%s'", dep.URL, fileDest)
-			if err = cheBroker.ioUtil.Download(dep.URL, fileDest); err != nil {
+			if err = cheBroker.ioUtil.Download(dep.URL, fileDest, nil); err != nil {
 				return err
 			}
 		default:

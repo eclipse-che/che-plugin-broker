@@ -29,7 +29,7 @@ import (
 )
 
 type IoUtil interface {
-	Download(URL string, destPath string) error
+	Download(URL string, destPath string, headers map[string]string) error
 	CopyResource(src string, dest string) error
 	CopyFile(src string, dest string) error
 	ResolveDestPath(filePath string, destDir string) string
@@ -49,14 +49,24 @@ func New() IoUtil {
 // Download downloads file by provided URL and places its content to provided destPath.
 // Returns error in a case of any problems.
 // Returns HTTPError if downloading is caused by non 2xx response from a service accessed by URL
-func (util *impl) Download(URL string, destPath string) error {
+func (util *impl) Download(URL string, destPath string, headers map[string]string) error {
 	out, err := os.Create(destPath)
 	if err != nil {
 		return err
 	}
 	defer Close(out)
 
-	resp, err := http.Get(URL)
+	req, err := http.NewRequest(http.MethodGet, URL, nil)
+	if err != nil {
+		return err
+	}
+	if headers != nil {
+		for k, v := range headers {
+			req.Header.Set(k, v)
+			log.Printf("Header:%s=%s", k, v)
+		}
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}

@@ -107,7 +107,7 @@ func (b *Broker) processPlugin(meta model.PluginMeta) error {
 
 	// Download an archive
 	b.PrintDebug("Downloading archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
-	err = b.ioUtil.Download(url, archivePath)
+	err = b.ioUtil.Download(url, archivePath, nil)
 	if err != nil {
 		return err
 	}

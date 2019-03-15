@@ -64,6 +64,8 @@ type PluginMeta struct {
 	URL string `json:"url" yaml:"url"`
 
 	Attributes map[string]string `json:"attributes" yaml:"attributes"`
+
+	Extensions []string `json:"extensions" yaml:"extensions"`
 }
 
 type Endpoint struct {

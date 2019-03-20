@@ -24,12 +24,13 @@ import (
 	"github.com/eclipse/che-plugin-broker/storage"
 	"github.com/eclipse/che-plugin-broker/utils"
 	"net/http"
+	"strings"
 )
 
-const ChePluginType = "Che plugin"
-const EditorPluginType = "Che Editor"
-const TheiaPluginType = "Theia plugin"
-const VscodePluginType = "VS Code extension"
+const ChePluginType = "che plugin"
+const EditorPluginType = "che editor"
+const TheiaPluginType = "theia plugin"
+const VscodePluginType = "vs code extension"
 
 // Broker is used to process Che plugins
 type Broker struct {
@@ -128,7 +129,7 @@ func sortMetas(metas []model.PluginMeta) (che []model.PluginMeta, theia []model.
 	theiaMetas := make([]model.PluginMeta, 0)
 	cheBrokerMetas := make([]model.PluginMeta, 0)
 	for _, meta := range metas {
-		switch meta.Type {
+		switch strings.ToLower(meta.Type) {
 		case ChePluginType:
 			fallthrough
 		case EditorPluginType:

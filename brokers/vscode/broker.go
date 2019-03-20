@@ -58,6 +58,17 @@ func NewBroker() *Broker {
 	}
 }
 
+// NewBroker creates Che VS Code extension broker instance
+func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage *storage.Storage, rand common.Random, httpClient *http.Client) *Broker {
+	return &Broker{
+		Broker:  broker,
+		ioUtil:  ioUtil,
+		rand:    rand,
+		Storage: storage,
+		client:  httpClient,
+	}
+}
+
 // Start executes plugins metas processing and sends data to Che master
 func (b *Broker) Start(metas []model.PluginMeta) {
 	b.PubStarted()
@@ -67,7 +78,7 @@ func (b *Broker) Start(metas []model.PluginMeta) {
 
 	b.PrintInfo("Starting VS Code extensions processing")
 	for _, meta := range metas {
-		err := b.processPlugin(meta)
+		err := b.ProcessPlugin(meta)
 		if err != nil {
 			b.PubFailed(err.Error())
 			b.PrintFatal(err.Error())
@@ -97,7 +108,7 @@ func (b *Broker) PushEvents(tun *jsonrpc.Tunnel) {
 	b.Broker.PushEvents(tun, model.BrokerStatusEventType, model.BrokerResultEventType, model.BrokerLogEventType)
 }
 
-func (b *Broker) processPlugin(meta model.PluginMeta) error {
+func (b *Broker) ProcessPlugin(meta model.PluginMeta) error {
 	b.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
 
 	URLs, err := b.getBinariesURLs(meta)

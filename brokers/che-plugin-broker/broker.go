@@ -36,6 +36,7 @@ const depFileBothLocationAndURLError = "Plugin dependency '%s:%s' contains both 
 const depFileNoLocationURLError = "Plugin dependency '%s:%s' contains neither 'location' nor 'url' field"
 
 type PluginLinkType int
+
 const (
 	Archive PluginLinkType = iota + 1
 	Yaml
@@ -57,6 +58,15 @@ func NewBroker() *ChePluginBroker {
 	}
 }
 
+// NewBroker creates Che plugin broker instance
+func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage *storage.Storage) *ChePluginBroker {
+	return &ChePluginBroker{
+		Broker:  broker,
+		ioUtil:  ioUtil,
+		storage: storage,
+	}
+}
+
 // Start executes plugins metas processing and sends data to Che master
 func (cheBroker *ChePluginBroker) Start(metas []model.PluginMeta) {
 	if ok, status := cheBroker.storage.SetStatus(model.StatusStarted); !ok {
@@ -71,7 +81,7 @@ func (cheBroker *ChePluginBroker) Start(metas []model.PluginMeta) {
 
 	cheBroker.PrintInfo("Starting common Che plugins processing")
 	for _, meta := range metas {
-		err := cheBroker.processPlugin(meta)
+		err := cheBroker.ProcessPlugin(meta)
 		if err != nil {
 			cheBroker.PubFailed(err.Error())
 			cheBroker.PrintFatal(err.Error())
@@ -107,7 +117,7 @@ func (cheBroker *ChePluginBroker) PushEvents(tun *jsonrpc.Tunnel) {
 	cheBroker.Broker.PushEvents(tun, model.BrokerStatusEventType, model.BrokerResultEventType, model.BrokerLogEventType)
 }
 
-func (cheBroker *ChePluginBroker) processPlugin(meta model.PluginMeta) error {
+func (cheBroker *ChePluginBroker) ProcessPlugin(meta model.PluginMeta) error {
 	cheBroker.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
 	url := meta.URL
 
@@ -117,12 +127,12 @@ func (cheBroker *ChePluginBroker) processPlugin(meta model.PluginMeta) error {
 	case Yaml:
 		return cheBroker.processYAML(&meta, url)
 	default:
-		return errors.New("Unexpected url format " +url)
+		return errors.New("Unexpected url format " + url)
 	}
 
 }
 
- func (cheBroker *ChePluginBroker) processYAML(meta *model.PluginMeta, url string) error {
+func (cheBroker *ChePluginBroker) processYAML(meta *model.PluginMeta, url string) error {
 	workDir, err := cheBroker.ioUtil.TempDir("", "che-plugin-broker")
 	if err != nil {
 		return err

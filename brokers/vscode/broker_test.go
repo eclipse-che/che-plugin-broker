@@ -46,7 +46,7 @@ const (
 type mocks struct {
 	cb       *cmock.Broker
 	u        *fmock.IoUtil
-	b        *Broker
+	b        *brokerImpl
 	randMock *cmock.Random
 }
 
@@ -58,7 +58,7 @@ func initMocks() *mocks {
 		cb:       cb,
 		u:        u,
 		randMock: randMock,
-		b: &Broker{
+		b: &brokerImpl{
 			Broker:  cb,
 			ioUtil:  u,
 			Storage: storage.New(),
@@ -655,7 +655,7 @@ func TestFetchExtensionInfo(t *testing.T) {
 			if tt.want == nil && tt.err == "" {
 				t.Fatal("Neither want nor error are defined")
 			}
-			var b = &Broker{
+			var b = &brokerImpl{
 				Broker:  common.NewBroker(),
 				ioUtil:  utils.New(),
 				Storage: storage.New(),

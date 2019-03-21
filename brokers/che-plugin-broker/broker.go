@@ -43,15 +43,21 @@ const (
 )
 
 // ChePluginBroker is used to process Che plugins
-type ChePluginBroker struct {
+type ChePluginBroker interface {
+	Start([]model.PluginMeta)
+	PushEvents(tun *jsonrpc.Tunnel)
+	ProcessPlugin(meta model.PluginMeta) error
+}
+
+type chePluginBrokerImpl struct {
 	common.Broker
 	ioUtil  utils.IoUtil
 	storage *storage.Storage
 }
 
 // NewBroker creates Che plugin broker instance
-func NewBroker() *ChePluginBroker {
-	return &ChePluginBroker{
+func NewBroker() ChePluginBroker {
+	return &chePluginBrokerImpl{
 		common.NewBroker(),
 		utils.New(),
 		storage.New(),
@@ -59,8 +65,8 @@ func NewBroker() *ChePluginBroker {
 }
 
 // NewBroker creates Che plugin broker instance
-func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage *storage.Storage) *ChePluginBroker {
-	return &ChePluginBroker{
+func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage *storage.Storage) ChePluginBroker {
+	return &chePluginBrokerImpl{
 		Broker:  broker,
 		ioUtil:  ioUtil,
 		storage: storage,
@@ -68,7 +74,7 @@ func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage *sto
 }
 
 // Start executes plugins metas processing and sends data to Che master
-func (cheBroker *ChePluginBroker) Start(metas []model.PluginMeta) {
+func (cheBroker *chePluginBrokerImpl) Start(metas []model.PluginMeta) {
 	if ok, status := cheBroker.storage.SetStatus(model.StatusStarted); !ok {
 		m := fmt.Sprintf("Starting broker in state '%s' is not allowed", status)
 		cheBroker.PubFailed(m)
@@ -113,11 +119,11 @@ func (cheBroker *ChePluginBroker) Start(metas []model.PluginMeta) {
 }
 
 // PushEvents sets given tunnel as consumer of broker events.
-func (cheBroker *ChePluginBroker) PushEvents(tun *jsonrpc.Tunnel) {
+func (cheBroker *chePluginBrokerImpl) PushEvents(tun *jsonrpc.Tunnel) {
 	cheBroker.Broker.PushEvents(tun, model.BrokerStatusEventType, model.BrokerResultEventType, model.BrokerLogEventType)
 }
 
-func (cheBroker *ChePluginBroker) ProcessPlugin(meta model.PluginMeta) error {
+func (cheBroker *chePluginBrokerImpl) ProcessPlugin(meta model.PluginMeta) error {
 	cheBroker.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
 	url := meta.URL
 
@@ -132,7 +138,7 @@ func (cheBroker *ChePluginBroker) ProcessPlugin(meta model.PluginMeta) error {
 
 }
 
-func (cheBroker *ChePluginBroker) processYAML(meta *model.PluginMeta, url string) error {
+func (cheBroker *chePluginBrokerImpl) processYAML(meta *model.PluginMeta, url string) error {
 	workDir, err := cheBroker.ioUtil.TempDir("", "che-plugin-broker")
 	if err != nil {
 		return err
@@ -153,7 +159,7 @@ func (cheBroker *ChePluginBroker) processYAML(meta *model.PluginMeta, url string
 	return nil
 }
 
-func (cheBroker *ChePluginBroker) processArchive(meta *model.PluginMeta, url string) error {
+func (cheBroker *chePluginBrokerImpl) processArchive(meta *model.PluginMeta, url string) error {
 	workDir, err := cheBroker.ioUtil.TempDir("", "che-plugin-broker")
 	if err != nil {
 		return err
@@ -192,7 +198,7 @@ func getTypeOfURL(url string) PluginLinkType {
 	return Archive
 }
 
-func (cheBroker *ChePluginBroker) resolveToolingConfig(meta *model.PluginMeta, workDir string) error {
+func (cheBroker *chePluginBrokerImpl) resolveToolingConfig(meta *model.PluginMeta, workDir string) error {
 	toolingConfPath := filepath.Join(workDir, pluginFileName)
 	f, err := ioutil.ReadFile(toolingConfPath)
 	if err != nil {
@@ -207,7 +213,7 @@ func (cheBroker *ChePluginBroker) resolveToolingConfig(meta *model.PluginMeta, w
 	return cheBroker.storage.AddPlugin(meta, tooling)
 }
 
-func (cheBroker *ChePluginBroker) copyDependencies(workDir string) error {
+func (cheBroker *chePluginBrokerImpl) copyDependencies(workDir string) error {
 	deps, err := cheBroker.parseDepsFile(workDir)
 	if err != nil || deps == nil {
 		return err
@@ -240,7 +246,7 @@ func (cheBroker *ChePluginBroker) copyDependencies(workDir string) error {
 	return nil
 }
 
-func (cheBroker *ChePluginBroker) parseDepsFile(workDir string) (*model.CheDependencies, error) {
+func (cheBroker *chePluginBrokerImpl) parseDepsFile(workDir string) (*model.CheDependencies, error) {
 	depsConfPath := filepath.Join(workDir, depFileName)
 	if _, err := os.Stat(depsConfPath); os.IsNotExist(err) {
 		return nil, nil

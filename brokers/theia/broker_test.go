@@ -33,7 +33,7 @@ var (
 	bMock      = &cmock.Broker{}
 	uMock      = &umock.IoUtil{}
 	randMock   = &cmock.Random{}
-	mockBroker = &Broker{
+	mockBroker = &brokerImpl{
 		Broker:  bMock,
 		ioUtil:  uMock,
 		storage: storage.New(),
@@ -42,7 +42,7 @@ var (
 )
 
 func TestProcessRemotePlugin(t *testing.T) {
-	mockBroker = &Broker{
+	mockBroker = &brokerImpl{
 		Broker:  bMock,
 		ioUtil:  uMock,
 		storage: storage.New(),
@@ -149,7 +149,7 @@ func expectedPlugins(meta model.PluginMeta, image string, publisher string, pubN
 }
 
 func TestProcessRegularPlugin(t *testing.T) {
-	mockBroker = &Broker{
+	mockBroker = &brokerImpl{
 		Broker:  bMock,
 		ioUtil:  uMock,
 		storage: storage.New(),

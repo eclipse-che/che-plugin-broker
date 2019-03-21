@@ -15,6 +15,8 @@ package broker
 import (
 	"errors"
 	"fmt"
+	"github.com/eclipse/che-plugin-broker/common"
+	"github.com/eclipse/che-plugin-broker/utils"
 	"log"
 	"path/filepath"
 	"testing"
@@ -31,10 +33,14 @@ import (
 )
 
 var (
-	broker     = NewBroker()
+	broker     = &chePluginBrokerImpl{
+		common.NewBroker(),
+		utils.New(),
+		storage.New(),
+	}
 	bMock      = &cmock.Broker{}
 	uMock      = &umock.IoUtil{}
-	mockBroker = &ChePluginBroker{
+	mockBroker = &chePluginBrokerImpl{
 		bMock,
 		uMock,
 		storage.New(),
@@ -141,7 +147,7 @@ func TestProcessPluginErrorIfPluginYamlParsingFails(t *testing.T) {
 
 func TestProcessPlugin(t *testing.T) {
 	workDir := tests.CreateTestWorkDir()
-	mockBroker = &ChePluginBroker{
+	mockBroker = &chePluginBrokerImpl{
 		bMock,
 		uMock,
 		storage.New(),
@@ -245,7 +251,7 @@ func TestProcessPluginWithYaml(t *testing.T) {
 	workDir := tests.CreateTestWorkDir()
 	pluginYaml := filepath.Join(workDir, pluginFileName)
 	defer tests.RemoveAll(workDir)
-	mockBroker = &ChePluginBroker{
+	mockBroker = &chePluginBrokerImpl{
 		bMock,
 		uMock,
 		storage.New(),

@@ -18,6 +18,7 @@ import (
 
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/model"
+	"github.com/eclipse/che-plugin-broker/cfg"
 )
 
 func GenerateSidecarTooling(image string, pj model.PackageJSON, rand common.Random) *model.ToolingConf {
@@ -61,7 +62,11 @@ func addPortToTooling(toolingConf *model.ToolingConf, pj model.PackageJSON, rand
 	var re = regexp.MustCompile(`[^a-zA-Z_0-9]+`)
 	prettyID := re.ReplaceAllString(pj.Publisher+"_"+pj.Name, `_`)
 	sidecarTheiaEnvVarName := "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID
-	sidecarTheiaEnvVarValue := "ws://" + endpointName + ":" + sPort
+	urlHostname := endpointName
+	if cfg.UseLocalhostInPluginUrls {
+		urlHostname = "localhost"
+	}
+	sidecarTheiaEnvVarValue := "ws://" + urlHostname + ":" + sPort
 
 	toolingConf.Containers[0].Ports = append(toolingConf.Containers[0].Ports, model.ExposedPort{ExposedPort: port})
 	toolingConf.Endpoints = append(toolingConf.Endpoints, model.Endpoint{

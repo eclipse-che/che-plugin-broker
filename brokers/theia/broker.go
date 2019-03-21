@@ -29,7 +29,7 @@ import (
 type Broker struct {
 	common.Broker
 	ioUtil  utils.IoUtil
-	storage *storage.Storage
+	Storage *storage.Storage
 	rand    common.Random
 }
 
@@ -38,14 +38,14 @@ func NewBroker() *Broker {
 	return &Broker{
 		Broker:  common.NewBroker(),
 		ioUtil:  utils.New(),
-		storage: storage.New(),
+		Storage: storage.New(),
 		rand:    common.NewRand(),
 	}
 }
 
 // Start executes plugins metas processing and sends data to Che master
 func (b *Broker) Start(metas []model.PluginMeta) {
-	if ok, status := b.storage.SetStatus(model.StatusStarted); !ok {
+	if ok, status := b.Storage.SetStatus(model.StatusStarted); !ok {
 		m := fmt.Sprintf("Starting broker in state '%s' is not allowed", status)
 		b.PubFailed(m)
 		b.PrintFatal(m)
@@ -57,20 +57,20 @@ func (b *Broker) Start(metas []model.PluginMeta) {
 
 	b.PrintInfo("Starting Theia plugins processing")
 	for _, meta := range metas {
-		err := b.processPlugin(meta)
+		err := b.ProcessPlugin(meta, false)
 		if err != nil {
 			b.PubFailed(err.Error())
 			b.PrintFatal(err.Error())
 		}
 	}
 
-	if ok, status := b.storage.SetStatus(model.StatusDone); !ok {
+	if ok, status := b.Storage.SetStatus(model.StatusDone); !ok {
 		err := fmt.Sprintf("Setting '%s' broker status failed. Broker has '%s' state", model.StatusDone, status)
 		b.PubFailed(err)
 		b.PrintFatal(err)
 	}
 
-	plugins, err := b.storage.Plugins()
+	plugins, err := b.Storage.Plugins()
 	if err != nil {
 		b.PubFailed(err.Error())
 		b.PrintFatal(err.Error())
@@ -93,7 +93,7 @@ func (b *Broker) PushEvents(tun *jsonrpc.Tunnel) {
 	b.Broker.PushEvents(tun, model.BrokerStatusEventType, model.BrokerResultEventType, model.BrokerLogEventType)
 }
 
-func (b *Broker) processPlugin(meta model.PluginMeta) error {
+func (b *Broker) ProcessPlugin(meta model.PluginMeta, onlyMetadata bool) error {
 	b.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
 	url := meta.URL
 
@@ -130,10 +130,10 @@ func (b *Broker) processPlugin(meta model.PluginMeta) error {
 	}
 	if pluginImage == "" {
 		// regular plugin
-		return b.injectTheiaFile(meta, archivePath)
+		return b.injectTheiaFile(meta, archivePath, onlyMetadata)
 	}
 	// remote plugin
-	return b.injectTheiaRemotePlugin(meta, unpackedPath, pluginImage, pj)
+	return b.injectTheiaRemotePlugin(meta, unpackedPath, pluginImage, pj, onlyMetadata)
 }
 
 func (b *Broker) getPackageJSON(pluginFolder string) (*PackageJSON, error) {
@@ -154,24 +154,28 @@ func (b *Broker) getPluginImage(pj *PackageJSON) (string, error) {
 	return "", nil
 }
 
-func (b *Broker) injectTheiaFile(meta model.PluginMeta, archivePath string) error {
-	b.PrintDebug("Copying Theia plugin '%s:%s'", meta.ID, meta.Version)
-	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.theia", meta.ID, meta.Version))
-	err := b.ioUtil.CopyFile(archivePath, pluginPath)
-	if err != nil {
-		return err
+func (b *Broker) injectTheiaFile(meta model.PluginMeta, archivePath string, onlyMetadata bool) error {
+	if (! onlyMetadata) {
+		b.PrintDebug("Copying Theia plugin '%s:%s'", meta.ID, meta.Version)
+		pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.theia", meta.ID, meta.Version))
+		err := b.ioUtil.CopyFile(archivePath, pluginPath)
+		if err != nil {
+			return err
+		}
 	}
 	tooling := &model.ToolingConf{}
-	return b.storage.AddPlugin(&meta, tooling)
+	return b.Storage.AddPlugin(&meta, tooling)
 }
 
-func (b *Broker) injectTheiaRemotePlugin(meta model.PluginMeta, archiveFolder string, image string, pj *PackageJSON) error {
-	pluginFolderPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
-	b.PrintDebug("Copying Theia remote plugin '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, archiveFolder, pluginFolderPath)
-	err := b.ioUtil.CopyResource(archiveFolder, pluginFolderPath)
-	if err != nil {
-		return err
+func (b *Broker) injectTheiaRemotePlugin(meta model.PluginMeta, archiveFolder string, image string, pj *PackageJSON, onlyMetadata bool) error {
+	if (! onlyMetadata) {
+		pluginFolderPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
+		b.PrintDebug("Copying Theia remote plugin '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, archiveFolder, pluginFolderPath)
+		err := b.ioUtil.CopyResource(archiveFolder, pluginFolderPath)
+		if err != nil {
+			return err
+		}
 	}
 	tooling := GenerateSidecarTooling(image, pj.PackageJSON, b.rand)
-	return b.storage.AddPlugin(&meta, tooling)
+	return b.Storage.AddPlugin(&meta, tooling)
 }

@@ -64,7 +64,7 @@ func (b *Broker) Start(metas []model.PluginMeta) {
 
 	b.PrintInfo("Starting VS Code extensions processing")
 	for _, meta := range metas {
-		err := b.processPlugin(meta)
+		err := b.ProcessPlugin(meta, false)
 		if err != nil {
 			b.PubFailed(err.Error())
 			b.PrintFatal(err.Error())
@@ -94,7 +94,7 @@ func (b *Broker) PushEvents(tun *jsonrpc.Tunnel) {
 	b.Broker.PushEvents(tun, model.BrokerStatusEventType, model.BrokerResultEventType, model.BrokerLogEventType)
 }
 
-func (b *Broker) processPlugin(meta model.PluginMeta) error {
+func (b *Broker) ProcessPlugin(meta model.PluginMeta, onlyMetadata bool) error {
 	b.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
 
 	url := meta.URL
@@ -136,24 +136,26 @@ func (b *Broker) processPlugin(meta model.PluginMeta) error {
 	image := meta.Attributes["containerImage"]
 	if image == "" {
 		// regular plugin
-		return b.injectLocalPlugin(meta, archivePath)
+		return b.injectLocalPlugin(meta, archivePath, onlyMetadata)
 	}
 	// remote plugin
-	return b.injectRemotePlugin(meta, image, archivePath, workDir)
+	return b.injectRemotePlugin(meta, image, archivePath, workDir, onlyMetadata)
 }
 
-func (b *Broker) injectLocalPlugin(meta model.PluginMeta, archivePath string) error {
-	b.PrintDebug("Copying VS Code extension '%s:%s'", meta.ID, meta.Version)
-	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.vsix", meta.ID, meta.Version))
-	err := b.ioUtil.CopyFile(archivePath, pluginPath)
-	if err != nil {
-		return err
+func (b *Broker) injectLocalPlugin(meta model.PluginMeta, archivePath string, onlyMetadata bool) error {
+	if (! onlyMetadata) {
+		b.PrintDebug("Copying VS Code extension '%s:%s'", meta.ID, meta.Version)
+		pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.vsix", meta.ID, meta.Version))
+		err := b.ioUtil.CopyFile(archivePath, pluginPath)
+		if err != nil {
+			return err
+		}
 	}
 	tooling := &model.ToolingConf{}
 	return b.Storage.AddPlugin(&meta, tooling)
 }
 
-func (b *Broker) injectRemotePlugin(meta model.PluginMeta, image string, archivePath string, workDir string) error {
+func (b *Broker) injectRemotePlugin(meta model.PluginMeta, image string, archivePath string, workDir string, onlyMetadata bool) error {
 	// Unzip it
 	unpackedPath := filepath.Join(workDir, "plugin")
 	b.PrintDebug("Unzipping archive '%s' for plugin '%s:%s' to '%s'", archivePath, meta.ID, meta.Version, unpackedPath)
@@ -167,11 +169,13 @@ func (b *Broker) injectRemotePlugin(meta model.PluginMeta, image string, archive
 		return err
 	}
 
-	pluginFolderPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
-	b.PrintDebug("Copying VS Code extension '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, unpackedPath, pluginFolderPath)
-	err = b.ioUtil.CopyResource(unpackedPath, pluginFolderPath)
-	if err != nil {
-		return err
+	if (! onlyMetadata) {
+		pluginFolderPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
+		b.PrintDebug("Copying VS Code extension '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, unpackedPath, pluginFolderPath)
+		err = b.ioUtil.CopyResource(unpackedPath, pluginFolderPath)
+		if err != nil {
+			return err
+		}
 	}
 	tooling := theia.GenerateSidecarTooling(image, *pj, b.rand)
 	return b.Storage.AddPlugin(&meta, tooling)

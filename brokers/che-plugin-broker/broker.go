@@ -45,7 +45,7 @@ const (
 type ChePluginBroker struct {
 	common.Broker
 	ioUtil  utils.IoUtil
-	storage *storage.Storage
+	Storage *storage.Storage
 }
 
 // NewBroker creates Che plugin broker instance
@@ -59,7 +59,7 @@ func NewBroker() *ChePluginBroker {
 
 // Start executes plugins metas processing and sends data to Che master
 func (cheBroker *ChePluginBroker) Start(metas []model.PluginMeta) {
-	if ok, status := cheBroker.storage.SetStatus(model.StatusStarted); !ok {
+	if ok, status := cheBroker.Storage.SetStatus(model.StatusStarted); !ok {
 		m := fmt.Sprintf("Starting broker in state '%s' is not allowed", status)
 		cheBroker.PubFailed(m)
 		cheBroker.PrintFatal(m)
@@ -71,20 +71,20 @@ func (cheBroker *ChePluginBroker) Start(metas []model.PluginMeta) {
 
 	cheBroker.PrintInfo("Starting common Che plugins processing")
 	for _, meta := range metas {
-		err := cheBroker.processPlugin(meta)
+		err := cheBroker.ProcessPlugin(meta, false)
 		if err != nil {
 			cheBroker.PubFailed(err.Error())
 			cheBroker.PrintFatal(err.Error())
 		}
 	}
 
-	if ok, status := cheBroker.storage.SetStatus(model.StatusDone); !ok {
+	if ok, status := cheBroker.Storage.SetStatus(model.StatusDone); !ok {
 		err := fmt.Sprintf("Setting '%s' broker status failed. Broker has '%s' state", model.StatusDone, status)
 		cheBroker.PubFailed(err)
 		cheBroker.PrintFatal(err)
 	}
 
-	plugins, err := cheBroker.storage.Plugins()
+	plugins, err := cheBroker.Storage.Plugins()
 	if err != nil {
 		cheBroker.PubFailed(err.Error())
 		cheBroker.PrintFatal(err.Error())
@@ -107,13 +107,13 @@ func (cheBroker *ChePluginBroker) PushEvents(tun *jsonrpc.Tunnel) {
 	cheBroker.Broker.PushEvents(tun, model.BrokerStatusEventType, model.BrokerResultEventType, model.BrokerLogEventType)
 }
 
-func (cheBroker *ChePluginBroker) processPlugin(meta model.PluginMeta) error {
+func (cheBroker *ChePluginBroker) ProcessPlugin(meta model.PluginMeta, onlyMetadata bool) error {
 	cheBroker.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
 	url := meta.URL
 
 	switch getTypeOfURL(url) {
 	case Archive:
-		return cheBroker.processArchive(&meta, url)
+		return cheBroker.processArchive(&meta, url, onlyMetadata)
 	case Yaml:
 		return cheBroker.processYAML(&meta, url)
 	default:
@@ -143,7 +143,7 @@ func (cheBroker *ChePluginBroker) processPlugin(meta model.PluginMeta) error {
 	return nil
 }
 
-func (cheBroker *ChePluginBroker) processArchive(meta *model.PluginMeta, url string) error {
+func (cheBroker *ChePluginBroker) processArchive(meta *model.PluginMeta, url string, onlyMetadata bool) error {
 	workDir, err := cheBroker.ioUtil.TempDir("", "che-plugin-broker")
 	if err != nil {
 		return err
@@ -171,6 +171,10 @@ func (cheBroker *ChePluginBroker) processArchive(meta *model.PluginMeta, url str
 		return err
 	}
 
+	if onlyMetadata {
+		return nil
+	}
+	
 	cheBroker.PrintDebug("Copying dependencies for '%s:%s'", meta.ID, meta.Version)
 	return cheBroker.copyDependencies(pluginPath)
 }
@@ -194,7 +198,7 @@ func (cheBroker *ChePluginBroker) resolveToolingConfig(meta *model.PluginMeta, w
 		return err
 	}
 
-	return cheBroker.storage.AddPlugin(meta, tooling)
+	return cheBroker.Storage.AddPlugin(meta, tooling)
 }
 
 func (cheBroker *ChePluginBroker) copyDependencies(workDir string) error {

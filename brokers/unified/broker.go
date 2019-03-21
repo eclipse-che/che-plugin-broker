@@ -63,65 +63,79 @@ func NewBroker() *Broker {
 	}
 }
 
-// Start executes plugins metas processing and sends data to Che master
+// Start executes plugins metas processing and sending data to Che master
 func (b *Broker) Start(metas []model.PluginMeta) {
+	defer b.CloseConsumers()
 	b.PubStarted()
 	b.PrintInfo("Unified Che Plugin Broker")
-
 	b.PrintPlan(metas)
 
-	cheMetas, theiaMetas, vscodeMetas, err := sortMetas(metas)
+	err := b.ProcessPlugins(metas)
 	if err != nil {
 		b.PubFailed(err.Error())
 		b.PrintFatal(err.Error())
 	}
 
-	b.PrintInfo("Starting Che common plugins processing")
-	for _, meta := range cheMetas {
-		err := b.cheBroker.ProcessPlugin(meta)
-		if err != nil {
-			b.PubFailed(err.Error())
-			b.PrintFatal(err.Error())
-		}
-	}
-	b.PrintInfo("Starting Theia plugins processing")
-	for _, meta := range theiaMetas {
-		err := b.theiaBroker.ProcessPlugin(meta)
-		if err != nil {
-			b.PubFailed(err.Error())
-			b.PrintFatal(err.Error())
-		}
-	}
-	b.PrintInfo("Starting VS Code plugins processing")
-	for _, meta := range vscodeMetas {
-		err := b.vscodeBroker.ProcessPlugin(meta)
-		if err != nil {
-			b.PubFailed(err.Error())
-			b.PrintFatal(err.Error())
-		}
-	}
-
-	plugins, err := b.Storage.Plugins()
-	if err != nil {
-		b.PubFailed(err.Error())
-		b.PrintFatal(err.Error())
-	}
-	pluginsBytes, err := json.Marshal(plugins)
+	result, err := b.serializeTooling()
 	if err != nil {
 		b.PubFailed(err.Error())
 		b.PrintFatal(err.Error())
 	}
 
 	b.PrintInfo("All plugins have been successfully processed")
-	result := string(pluginsBytes)
 	b.PrintDebug(result)
 	b.PubDone(result)
-	b.CloseConsumers()
 }
 
 // PushEvents sets given tunnel as consumer of broker events.
 func (b *Broker) PushEvents(tun *jsonrpc.Tunnel) {
 	b.Broker.PushEvents(tun, model.BrokerStatusEventType, model.BrokerResultEventType, model.BrokerLogEventType)
+}
+
+// ProcessPlugins processes metas of different plugin types and passes metas of each particular type
+// to the appropriate plugin broker
+func (b *Broker) ProcessPlugins(metas []model.PluginMeta) error {
+	cheMetas, theiaMetas, vscodeMetas, err := sortMetas(metas)
+	if err != nil {
+		return err
+	}
+
+	b.PrintInfo("Starting Che common plugins processing")
+	for _, meta := range cheMetas {
+		err := b.cheBroker.ProcessPlugin(meta)
+		if err != nil {
+			return err
+		}
+	}
+	b.PrintInfo("Starting Theia plugins processing")
+	for _, meta := range theiaMetas {
+		err := b.theiaBroker.ProcessPlugin(meta)
+		if err != nil {
+			return err
+		}
+	}
+	b.PrintInfo("Starting VS Code plugins processing")
+	for _, meta := range vscodeMetas {
+		err := b.vscodeBroker.ProcessPlugin(meta)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (b *Broker) serializeTooling() (string, error) {
+	plugins, err := b.Storage.Plugins()
+	if err != nil {
+		return "",err
+	}
+	pluginsBytes, err := json.Marshal(plugins)
+	if err != nil {
+		return "", err
+	}
+
+	return string(pluginsBytes), nil
 }
 
 func sortMetas(metas []model.PluginMeta) (che []model.PluginMeta, theia []model.PluginMeta, vscode []model.PluginMeta, err error) {
@@ -138,8 +152,10 @@ func sortMetas(metas []model.PluginMeta) (che []model.PluginMeta, theia []model.
 			vscodeMetas = append(vscodeMetas, meta)
 		case TheiaPluginType:
 			theiaMetas = append(theiaMetas, meta)
+		case "":
+			return nil, nil, nil, fmt.Errorf("Type field is missing in meta information of plugin '%s:%s'", meta.ID, meta.Version)
 		default:
-			return nil, nil, nil, fmt.Errorf("Type field is missing in metainformation of plugin '%s:%s'", meta.ID, meta.Version)
+			return nil, nil, nil, fmt.Errorf("Type '%s' of plugin '%s:%s' is unsupported", meta.Type, meta.ID, meta.Version)
 		}
 	}
 

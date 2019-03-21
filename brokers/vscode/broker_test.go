@@ -98,7 +98,7 @@ func TestProcessPluginBrokenUrl(t *testing.T) {
 
 	setUpDownloadFailureCase(workDir, m)
 	defer tests.RemoveAll(workDir)
-	err := m.b.processPlugin(meta)
+	err := m.b.ProcessPlugin(meta, false)
 
 	assert.NotNil(t, err)
 	assert.EqualError(t, err, "Failed to download plugin")
@@ -379,7 +379,7 @@ func TestBroker_processPlugin(t *testing.T) {
 			if tt.want == nil && tt.err == "" {
 				t.Fatal("Neither want nor error are defined")
 			}
-			err := m.b.processPlugin(tt.meta)
+			err := m.b.ProcessPlugin(tt.meta, false)
 			if err != nil {
 				if tt.err != "" {
 					assert.EqualError(t, err, tt.err)

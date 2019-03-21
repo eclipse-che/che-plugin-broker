@@ -36,7 +36,7 @@ var (
 	mockBroker = &Broker{
 		Broker:  bMock,
 		ioUtil:  uMock,
-		storage: storage.New(),
+		Storage: storage.New(),
 		rand: randMock,
 	}
 )
@@ -45,7 +45,7 @@ func TestProcessRemotePlugin(t *testing.T) {
 	mockBroker = &Broker{
 		Broker:  bMock,
 		ioUtil:  uMock,
-		storage: storage.New(),
+		Storage: storage.New(),
 		rand: randMock,
 	}
 	workDir := tests.CreateTestWorkDir()
@@ -84,10 +84,10 @@ func TestProcessRemotePlugin(t *testing.T) {
 	randMock.On("String", 6).Return("randomContainerSuffix").Once()
 	expected := expectedPlugins(meta, packageJSON.Engines.CheRuntimeContainer, packageJSON.Publisher, packageJSON.Name)
 
-	err := mockBroker.processPlugin(meta)
+	err := mockBroker.ProcessPlugin(meta, false)
 
 	assert.Nil(t, err)
-	pluginsPointer, err := mockBroker.storage.Plugins()
+	pluginsPointer, err := mockBroker.Storage.Plugins()
 	assert.Nil(t, err)
 	assert.NotNil(t, pluginsPointer)
 	plugins := *pluginsPointer
@@ -152,7 +152,7 @@ func TestProcessRegularPlugin(t *testing.T) {
 	mockBroker = &Broker{
 		Broker:  bMock,
 		ioUtil:  uMock,
-		storage: storage.New(),
+		Storage: storage.New(),
 		rand: randMock,
 	}
 	workDir := tests.CreateTestWorkDir()
@@ -192,10 +192,10 @@ func TestProcessRegularPlugin(t *testing.T) {
 	}).Once()
 	uMock.On("CopyFile", archivePath, pluginPath).Return(nil).Once()
 
-	err := mockBroker.processPlugin(meta)
+	err := mockBroker.ProcessPlugin(meta, false)
 
 	assert.Nil(t, err)
-	plugins, err := mockBroker.storage.Plugins()
+	plugins, err := mockBroker.Storage.Plugins()
 	assert.Nil(t, err)
 	assert.Equal(t, expectedPlugins, *plugins)
 	bMock.AssertExpectations(t)
@@ -231,7 +231,7 @@ func TestProcessPluginErrorIfArchiveUnpackingFails(t *testing.T) {
 	uMock.On("Download", "http://test.url", archivePath).Return(nil).Once()
 	uMock.On("Unzip", archivePath, unarchivedPath).Once().Return(errors.New("test"))
 
-	err := mockBroker.processPlugin(meta)
+	err := mockBroker.ProcessPlugin(meta, false)
 
 	assert.Equal(t, errors.New("test"), err)
 	bMock.AssertExpectations(t)
@@ -252,7 +252,7 @@ func TestProcessPluginErrorIfArchiveDownloadingFails(t *testing.T) {
 	bMock.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	uMock.On("Download", "http://test.url", archivePath).Return(errors.New("test")).Once()
 
-	err := mockBroker.processPlugin(meta)
+	err := mockBroker.ProcessPlugin(meta, false)
 
 	assert.Equal(t, errors.New("test"), err)
 	bMock.AssertExpectations(t)
@@ -278,7 +278,7 @@ func TestProcessPluginErrorIfPackageJSONMissing(t *testing.T) {
 		return nil
 	}).Once()
 
-	err := mockBroker.processPlugin(meta)
+	err := mockBroker.ProcessPlugin(meta, false)
 
 	assert.NotNil(t, err)
 	bMock.AssertExpectations(t)
@@ -306,7 +306,7 @@ func TestProcessPluginErrorIfPackageJSONParsingFails(t *testing.T) {
 		return nil
 	}).Once()
 
-	err := mockBroker.processPlugin(meta)
+	err := mockBroker.ProcessPlugin(meta, false)
 
 	assert.NotNil(t, err)
 	bMock.AssertExpectations(t)
@@ -345,7 +345,7 @@ func TestProcessPluginErrorIfArchiveCopyingFails(t *testing.T) {
 	}).Once()
 	uMock.On("CopyFile", archivePath, pluginPath).Return(errors.New("test error: copying archive")).Once()
 
-	err := mockBroker.processPlugin(meta)
+	err := mockBroker.ProcessPlugin(meta, false)
 
 	assert.Equal(t, errors.New("test error: copying archive"), err)
 	bMock.AssertExpectations(t)
@@ -384,7 +384,7 @@ func TestProcessPluginErrorIfArchiveFolderCopyingFails(t *testing.T) {
 	}).Once()
 	uMock.On("CopyResource", unarchivedPath, pluginPath).Return(errors.New("test error: copying archive folder")).Once()
 
-	err := mockBroker.processPlugin(meta)
+	err := mockBroker.ProcessPlugin(meta, false)
 
 	assert.Equal(t, errors.New("test error: copying archive folder"), err)
 	bMock.AssertExpectations(t)

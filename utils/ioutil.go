@@ -56,7 +56,12 @@ func (util *impl) Download(URL string, destPath string) error {
 	}
 	defer Close(out)
 
-	resp, err := http.Get(URL)
+  client := &http.Client{}
+  req, err := http.NewRequest("GET", URL, nil)
+  req.Header.Add("X-Market-Client-Id", "VSCode 1.3.12")
+  req.Header.Add("User-Agent", "VSCode 1.3.12")
+  req.Header.Add("X-Market-User-Id" ,"007")
+  resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}

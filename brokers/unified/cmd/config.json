@@ -1,0 +1,139 @@
+[
+  {
+    "id": "org.eclipse.che.vscode.k8s",
+    "version": "1.0.0",
+    "type": "VS Code extension",
+    "name": "k8s-plugin",
+    "title": "k8s extension",
+    "description": "k8s extension",
+    "icon": "https://www.eclipse.org/che/images/ico/16x16.png",
+    "attributes": {
+      "extension": "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+      "containerImage": "garagatyi/remotetheia:kubectl"
+    }
+  },
+  {
+    "id": "org.eclipse.che.vscode.local.k8s",
+    "version": "1.0.0",
+    "type": "VS Code extension",
+    "name": "k8s-local-plugin",
+    "title": "k8s local extension",
+    "description": "k8s local extension",
+    "icon": "https://www.eclipse.org/che/images/ico/16x16.png",
+    "attributes": {
+      "extension": "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools"
+    }
+  },
+  {
+    "id": "ms-vscode.typescript",
+    "version": "1.0.0",
+    "type": "VS Code extension",
+    "name": "Typescript",
+    "title": "Typescript language features",
+    "description": "Typescript language features",
+    "icon": "https://www.eclipse.org/che/images/ico/16x16.png",
+    "url": "https://github.com/tolusha/ms-code.typescript/releases/download/1.0.0/che-typescript-language.vsix",
+    "attributes": {
+      "containerImage": "garagatyi/remotetheia:kubectl"
+    }
+  },
+  {
+    "id": "ms-vscode.typescript.local",
+    "version": "1.0.0",
+    "type": "VS Code extension",
+    "name": "Typescript",
+    "title": "Typescript language features local",
+    "description": "Typescript language features local",
+    "icon": "https://www.eclipse.org/che/images/ico/16x16.png",
+    "url": "https://github.com/tolusha/ms-code.typescript/releases/download/1.0.0/che-typescript-language.vsix"
+  },
+  {
+    "id": "org.eclipse.che.samples.container-fortune",
+    "version": "0.0.1",
+    "type": "Theia plugin",
+    "name": "Che-Samples-Fortune",
+    "title": "Che Samples Container Fortune Plugin",
+    "description": "Fortune plug-in running in its own container that provides the fortune tool",
+    "icon": "https://www.eclipse.org/che/images/logo-eclipseche.svg",
+    "url": "https://github.com/ws-skeleton/che-fortune-plugin/releases/download/untagged-bbffe2843692982f673b/che_fortune_plugin.theia"
+  },
+  {
+    "id": "org.eclipse.che.samples.dummy-plugin",
+    "version": "0.0.1",
+    "type": "Theia plugin",
+    "name": "Dummy-plugin",
+    "title": "Dummy theia plugin",
+    "description": "Dummy theia plugin",
+    "icon": "https://www.eclipse.org/che/images/logo-eclipseche.svg",
+    "url": "https://github.com/ws-skeleton/che-dummy-plugin/releases/download/new/hello_world_plugin.theia"
+  },
+  {
+    "id": "che-service-plugin",
+    "version": "0.0.1",
+    "type": "Che plugin",
+    "name": "Che Samples REST API Sidecar Plugin",
+    "title": "Che Samples REST API Sidecar Plugin",
+    "description": "Che Plug-in with Theia plug-in and container definition providing a service",
+    "icon": "https://www.eclipse.org/che/images/ico/16x16.png",
+    "url": "https://github.com/ws-skeleton/che-service-plugin/releases/download/untagged-5c4c888ff2de8ae7a5e2/che-service-plugin.tar.gz"
+  },
+  {
+    "id": "org.eclipse.che.editor.theia",
+    "version": "1.0.0",
+    "type": "Che Editor",
+    "name": "theia-ide",
+    "title": "Eclipse Theia for Eclipse Che",
+    "description": "Eclipse Theia",
+    "icon": "https://raw.githubusercontent.com/theia-ide/theia/master/logo/theia-logo-no-text-black.svg?sanitize=true",
+    "url": "https://github.com/ws-skeleton/che-editor-theia/releases/download/untagged-2218dafda12e0786aa79/che-editor-plugin.tar.gz"
+  },
+  {
+    "id": "org.eclipse.che.editor.theia",
+    "version": "1.0.0",
+    "type": "Che Editor",
+    "name": "theia-ide",
+    "title": "Eclipse Theia for Eclipse Che",
+    "description": "Eclipse Theia",
+    "icon": "https://raw.githubusercontent.com/theia-ide/theia/master/logo/theia-logo-no-text-black.svg?sanitize=true",
+    "url": "https://raw.githubusercontent.com/ws-skeleton/che-editor-theia/master/etc/che-plugin.yaml"
+  },
+  {
+    "id": "org.eclipse.che.vscode-redhat.java-and-yaml-in-sidecar",
+    "version": "0.38.0",
+    "type": "VS Code extension",
+    "name": "Language Support for Java(TM)",
+    "title": "Language Support for Java(TM) by Red Hat",
+    "description": "Java Linting, Intellisense, formatting, refactoring, Maven/Gradle support and more...",
+    "icon": "https://www.eclipse.org/che/images/logo-eclipseche.svg",
+    "publisher": "Red Hat, Inc.",
+    "repository": "https://github.com/redhat-developer/vscode-java",
+    "category": "Language",
+    "firstPublicationDate": "2019-02-20",
+    "extensions": [
+      "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/redhat/vsextensions/vscode-yaml/0.3.0/vspackage",
+      "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/redhat/vsextensions/java/0.38.0/vspackage",
+      "vscode:extension/redhat.vscode-xml"
+    ],
+    "attributes": {
+      "containerImage": "eclipse/che-remote-plugin-runner-java8:nightly"
+    }
+  },
+  {
+    "id": "org.eclipse.che.vscode-redhat.java-and-yaml-local",
+    "version": "0.38.0",
+    "type": "VS Code extension",
+    "name": "Language Support for Java(TM)",
+    "title": "Language Support for Java(TM) by Red Hat",
+    "description": "Java Linting, Intellisense, formatting, refactoring, Maven/Gradle support and more...",
+    "icon": "https://www.eclipse.org/che/images/logo-eclipseche.svg",
+    "publisher": "Red Hat, Inc.",
+    "repository": "https://github.com/redhat-developer/vscode-java",
+    "category": "Language",
+    "firstPublicationDate": "2019-02-20",
+    "extensions": [
+      "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/redhat/vsextensions/vscode-yaml/0.3.0/vspackage",
+      "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/redhat/vsextensions/java/0.38.0/vspackage",
+      "vscode:extension/redhat.vscode-xml"
+    ]
+  }
+]

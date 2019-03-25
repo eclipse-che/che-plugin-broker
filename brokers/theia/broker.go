@@ -26,7 +26,13 @@ import (
 )
 
 // Broker is used to process .theia and remote plugins
-type Broker struct {
+type Broker interface {
+	Start(metas []model.PluginMeta)
+	PushEvents(tun *jsonrpc.Tunnel)
+	ProcessPlugin(meta model.PluginMeta) error
+}
+
+type brokerImpl struct {
 	common.Broker
 	ioUtil  utils.IoUtil
 	storage *storage.Storage
@@ -34,8 +40,8 @@ type Broker struct {
 }
 
 // NewBroker creates Che Theia plugin broker instance
-func NewBroker() *Broker {
-	return &Broker{
+func NewBroker() Broker {
+	return &brokerImpl{
 		Broker:  common.NewBroker(),
 		ioUtil:  utils.New(),
 		storage: storage.New(),
@@ -43,8 +49,18 @@ func NewBroker() *Broker {
 	}
 }
 
+// NewBroker creates Che Theia plugin broker instance
+func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage *storage.Storage, rand common.Random) Broker {
+	return &brokerImpl{
+		Broker:  broker,
+		ioUtil:  ioUtil,
+		rand:    rand,
+		storage: storage,
+	}
+}
+
 // Start executes plugins metas processing and sends data to Che master
-func (b *Broker) Start(metas []model.PluginMeta) {
+func (b *brokerImpl) Start(metas []model.PluginMeta) {
 	if ok, status := b.storage.SetStatus(model.StatusStarted); !ok {
 		m := fmt.Sprintf("Starting broker in state '%s' is not allowed", status)
 		b.PubFailed(m)
@@ -57,7 +73,7 @@ func (b *Broker) Start(metas []model.PluginMeta) {
 
 	b.PrintInfo("Starting Theia plugins processing")
 	for _, meta := range metas {
-		err := b.processPlugin(meta)
+		err := b.ProcessPlugin(meta)
 		if err != nil {
 			b.PubFailed(err.Error())
 			b.PrintFatal(err.Error())
@@ -89,11 +105,11 @@ func (b *Broker) Start(metas []model.PluginMeta) {
 }
 
 // PushEvents sets given tunnel as consumer of broker events.
-func (b *Broker) PushEvents(tun *jsonrpc.Tunnel) {
+func (b *brokerImpl) PushEvents(tun *jsonrpc.Tunnel) {
 	b.Broker.PushEvents(tun, model.BrokerStatusEventType, model.BrokerResultEventType, model.BrokerLogEventType)
 }
 
-func (b *Broker) processPlugin(meta model.PluginMeta) error {
+func (b *brokerImpl) ProcessPlugin(meta model.PluginMeta) error {
 	b.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
 	url := meta.URL
 
@@ -136,7 +152,7 @@ func (b *Broker) processPlugin(meta model.PluginMeta) error {
 	return b.injectTheiaRemotePlugin(meta, unpackedPath, pluginImage, pj)
 }
 
-func (b *Broker) getPackageJSON(pluginFolder string) (*PackageJSON, error) {
+func (b *brokerImpl) getPackageJSON(pluginFolder string) (*PackageJSON, error) {
 	packageJSONPath := filepath.Join(pluginFolder, "package.json")
 	f, err := ioutil.ReadFile(packageJSONPath)
 	if err != nil {
@@ -147,14 +163,14 @@ func (b *Broker) getPackageJSON(pluginFolder string) (*PackageJSON, error) {
 	return pj, err
 }
 
-func (b *Broker) getPluginImage(pj *PackageJSON) (string, error) {
+func (b *brokerImpl) getPluginImage(pj *PackageJSON) (string, error) {
 	if pj.Engines.CheRuntimeContainer != "" {
 		return pj.Engines.CheRuntimeContainer, nil
 	}
 	return "", nil
 }
 
-func (b *Broker) injectTheiaFile(meta model.PluginMeta, archivePath string) error {
+func (b *brokerImpl) injectTheiaFile(meta model.PluginMeta, archivePath string) error {
 	b.PrintDebug("Copying Theia plugin '%s:%s'", meta.ID, meta.Version)
 	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.theia", meta.ID, meta.Version))
 	err := b.ioUtil.CopyFile(archivePath, pluginPath)
@@ -165,7 +181,7 @@ func (b *Broker) injectTheiaFile(meta model.PluginMeta, archivePath string) erro
 	return b.storage.AddPlugin(&meta, tooling)
 }
 
-func (b *Broker) injectTheiaRemotePlugin(meta model.PluginMeta, archiveFolder string, image string, pj *PackageJSON) error {
+func (b *brokerImpl) injectTheiaRemotePlugin(meta model.PluginMeta, archiveFolder string, image string, pj *PackageJSON) error {
 	pluginFolderPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
 	b.PrintDebug("Copying Theia remote plugin '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, archiveFolder, pluginFolderPath)
 	err := b.ioUtil.CopyResource(archiveFolder, pluginFolderPath)

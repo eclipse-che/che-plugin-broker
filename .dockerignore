@@ -6,3 +6,4 @@
 */cmd/cmd
 main
 *.json
+*/unified/cmd/unified-broker

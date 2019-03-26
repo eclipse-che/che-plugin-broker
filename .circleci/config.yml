@@ -22,3 +22,4 @@ jobs:
       - run: cd brokers/theia/cmd && CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o theia-plugin-broker main.go
       - run: cd brokers/vscode/cmd && CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o vscode-extension-broker main.go
       - run: cd brokers/init/cmd && CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o init-plugin-broker main.go
+      - run: cd brokers/unified/cmd && CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o unified-broker main.go

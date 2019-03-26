@@ -30,6 +30,7 @@ import (
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
 	"github.com/eclipse/che-plugin-broker/utils"
+	"github.com/eclipse/che-plugin-broker/cfg"
 )
 
 const marketplace = "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery"
@@ -39,27 +40,44 @@ const errorMutuallyExclusiveExtFieldsTemplate = "VS Code extension description o
 const errorNoExtFieldsTemplate = "Neither 'extension' nor 'url' nor 'extensions' field found in VS Code extension description of the plugin '%s:%s'"
 
 // Broker is used to process VS Code extensions to run them as Che plugins
-type Broker struct {
+type Broker interface {
+	Start(metas []model.PluginMeta)
+	PushEvents(tun *jsonrpc.Tunnel)
+	ProcessPlugin(meta model.PluginMeta) error
+}
+
+type brokerImpl struct {
 	common.Broker
 	ioUtil  utils.IoUtil
-	Storage *storage.Storage
+	storage *storage.Storage
 	client  *http.Client
 	rand    common.Random
 }
 
 // NewBroker creates Che VS Code extension broker instance
-func NewBroker() *Broker {
-	return &Broker{
+func NewBroker() *brokerImpl {
+	return &brokerImpl{
 		Broker:  common.NewBroker(),
 		ioUtil:  utils.New(),
-		Storage: storage.New(),
+		storage: storage.New(),
 		client:  &http.Client{},
 		rand:    common.NewRand(),
 	}
 }
 
+// NewBroker creates Che VS Code extension broker instance
+func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage *storage.Storage, rand common.Random, httpClient *http.Client) *brokerImpl {
+	return &brokerImpl{
+		Broker:  broker,
+		ioUtil:  ioUtil,
+		rand:    rand,
+		storage: storage,
+		client:  httpClient,
+	}
+}
+
 // Start executes plugins metas processing and sends data to Che master
-func (b *Broker) Start(metas []model.PluginMeta) {
+func (b *brokerImpl) Start(metas []model.PluginMeta) {
 	b.PubStarted()
 	b.PrintInfo("Started VS Code Plugin Broker")
 
@@ -67,14 +85,14 @@ func (b *Broker) Start(metas []model.PluginMeta) {
 
 	b.PrintInfo("Starting VS Code extensions processing")
 	for _, meta := range metas {
-		err := b.ProcessPlugin(meta, false)
+		err := b.ProcessPlugin(meta)
 		if err != nil {
 			b.PubFailed(err.Error())
 			b.PrintFatal(err.Error())
 		}
 	}
 
-	plugins, err := b.Storage.Plugins()
+	plugins, err := b.storage.Plugins()
 	if err != nil {
 		b.PubFailed(err.Error())
 		b.PrintFatal(err.Error())
@@ -93,11 +111,11 @@ func (b *Broker) Start(metas []model.PluginMeta) {
 }
 
 // PushEvents sets given tunnel as consumer of broker events.
-func (b *Broker) PushEvents(tun *jsonrpc.Tunnel) {
+func (b *brokerImpl) PushEvents(tun *jsonrpc.Tunnel) {
 	b.Broker.PushEvents(tun, model.BrokerStatusEventType, model.BrokerResultEventType, model.BrokerLogEventType)
 }
 
-func (b *Broker) ProcessPlugin(meta model.PluginMeta, onlyMetadata bool) error {
+func (b *brokerImpl) ProcessPlugin(meta model.PluginMeta) error {
 	b.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
 
 	URLs, err := b.getBinariesURLs(meta)
@@ -117,32 +135,34 @@ func (b *Broker) ProcessPlugin(meta model.PluginMeta, onlyMetadata bool) error {
 
 	image := meta.Attributes["containerImage"]
 	if image == "" {
-		// regular plugin
-		return b.injectLocalPlugin(meta, archivesPaths, onlyMetadata)
-	}
-	// remote plugin
-	return b.injectRemotePlugin(meta, image, archivesPaths, workDir, onlyMetadata)
-}
-
-func (b *Broker) injectLocalPlugin(meta model.PluginMeta, archivesPaths []string, onlyMetadata bool) error {
-	if (! onlyMetadata) {
-		b.PrintDebug("Copying VS Code plugin '%s:%s'", meta.ID, meta.Version)
-		for _, path := range archivesPaths {
-			pluginName := b.generatePluginArchiveName(meta)
-			pluginPath := filepath.Join("/plugins", pluginName)
-			b.PrintDebug("Copying VS Code extension archive from '%s' to '%s' for plugin '%s:%s'", path, pluginPath, meta.ID, meta.Version)
-			err := b.ioUtil.CopyFile(path, pluginPath)
+		if (! cfg.OnlyApplyMetadataActions) {
+			// regular plugin
+			err = b.injectLocalPlugin(meta, archivesPaths)
 			if err != nil {
 				return err
 			}
+			return b.storage.AddPlugin(&meta, &model.ToolingConf{})
 		}
 	}
-
-	tooling := &model.ToolingConf{}
-	return b.Storage.AddPlugin(&meta, tooling)
+	// remote plugin
+	return b.injectRemotePlugin(meta, image, archivesPaths, workDir)
 }
 
-func (b *Broker) injectRemotePlugin(meta model.PluginMeta, image string, archivesPaths []string, workDir string, onlyMetadata bool) error {
+func (b *brokerImpl) injectLocalPlugin(meta model.PluginMeta, archivesPaths []string) error {
+	b.PrintDebug("Copying VS Code plugin '%s:%s'", meta.ID, meta.Version)
+	for _, path := range archivesPaths {
+		pluginName := b.generatePluginArchiveName(meta)
+		pluginPath := filepath.Join("/plugins", pluginName)
+		b.PrintDebug("Copying VS Code extension archive from '%s' to '%s' for plugin '%s:%s'", path, pluginPath, meta.ID, meta.Version)
+		err := b.ioUtil.CopyFile(path, pluginPath)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (b *brokerImpl) injectRemotePlugin(meta model.PluginMeta, image string, archivesPaths []string, workDir string) error {
 	tooling := theia.GenerateSidecar(image, b.rand)
 	for _, archive := range archivesPaths {
 		// Unzip it
@@ -158,7 +178,7 @@ func (b *Broker) injectRemotePlugin(meta model.PluginMeta, image string, archive
 			return err
 		}
 
-		if (! onlyMetadata) {
+		if (! cfg.OnlyApplyMetadataActions) {
 			pluginName := b.generatePluginFolderName(meta, *pj)
 
 			pluginFolderPath := filepath.Join("/plugins", pluginName)
@@ -171,10 +191,10 @@ func (b *Broker) injectRemotePlugin(meta model.PluginMeta, image string, archive
 		theia.AddExtension(tooling, *pj)
 	}
 
-	return b.Storage.AddPlugin(&meta, tooling)
+	return b.storage.AddPlugin(&meta, tooling)
 }
 
-func (b *Broker) downloadArchives(URLs []string, meta model.PluginMeta, workDir string) ([]string, error) {
+func (b *brokerImpl) downloadArchives(URLs []string, meta model.PluginMeta, workDir string) ([]string, error) {
 	paths := make([]string, 0)
 	for _, URL := range URLs {
 		archivePath := filepath.Join(workDir, "pluginArchive"+b.rand.String(10))
@@ -189,7 +209,7 @@ func (b *Broker) downloadArchives(URLs []string, meta model.PluginMeta, workDir 
 	return paths, nil
 }
 
-func (b *Broker) getExtensionsAndURLs(meta model.PluginMeta) (e []string, u []string, err error) {
+func (b *brokerImpl) getExtensionsAndURLs(meta model.PluginMeta) (e []string, u []string, err error) {
 	extensions := make([]string, 0)
 	URLs := make([]string, 0)
 	isSet := false
@@ -226,7 +246,7 @@ func (b *Broker) getExtensionsAndURLs(meta model.PluginMeta) (e []string, u []st
 	return extensions, URLs, nil
 }
 
-func (b *Broker) getBinariesURLs(meta model.PluginMeta) ([]string, error) {
+func (b *brokerImpl) getBinariesURLs(meta model.PluginMeta) ([]string, error) {
 	extensions, URLs, err := b.getExtensionsAndURLs(meta)
 	if err != nil {
 		return nil, err
@@ -249,17 +269,17 @@ func extensionOrURL(extensionOrURL string) (extension string, URL string) {
 	}
 }
 
-func (b *Broker) generatePluginFolderName(meta model.PluginMeta, pj model.PackageJSON) string {
+func (b *brokerImpl) generatePluginFolderName(meta model.PluginMeta, pj model.PackageJSON) string {
 	var re = regexp.MustCompile(`[^a-zA-Z_0-9]+`)
 	prettyID := re.ReplaceAllString(pj.Publisher+"_"+pj.Name, "")
 	return fmt.Sprintf("%s.%s.%s", meta.ID, meta.Version, prettyID)
 }
 
-func (b *Broker) generatePluginArchiveName(meta model.PluginMeta) string {
+func (b *brokerImpl) generatePluginArchiveName(meta model.PluginMeta) string {
 	return fmt.Sprintf("%s.%s.%s.vsix", meta.ID, meta.Version, b.rand.String(10))
 }
 
-func (b *Broker) getExtensionArchiveURL(extension string, meta model.PluginMeta) (string, error) {
+func (b *brokerImpl) getExtensionArchiveURL(extension string, meta model.PluginMeta) (string, error) {
 	response, err := b.fetchExtensionInfo(extension, meta)
 	if err != nil {
 		return "", err
@@ -272,7 +292,7 @@ func (b *Broker) getExtensionArchiveURL(extension string, meta model.PluginMeta)
 	return URL, nil
 }
 
-func (b *Broker) downloadArchive(URL string, dest string) error {
+func (b *brokerImpl) downloadArchive(URL string, dest string) error {
 	err := b.ioUtil.Download(URL, dest)
 	retries := 5
 	for i := 1; i <= retries && isRateLimitError(err); i++ {
@@ -299,7 +319,7 @@ func isRateLimitError(err error) bool {
 	return false
 }
 
-func (b *Broker) fetchExtensionInfo(extension string, meta model.PluginMeta) ([]byte, error) {
+func (b *brokerImpl) fetchExtensionInfo(extension string, meta model.PluginMeta) ([]byte, error) {
 	re := regexp.MustCompile(`^vscode:extension/(.*)`)
 	groups := re.FindStringSubmatch(extension)
 	if len(groups) != 2 {
@@ -353,7 +373,7 @@ func findAssetURL(response []byte, meta model.PluginMeta) (string, error) {
 	return "", fmt.Errorf("VS Code extension archive information is not found in marketplace response for plugin %s:%s", meta.ID, meta.Version)
 }
 
-func (b *Broker) getPackageJSON(pluginFolder string) (*model.PackageJSON, error) {
+func (b *brokerImpl) getPackageJSON(pluginFolder string) (*model.PackageJSON, error) {
 	packageJSONPath := filepath.Join(pluginFolder, "extension", "package.json")
 	f, err := ioutil.ReadFile(packageJSONPath)
 	if err != nil {

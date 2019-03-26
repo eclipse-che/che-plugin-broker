@@ -61,7 +61,7 @@ func initMocks() *mocks {
 		b: &brokerImpl{
 			Broker:  cb,
 			ioUtil:  u,
-			storage: storage.New(),
+			Storage: storage.New(),
 			client:  test.NewTestHTTPClient(okMarketplaceResponse),
 			rand:    randMock,
 		},
@@ -103,7 +103,7 @@ func TestProcessPluginBrokenUrl(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.EqualError(t, err, "Failed to download plugin")
 
-	pluginsPointer, err := m.b.storage.Plugins()
+	pluginsPointer, err := m.b.Storage.Plugins()
 	assert.Nil(t, err)
 	assert.NotNil(t, pluginsPointer)
 	plugins := *pluginsPointer
@@ -388,7 +388,7 @@ func TestBroker_processPlugin(t *testing.T) {
 					return
 				}
 			} else {
-				pluginsPointer, err := m.b.storage.Plugins()
+				pluginsPointer, err := m.b.Storage.Plugins()
 				assert.Nil(t, err)
 				assert.NotNil(t, pluginsPointer)
 				plugins := *pluginsPointer
@@ -658,7 +658,7 @@ func TestFetchExtensionInfo(t *testing.T) {
 			var b = &brokerImpl{
 				Broker:  common.NewBroker(),
 				ioUtil:  utils.New(),
-				storage: storage.New(),
+				Storage: storage.New(),
 				client:  test.NewTestHTTPClient(tt.roundTF),
 				rand:    common.NewRand(),
 			}

@@ -141,8 +141,8 @@ func (b *brokerImpl) ProcessPlugin(meta model.PluginMeta) error {
 			if err != nil {
 				return err
 			}
-			return b.Storage.AddPlugin(&meta, &model.ToolingConf{})
 		}
+		return b.Storage.AddPlugin(&meta, &model.ToolingConf{})
 	}
 	// remote plugin
 	return b.injectRemotePlugin(meta, image, archivesPaths, workDir)

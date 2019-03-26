@@ -49,7 +49,7 @@ type Broker interface {
 type brokerImpl struct {
 	common.Broker
 	ioUtil  utils.IoUtil
-	Storage *storage.Storage
+	storage *storage.Storage
 	client  *http.Client
 	rand    common.Random
 }
@@ -59,7 +59,7 @@ func NewBroker() *brokerImpl {
 	return &brokerImpl{
 		Broker:  common.NewBroker(),
 		ioUtil:  utils.New(),
-		Storage: storage.New(),
+		storage: storage.New(),
 		client:  &http.Client{},
 		rand:    common.NewRand(),
 	}
@@ -71,7 +71,7 @@ func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage *sto
 		Broker:  broker,
 		ioUtil:  ioUtil,
 		rand:    rand,
-		Storage: storage,
+		storage: storage,
 		client:  httpClient,
 	}
 }
@@ -92,7 +92,7 @@ func (b *brokerImpl) Start(metas []model.PluginMeta) {
 		}
 	}
 
-	plugins, err := b.Storage.Plugins()
+	plugins, err := b.storage.Plugins()
 	if err != nil {
 		b.PubFailed(err.Error())
 		b.PrintFatal(err.Error())
@@ -191,7 +191,7 @@ func (b *brokerImpl) injectRemotePlugin(meta model.PluginMeta, image string, arc
 		theia.AddExtension(tooling, *pj)
 	}
 
-	return b.Storage.AddPlugin(&meta, tooling)
+	return b.storage.AddPlugin(&meta, tooling)
 }
 
 func (b *brokerImpl) downloadArchives(URLs []string, meta model.PluginMeta, workDir string) ([]string, error) {

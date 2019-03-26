@@ -23,29 +23,46 @@ import (
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
 	"github.com/eclipse/che-plugin-broker/utils"
+	"github.com/eclipse/che-plugin-broker/cfg"
 )
 
 // Broker is used to process .theia and remote plugins
-type Broker struct {
+type Broker interface {
+	Start(metas []model.PluginMeta)
+	PushEvents(tun *jsonrpc.Tunnel)
+	ProcessPlugin(meta model.PluginMeta) error
+}
+
+type brokerImpl struct {
 	common.Broker
 	ioUtil  utils.IoUtil
-	Storage *storage.Storage
+	storage *storage.Storage
 	rand    common.Random
 }
 
 // NewBroker creates Che Theia plugin broker instance
-func NewBroker() *Broker {
-	return &Broker{
+func NewBroker() Broker {
+	return &brokerImpl{
 		Broker:  common.NewBroker(),
 		ioUtil:  utils.New(),
-		Storage: storage.New(),
+		storage: storage.New(),
 		rand:    common.NewRand(),
 	}
 }
 
+// NewBroker creates Che Theia plugin broker instance
+func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage *storage.Storage, rand common.Random) Broker {
+	return &brokerImpl{
+		Broker:  broker,
+		ioUtil:  ioUtil,
+		rand:    rand,
+		storage: storage,
+	}
+}
+
 // Start executes plugins metas processing and sends data to Che master
-func (b *Broker) Start(metas []model.PluginMeta) {
-	if ok, status := b.Storage.SetStatus(model.StatusStarted); !ok {
+func (b *brokerImpl) Start(metas []model.PluginMeta) {
+	if ok, status := b.storage.SetStatus(model.StatusStarted); !ok {
 		m := fmt.Sprintf("Starting broker in state '%s' is not allowed", status)
 		b.PubFailed(m)
 		b.PrintFatal(m)
@@ -57,20 +74,20 @@ func (b *Broker) Start(metas []model.PluginMeta) {
 
 	b.PrintInfo("Starting Theia plugins processing")
 	for _, meta := range metas {
-		err := b.ProcessPlugin(meta, false)
+		err := b.ProcessPlugin(meta)
 		if err != nil {
 			b.PubFailed(err.Error())
 			b.PrintFatal(err.Error())
 		}
 	}
 
-	if ok, status := b.Storage.SetStatus(model.StatusDone); !ok {
+	if ok, status := b.storage.SetStatus(model.StatusDone); !ok {
 		err := fmt.Sprintf("Setting '%s' broker status failed. Broker has '%s' state", model.StatusDone, status)
 		b.PubFailed(err)
 		b.PrintFatal(err)
 	}
 
-	plugins, err := b.Storage.Plugins()
+	plugins, err := b.storage.Plugins()
 	if err != nil {
 		b.PubFailed(err.Error())
 		b.PrintFatal(err.Error())
@@ -89,11 +106,11 @@ func (b *Broker) Start(metas []model.PluginMeta) {
 }
 
 // PushEvents sets given tunnel as consumer of broker events.
-func (b *Broker) PushEvents(tun *jsonrpc.Tunnel) {
+func (b *brokerImpl) PushEvents(tun *jsonrpc.Tunnel) {
 	b.Broker.PushEvents(tun, model.BrokerStatusEventType, model.BrokerResultEventType, model.BrokerLogEventType)
 }
 
-func (b *Broker) ProcessPlugin(meta model.PluginMeta, onlyMetadata bool) error {
+func (b *brokerImpl) ProcessPlugin(meta model.PluginMeta) error {
 	b.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
 	url := meta.URL
 
@@ -130,13 +147,19 @@ func (b *Broker) ProcessPlugin(meta model.PluginMeta, onlyMetadata bool) error {
 	}
 	if pluginImage == "" {
 		// regular plugin
-		return b.injectTheiaFile(meta, archivePath, onlyMetadata)
+		if (! cfg.OnlyApplyMetadataActions) {
+			err = b.injectTheiaFile(meta, archivePath)
+			if err != nil {
+				return err
+			}
+		}
+		return b.storage.AddPlugin(&meta, &model.ToolingConf{})
 	}
 	// remote plugin
-	return b.injectTheiaRemotePlugin(meta, unpackedPath, pluginImage, pj, onlyMetadata)
+	return b.injectTheiaRemotePlugin(meta, unpackedPath, pluginImage, pj)
 }
 
-func (b *Broker) getPackageJSON(pluginFolder string) (*PackageJSON, error) {
+func (b *brokerImpl) getPackageJSON(pluginFolder string) (*PackageJSON, error) {
 	packageJSONPath := filepath.Join(pluginFolder, "package.json")
 	f, err := ioutil.ReadFile(packageJSONPath)
 	if err != nil {
@@ -147,28 +170,25 @@ func (b *Broker) getPackageJSON(pluginFolder string) (*PackageJSON, error) {
 	return pj, err
 }
 
-func (b *Broker) getPluginImage(pj *PackageJSON) (string, error) {
+func (b *brokerImpl) getPluginImage(pj *PackageJSON) (string, error) {
 	if pj.Engines.CheRuntimeContainer != "" {
 		return pj.Engines.CheRuntimeContainer, nil
 	}
 	return "", nil
 }
 
-func (b *Broker) injectTheiaFile(meta model.PluginMeta, archivePath string, onlyMetadata bool) error {
-	if (! onlyMetadata) {
-		b.PrintDebug("Copying Theia plugin '%s:%s'", meta.ID, meta.Version)
-		pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.theia", meta.ID, meta.Version))
-		err := b.ioUtil.CopyFile(archivePath, pluginPath)
-		if err != nil {
-			return err
-		}
+func (b *brokerImpl) injectTheiaFile(meta model.PluginMeta, archivePath string) error {
+	b.PrintDebug("Copying Theia plugin '%s:%s'", meta.ID, meta.Version)
+	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.theia", meta.ID, meta.Version))
+	err := b.ioUtil.CopyFile(archivePath, pluginPath)
+	if err != nil {
+		return err
 	}
-	tooling := &model.ToolingConf{}
-	return b.Storage.AddPlugin(&meta, tooling)
+	return nil
 }
 
-func (b *Broker) injectTheiaRemotePlugin(meta model.PluginMeta, archiveFolder string, image string, pj *PackageJSON, onlyMetadata bool) error {
-	if (! onlyMetadata) {
+func (b *brokerImpl) injectTheiaRemotePlugin(meta model.PluginMeta, archiveFolder string, image string, pj *PackageJSON) error {
+	if (! cfg.OnlyApplyMetadataActions) {
 		pluginFolderPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
 		b.PrintDebug("Copying Theia remote plugin '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, archiveFolder, pluginFolderPath)
 		err := b.ioUtil.CopyResource(archiveFolder, pluginFolderPath)
@@ -177,5 +197,5 @@ func (b *Broker) injectTheiaRemotePlugin(meta model.PluginMeta, archiveFolder st
 		}
 	}
 	tooling := GenerateSidecarTooling(image, pj.PackageJSON, b.rand)
-	return b.Storage.AddPlugin(&meta, tooling)
+	return b.storage.AddPlugin(&meta, tooling)
 }

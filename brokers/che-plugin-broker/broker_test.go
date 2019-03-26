@@ -15,6 +15,8 @@ package broker
 import (
 	"errors"
 	"fmt"
+	"github.com/eclipse/che-plugin-broker/common"
+	"github.com/eclipse/che-plugin-broker/utils"
 	"log"
 	"path/filepath"
 	"testing"
@@ -31,10 +33,14 @@ import (
 )
 
 var (
-	broker     = NewBroker()
+	broker     = &chePluginBrokerImpl{
+		common.NewBroker(),
+		utils.New(),
+		storage.New(),
+	}
 	bMock      = &cmock.Broker{}
 	uMock      = &umock.IoUtil{}
-	mockBroker = &ChePluginBroker{
+	mockBroker = &chePluginBrokerImpl{
 		bMock,
 		uMock,
 		storage.New(),
@@ -55,7 +61,7 @@ func TestProcessPluginErrorIfArchiveDownloadingFails(t *testing.T) {
 	bMock.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	uMock.On("Download", "http://test.url", archivePath).Return(errors.New("test")).Once()
 
-	err := mockBroker.ProcessPlugin(meta, false)
+	err := mockBroker.ProcessPlugin(meta)
 
 	assert.Equal(t, errors.New("test"), err)
 	bMock.AssertExpectations(t)
@@ -76,7 +82,7 @@ func TestProcessPluginErrorIfYamlDownloadingFails(t *testing.T) {
 	bMock.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	uMock.On("Download", "http://test.url/che-plugin.yaml", pluginYaml).Return(errors.New("test")).Once()
 
-	err := mockBroker.ProcessPlugin(meta, false)
+	err := mockBroker.ProcessPlugin(meta)
 
 	assert.Equal(t, errors.New("test"), err)
 	bMock.AssertExpectations(t)
@@ -99,7 +105,7 @@ func TestProcessPluginErrorIfArchiveUnpackingFails(t *testing.T) {
 	uMock.On("Download", "http://test.url", archivePath).Return(nil).Once()
 	uMock.On("Untar", archivePath, unarchivedPath).Once().Return(errors.New("test"))
 
-	err := mockBroker.ProcessPlugin(meta, false)
+	err := mockBroker.ProcessPlugin(meta)
 
 	assert.Equal(t, errors.New("test"), err)
 	bMock.AssertExpectations(t)
@@ -132,7 +138,7 @@ func TestProcessPluginErrorIfPluginYamlParsingFails(t *testing.T) {
 		return nil
 	})
 
-	err := mockBroker.ProcessPlugin(meta, false)
+	err := mockBroker.ProcessPlugin(meta)
 
 	assert.NotNil(t, err)
 	bMock.AssertExpectations(t)
@@ -141,7 +147,7 @@ func TestProcessPluginErrorIfPluginYamlParsingFails(t *testing.T) {
 
 func TestProcessPlugin(t *testing.T) {
 	workDir := tests.CreateTestWorkDir()
-	mockBroker = &ChePluginBroker{
+	mockBroker = &chePluginBrokerImpl{
 		bMock,
 		uMock,
 		storage.New(),
@@ -231,10 +237,10 @@ func TestProcessPlugin(t *testing.T) {
 		return nil
 	})
 
-	err := mockBroker.ProcessPlugin(meta, false)
+	err := mockBroker.ProcessPlugin(meta)
 
 	assert.Nil(t, err)
-	plugins, err := mockBroker.Storage.Plugins()
+	plugins, err := mockBroker.storage.Plugins()
 	assert.Nil(t, err)
 	assert.Equal(t, expectedPlugins, *plugins)
 	bMock.AssertExpectations(t)
@@ -245,7 +251,7 @@ func TestProcessPluginWithYaml(t *testing.T) {
 	workDir := tests.CreateTestWorkDir()
 	pluginYaml := filepath.Join(workDir, pluginFileName)
 	defer tests.RemoveAll(workDir)
-	mockBroker = &ChePluginBroker{
+	mockBroker = &chePluginBrokerImpl{
 		bMock,
 		uMock,
 		storage.New(),
@@ -329,10 +335,10 @@ func TestProcessPluginWithYaml(t *testing.T) {
 		return nil
 	})
 
-	err := mockBroker.ProcessPlugin(meta, false)
+	err := mockBroker.ProcessPlugin(meta)
 
 	assert.Nil(t, err)
-	plugins, err := mockBroker.Storage.Plugins()
+	plugins, err := mockBroker.storage.Plugins()
 	assert.Nil(t, err)
 	assert.Equal(t, expectedPlugins, *plugins)
 	bMock.AssertExpectations(t)

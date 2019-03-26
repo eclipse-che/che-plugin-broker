@@ -23,6 +23,7 @@ import (
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
 	"github.com/eclipse/che-plugin-broker/utils"
+	"github.com/eclipse/che-plugin-broker/cfg"
 )
 
 // Broker is used to process .theia and remote plugins
@@ -146,7 +147,13 @@ func (b *brokerImpl) ProcessPlugin(meta model.PluginMeta) error {
 	}
 	if pluginImage == "" {
 		// regular plugin
-		return b.injectTheiaFile(meta, archivePath)
+		if (! cfg.OnlyApplyMetadataActions) {
+			err = b.injectTheiaFile(meta, archivePath)
+			if err != nil {
+				return err
+			}
+		}
+		return b.storage.AddPlugin(&meta, &model.ToolingConf{})
 	}
 	// remote plugin
 	return b.injectTheiaRemotePlugin(meta, unpackedPath, pluginImage, pj)
@@ -177,16 +184,17 @@ func (b *brokerImpl) injectTheiaFile(meta model.PluginMeta, archivePath string) 
 	if err != nil {
 		return err
 	}
-	tooling := &model.ToolingConf{}
-	return b.storage.AddPlugin(&meta, tooling)
+	return nil
 }
 
 func (b *brokerImpl) injectTheiaRemotePlugin(meta model.PluginMeta, archiveFolder string, image string, pj *PackageJSON) error {
-	pluginFolderPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
-	b.PrintDebug("Copying Theia remote plugin '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, archiveFolder, pluginFolderPath)
-	err := b.ioUtil.CopyResource(archiveFolder, pluginFolderPath)
-	if err != nil {
-		return err
+	if (! cfg.OnlyApplyMetadataActions) {
+		pluginFolderPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
+		b.PrintDebug("Copying Theia remote plugin '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, archiveFolder, pluginFolderPath)
+		err := b.ioUtil.CopyResource(archiveFolder, pluginFolderPath)
+		if err != nil {
+			return err
+		}
 	}
 	tooling := GenerateSidecarTooling(image, pj.PackageJSON, b.rand)
 	return b.storage.AddPlugin(&meta, tooling)

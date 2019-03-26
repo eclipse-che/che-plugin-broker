@@ -18,6 +18,7 @@ import (
 
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/model"
+	"github.com/eclipse/che-plugin-broker/cfg"
 )
 
 var re = regexp.MustCompile(`[^a-zA-Z_0-9]+`)
@@ -53,7 +54,11 @@ func AddExtension(toolingConf *model.ToolingConf, pj model.PackageJSON) {
 	sidecarEndpoint := toolingConf.Endpoints[0]
 	prettyID := re.ReplaceAllString(pj.Publisher+"_"+pj.Name, `_`)
 	sidecarTheiaEnvVarName := "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID
-	sidecarTheiaEnvVarValue := "ws://" + sidecarEndpoint.Name + ":" + strconv.Itoa(sidecarEndpoint.TargetPort)
+	sidecarHostname := sidecarEndpoint.Name
+	if cfg.UseLocalhostInPluginUrls {
+		sidecarHostname = "localhost"
+	}
+	sidecarTheiaEnvVarValue := "ws://" + sidecarHostname + ":" + strconv.Itoa(sidecarEndpoint.TargetPort)
 
 	toolingConf.WorkspaceEnv = append(toolingConf.WorkspaceEnv, model.EnvVar{Name: sidecarTheiaEnvVarName, Value: sidecarTheiaEnvVarValue})
 }

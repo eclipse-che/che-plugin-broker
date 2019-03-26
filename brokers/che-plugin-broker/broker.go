@@ -28,6 +28,7 @@ import (
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
 	"github.com/eclipse/che-plugin-broker/utils"
+	"github.com/eclipse/che-plugin-broker/cfg"
 )
 
 const pluginFileName = "che-plugin.yaml"
@@ -187,6 +188,10 @@ func (cheBroker *chePluginBrokerImpl) processArchive(meta *model.PluginMeta, url
 		return err
 	}
 
+	if cfg.OnlyApplyMetadataActions {
+		return nil
+	}
+	
 	cheBroker.PrintDebug("Copying dependencies for '%s:%s'", meta.ID, meta.Version)
 	return cheBroker.copyDependencies(pluginPath)
 }

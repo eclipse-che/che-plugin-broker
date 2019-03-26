@@ -48,6 +48,14 @@ var (
 	// to be sent to endpoint. This helps imitate what info about plugin brokering
 	// a user would see
 	PrintEventsOnly bool
+
+	// Use the `localhost` name instead of the Kubernetes service name
+	// to build Theia or VSCode plugin endpoint URL 
+	UseLocalhostInPluginUrls bool
+
+	// Only apply metadata-related steps, without copying any file
+	// into the `plugins` directory
+	OnlyApplyMetadataActions bool
 )
 
 func init() {

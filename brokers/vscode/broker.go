@@ -30,6 +30,7 @@ import (
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
 	"github.com/eclipse/che-plugin-broker/utils"
+	"github.com/eclipse/che-plugin-broker/cfg"
 )
 
 const marketplace = "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery"
@@ -134,8 +135,14 @@ func (b *brokerImpl) ProcessPlugin(meta model.PluginMeta) error {
 
 	image := meta.Attributes["containerImage"]
 	if image == "" {
-		// regular plugin
-		return b.injectLocalPlugin(meta, archivesPaths)
+		if (! cfg.OnlyApplyMetadataActions) {
+			// regular plugin
+			err = b.injectLocalPlugin(meta, archivesPaths)
+			if err != nil {
+				return err
+			}
+		}
+		return b.Storage.AddPlugin(&meta, &model.ToolingConf{})
 	}
 	// remote plugin
 	return b.injectRemotePlugin(meta, image, archivesPaths, workDir)
@@ -152,9 +159,7 @@ func (b *brokerImpl) injectLocalPlugin(meta model.PluginMeta, archivesPaths []st
 			return err
 		}
 	}
-
-	tooling := &model.ToolingConf{}
-	return b.Storage.AddPlugin(&meta, tooling)
+	return nil
 }
 
 func (b *brokerImpl) injectRemotePlugin(meta model.PluginMeta, image string, archivesPaths []string, workDir string) error {
@@ -173,13 +178,15 @@ func (b *brokerImpl) injectRemotePlugin(meta model.PluginMeta, image string, arc
 			return err
 		}
 
-		pluginName := b.generatePluginFolderName(meta, *pj)
+		if (! cfg.OnlyApplyMetadataActions) {
+			pluginName := b.generatePluginFolderName(meta, *pj)
 
-		pluginFolderPath := filepath.Join("/plugins", pluginName)
-		b.PrintDebug("Copying VS Code extension '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, unpackedPath, pluginFolderPath)
-		err = b.ioUtil.CopyResource(unpackedPath, pluginFolderPath)
-		if err != nil {
-			return err
+			pluginFolderPath := filepath.Join("/plugins", pluginName)
+			b.PrintDebug("Copying VS Code extension '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, unpackedPath, pluginFolderPath)
+			err = b.ioUtil.CopyResource(unpackedPath, pluginFolderPath)
+			if err != nil {
+				return err
+			}
 		}
 		theia.AddExtension(tooling, *pj)
 	}

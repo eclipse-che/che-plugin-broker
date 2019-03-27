@@ -1,8 +1,5 @@
 # Ignore binaries with these names but not folders with the same names
-*/che-plugin-broker/cmd/che-plugin-broker
-*/theia/cmd/theia-plugin-broker
 */init/cmd/init-plugin-broker
-*/vscode/cmd/vscode-extension-broker
 */cmd/cmd
 main
 *.json

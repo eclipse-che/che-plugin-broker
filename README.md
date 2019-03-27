@@ -2,14 +2,31 @@
 
 # This repo contains implementations of several Che plugin brokers
 
-## che-plugin-broker
+## init-plugin-broker
+
+Cleanups content of /plugins/ folder.
+Should be started before other brokers not to remove files they are adding to plugins folder.
+
+## unified-plugin-broker
+
+Which can process plugins of types:
+- Che Plugin
+- VS Code extension
+- Che Editor
+- Theia plugin
+
+But it ignores case of plugin type, so any other variants of the same type but with different case of letters is considered the same.
+
+How it processes plugin of different types:
+
+### Che Plugin or Che Editor
 
 Downloads tar.gz archive and:
 
 - Evaluates Che workspace sidecars config from che-plugin.yaml located in a plugin archive and data from config.json that is placed in workdir or different path if a corresponding broker argument is used. It contains data about Che plugin or editor from meta.yaml
 - Copies dependency file/folder specified in dependencies.yaml inside of a plugin archive
 
-## theia-plugin-broker
+### Theia plugin
 
 Downloads .theia archive and:
 
@@ -27,12 +44,7 @@ Downloads .theia archive and:
   - adds plugin volume
 - Sends sidecar config to Che workspace master
 
-## init-plugin-broker
-
-Cleanups content of /plugins/ folder.
-Should be started before other brokers not to remove files they are adding to plugins folder.
-
-## vscode-extension-broker
+### VS Code extension
 
 Downloads VS Code extension from marketplace and:
 
@@ -68,28 +80,16 @@ mockery -name=NameOfAnInterfaceToMock
 CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo ./...
 ```
 
-- build Che plugin broker binary:
-
-```shell
-CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o che-plugin-broker brokers/che-plugin-broker/cmd/main.go
-```
-
-- build Che Theia plugin broker binary:
-
-```shell
-CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o theia-plugin-broker brokers/theia/cmd/main.go
-```
-
 - build Init plugin broker binary:
 
 ```shell
 CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o init-plugin-broker brokers/init/cmd/main.go
 ```
 
-- build VS Code extension broker binary:
+- build Unified plugin broker binary:
 
 ```shell
-CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o vscode-extension-broker brokers/vscode/cmd/main.go
+CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o unified-plugin-broker brokers/unified/cmd/main.go
 ```
 
 ### Run checks
@@ -118,7 +118,7 @@ Prerequisites:
 
     - Folder /plugins exists on the host and writable for the user
 
-- Go to a broker cmd directory, e.g. `brokers/vscode/cmd`
+- Go to a broker cmd directory, e.g. `brokers/unified/cmd`
 - Compile binaries `go build main.go`
 - Run binary `./main -disable-push -runtime-id wsId:env:ownerId`
 - Check JSON with sidecar configuration in the very bottom of the output
@@ -139,26 +139,14 @@ So, when a dependency is introduced or changed it should be reflected in Gopkg.t
 
 ### Build of Docker images
 
-- build Che plugin broker
-
-```shell
-docker build -t eclipse/che-plugin-broker:latest -f build/che-plugin-broker/Dockerfile .
-```
-
-- build Theia plugin broker
-
-```shell
-docker build -t eclipse/che-theia-plugin-broker:latest -f build/theia/Dockerfile .
-```
-
 - build Init plugin broker
 
 ```shell
 docker build -t eclipse/che-init-plugin-broker:latest -f build/init/Dockerfile .
 ```
 
-- build VS Code extension broker
+- build Unified plugin broker
 
 ```shell
-docker build -t eclipse/che-vscode-extension-broker:latest -f build/vscode/Dockerfile .
+docker build -t eclipse/che-unified-plugin-broker:latest -f build/unified/Dockerfile .
 ```

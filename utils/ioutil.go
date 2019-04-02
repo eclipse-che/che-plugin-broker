@@ -38,12 +38,18 @@ type IoUtil interface {
 	Unzip(arch string, dest string) error
 	Untar(tarPath string, dest string) error
 	CreateFile(file string, tr io.Reader) error
+	Fetch(url string) ([]byte, error)
 }
 
-type impl struct{}
+type impl struct {
+	httpClient *http.Client
+}
 
+// New creates an instance of IoUtil using the default http client.
 func New() IoUtil {
-	return &impl{}
+	return &impl{
+		httpClient: http.DefaultClient,
+	}
 }
 
 // Download downloads file by provided URL and places its content to provided destPath.
@@ -56,7 +62,7 @@ func (util *impl) Download(URL string, destPath string) error {
 	}
 	defer Close(out)
 
-	resp, err := http.Get(URL)
+	resp, err := util.httpClient.Get(URL)
 	if err != nil {
 		return err
 	}
@@ -72,6 +78,25 @@ func (util *impl) Download(URL string, destPath string) error {
 	}
 
 	return out.Sync()
+}
+
+// Fetch downloads data from URL and returns the bytes in the response.
+func (util *impl) Fetch(URL string) ([]byte, error) {
+	resp, err := util.httpClient.Get(URL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get data from %s: %s", URL, err)
+	}
+	defer Close(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, NewHTTPError(resp, fmt.Sprintf("Downloading %s failed. Status code %v", URL, resp.StatusCode))
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, NewHTTPError(resp, fmt.Sprintf("failed to read response body: %s", err))
+	}
+	return data, nil
 }
 
 func (util *impl) TempDir(baseDir string, prefix string) (dirPath string, err error) {

@@ -14,8 +14,12 @@ package unified
 
 import (
 	"errors"
-	"github.com/stretchr/testify/assert"
+	"fmt"
+	"regexp"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	cheBrokerMocks "github.com/eclipse/che-plugin-broker/brokers/che-plugin-broker/mocks"
 	theiaBrokerMocks "github.com/eclipse/che-plugin-broker/brokers/theia/mocks"
@@ -59,6 +63,7 @@ func createMocks() *mocks {
 		b: &Broker{
 			Broker:  cb,
 			Storage: storage.New(),
+			utils:   u,
 
 			theiaBroker:  theiaBroker,
 			vscodeBroker: vscodeBroker,
@@ -143,7 +148,7 @@ func TestBroker_processPlugins(t *testing.T) {
 			want: want{
 				cheBrokerMetas: []model.PluginMeta{createChePluginMeta("id2"), createChePluginMeta("id6")},
 				vscodeMetas:    []model.PluginMeta{createVSCodeMeta("id1"), createVSCodeMeta("id4")},
-				theiaMetas:     []model.PluginMeta{createTheiaMeta("id3"), createTheiaMeta("id5"),},
+				theiaMetas:     []model.PluginMeta{createTheiaMeta("id3"), createTheiaMeta("id5")},
 			},
 		},
 		{
@@ -308,6 +313,158 @@ func TestBroker_processPlugins(t *testing.T) {
 	}
 }
 
+func TestBroker_getPluginMetas(t *testing.T) {
+	const defaultRegistry = "defaultRegistry"
+	const RegistryURLFormat = "%s/plugins/%s/%s/meta.yaml"
+
+	type args struct {
+		fqns            []model.PluginFQN
+		defaultRegistry string
+	}
+	type want struct {
+		errRegexp *regexp.Regexp
+		fetchURL  string
+	}
+	type mocks struct {
+		fetchData  []byte
+		fetchError error
+	}
+	successMock := mocks{
+		fetchData:  []byte(""),
+		fetchError: nil,
+	}
+	errorMock := mocks{
+		fetchData:  nil,
+		fetchError: errors.New("Test error"),
+	}
+
+	tests := []struct {
+		name  string
+		args  args
+		mocks mocks
+		want  want
+	}{
+		{
+			name: "Returns error when unable to get registry",
+			args: args{
+				fqns:            []model.PluginFQN{pluginFQNWithoutRegistry},
+				defaultRegistry: "",
+			},
+			want: want{
+				errRegexp: regexp.MustCompile("plugin .* does not specify registry and no default is provided"),
+			},
+			mocks: successMock,
+		},
+		{
+			name: "Uses default registry for plugins with no registry defined",
+			args: args{
+				fqns:            []model.PluginFQN{pluginFQNWithoutRegistry},
+				defaultRegistry: defaultRegistry,
+			},
+			want: want{
+				errRegexp: nil,
+				fetchURL: fmt.Sprintf(
+					RegistryURLFormat,
+					defaultRegistry,
+					pluginFQNWithoutRegistry.ID,
+					pluginFQNWithoutRegistry.Version),
+			},
+			mocks: successMock,
+		},
+		{
+			name: "Uses specified registry for plugins that define one",
+			args: args{
+				fqns:            []model.PluginFQN{pluginFQNWithRegistry},
+				defaultRegistry: defaultRegistry,
+			},
+			want: want{
+				errRegexp: nil,
+				fetchURL: fmt.Sprintf(
+					RegistryURLFormat,
+					pluginFQNWithRegistry.Registry,
+					pluginFQNWithRegistry.ID,
+					pluginFQNWithRegistry.Version),
+			},
+			mocks: successMock,
+		},
+		{
+			name: "Should not return error when all plugins specify registry",
+			args: args{
+				fqns:            []model.PluginFQN{pluginFQNWithRegistry},
+				defaultRegistry: "",
+			},
+			want: want{
+				errRegexp: nil,
+				fetchURL: fmt.Sprintf(
+					RegistryURLFormat,
+					pluginFQNWithRegistry.Registry,
+					pluginFQNWithRegistry.ID,
+					pluginFQNWithRegistry.Version),
+			},
+			mocks: successMock,
+		},
+		{
+			name: "Returns error when unable to get meta.yaml from registry",
+			args: args{
+				fqns:            []model.PluginFQN{pluginFQNWithoutRegistry},
+				defaultRegistry: defaultRegistry,
+			},
+			want: want{
+				errRegexp: regexp.MustCompile("failed to fetch plugin meta.yaml for plugin .* from registry .*"),
+				fetchURL:  "",
+			},
+			mocks: errorMock,
+		},
+		{
+			name: "Accounts for trailing slash in plugin registry field",
+			args: args{
+				fqns:            []model.PluginFQN{pluginFQNWithRegistryTrailingSlash},
+				defaultRegistry: defaultRegistry,
+			},
+			want: want{
+				errRegexp: nil,
+				fetchURL: fmt.Sprintf(
+					RegistryURLFormat,
+					strings.TrimSuffix(pluginFQNWithRegistryTrailingSlash.Registry, "/"),
+					pluginFQNWithRegistryTrailingSlash.ID,
+					pluginFQNWithRegistryTrailingSlash.Version),
+			},
+			mocks: successMock,
+		},
+		{
+			name: "Accounts for trailing slash in default registry address",
+			args: args{
+				fqns:            []model.PluginFQN{pluginFQNWithoutRegistry},
+				defaultRegistry: defaultRegistry + "/",
+			},
+			want: want{
+				errRegexp: nil,
+				fetchURL: fmt.Sprintf(
+					RegistryURLFormat,
+					defaultRegistry,
+					pluginFQNWithoutRegistry.ID,
+					pluginFQNWithoutRegistry.Version),
+			},
+			mocks: successMock,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := createMocks()
+			m.u.On("Fetch", mock.AnythingOfType("string")).Return(tt.mocks.fetchData, tt.mocks.fetchError)
+
+			_, err := m.b.getPluginMetas(tt.args.fqns, tt.args.defaultRegistry)
+			if tt.want.errRegexp != nil {
+				assertErrorMatches(t, tt.want.errRegexp, err)
+				return
+			}
+			assert.NoError(t, err)
+			m.u.AssertCalled(t, "Fetch", tt.want.fetchURL)
+		})
+	}
+}
+
 func createDefaultVSCodeMeta() model.PluginMeta {
 	return createVSCodeMeta("test ID")
 }
@@ -345,5 +502,31 @@ func createCheEditorMeta(ID string) model.PluginMeta {
 	return model.PluginMeta{
 		Type: TestEditorPluginType,
 		ID:   ID,
+	}
+}
+
+var pluginFQNWithoutRegistry = model.PluginFQN{
+	ID:      "test-no-registry",
+	Version: "1.0",
+}
+
+var pluginFQNWithRegistry = model.PluginFQN{
+	ID:       "test-with-registry",
+	Version:  "2.0",
+	Registry: "test-registry",
+}
+
+var pluginFQNWithRegistryTrailingSlash = model.PluginFQN{
+	ID:       "test-with-registry-suffix",
+	Version:  "3.0",
+	Registry: "test-registry/",
+}
+
+func assertErrorMatches(t *testing.T, expected *regexp.Regexp, actual error) {
+	if actual == nil {
+		t.Errorf("Expected error %s but got nil", expected.String())
+	}
+	if !expected.MatchString(actual.Error()) {
+		t.Errorf("Error message does not match. Expected '%s' but got '%s'", expected.String(), actual.Error())
 	}
 }

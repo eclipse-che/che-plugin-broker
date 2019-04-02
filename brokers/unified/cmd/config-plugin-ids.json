@@ -1,0 +1,15 @@
+[
+  {
+    "id": "ms-kubernetes-tools.vscode-kubernetes-tools",
+    "version": "0.1.17"
+  },
+  {
+    "id": "che-machine-exec-plugin",
+    "version": "0.0.1"
+  },
+  {
+    "id": "org.eclipse.che.vscode-redhat.java",
+    "version": "0.38.0",
+    "registry": "https://raw.githubusercontent.com/eclipse/che-plugin-registry/master/plugins/"
+  }
+]

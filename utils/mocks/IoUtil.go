@@ -66,6 +66,29 @@ func (_m *IoUtil) Download(URL string, destPath string) error {
 	return r0
 }
 
+// Fetch provides a mock function with given fields: url
+func (_m *IoUtil) Fetch(url string) ([]byte, error) {
+	ret := _m.Called(url)
+
+	var r0 []byte
+	if rf, ok := ret.Get(0).(func(string) []byte); ok {
+		r0 = rf(url)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(url)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ResolveDestPath provides a mock function with given fields: filePath, destDir
 func (_m *IoUtil) ResolveDestPath(filePath string, destDir string) string {
 	ret := _m.Called(filePath, destDir)

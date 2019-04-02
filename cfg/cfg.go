@@ -15,6 +15,7 @@ package cfg
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -44,18 +45,28 @@ var (
 	// DisablePushingToEndpoint disables pushing anything to the endpoint
 	DisablePushingToEndpoint bool
 
-	// PrintOnlyEvents disable output of broker logs and instead prints events that supposed
+	// PrintEventsOnly disable output of broker logs and instead prints events that are supposed
 	// to be sent to endpoint. This helps imitate what info about plugin brokering
 	// a user would see
 	PrintEventsOnly bool
 
-	// Use the `localhost` name instead of the Kubernetes service name
-	// to build Theia or VSCode plugin endpoint URL 
+	// UseLocalhostInPluginUrls configures the broker to use the `localhost` name
+	// instead of the Kubernetes service name to build Theia or VSCode plugin
+	// endpoint URL
 	UseLocalhostInPluginUrls bool
 
-	// Only apply metadata-related steps, without copying any file
-	// into the `plugins` directory
+	// OnlyApplyMetadataActions configures the broker to only apply metadata-related
+	// steps, without copying any file into the `plugins` directory
 	OnlyApplyMetadataActions bool
+
+	// RegistryAddress address of the plugin registry, if plugin IDs are specified in config instead of metas.
+	// Used as a default registry if a plugin fully-qualified name does not specify a registry.
+	RegistryAddress string
+
+	// DownloadMetas specifies whether the broker should download plugin metas from the registry. If
+	// true, then config file should be a list of plugin fully-qualified names. Otherwise, the config
+	// file should contain the plugin metas to be processed.
+	DownloadMetas bool
 )
 
 func init() {
@@ -109,6 +120,18 @@ func init() {
 		"Output events that are usually sent Che master instead of regular logs to imitate what a user can see."+
 			"`false` by default. Needed for testing and debugging purposes",
 	)
+	flag.StringVar(
+		&RegistryAddress,
+		"registry-address",
+		"",
+		"Default address of registry from which to retrieve meta.yamls when plugin FQNs do not specify a registry. Ignored unless --download-metas is set",
+	)
+	flag.BoolVar(
+		&DownloadMetas,
+		"download-metas",
+		false,
+		"Download plugin metadata from registry instead of process already-downloaded metas",
+	)
 }
 
 // Parse parses configuration.
@@ -160,10 +183,41 @@ func Print() {
 // ReadConfig reads content of file by path cfg.FilePath,
 // parses its content as array of Che plugin meta objects and returns it.
 // If any error occurs during read, log.Fatal is called.
-func ReadConfig() []model.PluginMeta {
+//
+// Deprecated
+func ReadConfig() ([]model.PluginMeta, error) {
+	raw, err := readConfigFile()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file: %s", err)
+	}
+
+	metas := make([]model.PluginMeta, 0)
+	if err := json.Unmarshal(raw, &metas); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal plugin metas: %s", err)
+	}
+	return metas, nil
+}
+
+// ParsePluginFQNs reads content of file at path cfg.Filepath and parses its
+// content as a list of fully-qualified Plugin names (id, version, registry).
+// If any error occurs, log.Fatal is called.
+func ParsePluginFQNs() ([]model.PluginFQN, error) {
+	raw, err := readConfigFile()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file: %s", err)
+	}
+
+	pluginFQNs := make([]model.PluginFQN, 0)
+	if err := json.Unmarshal(raw, &pluginFQNs); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal plugin details from config: %s", err)
+	}
+	return pluginFQNs, nil
+}
+
+func readConfigFile() ([]byte, error) {
 	f, err := os.Open(FilePath)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to open config file for reading: %s", err)
 	}
 
 	defer func() {
@@ -174,12 +228,7 @@ func ReadConfig() []model.PluginMeta {
 
 	raw, err := ioutil.ReadAll(f)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("Failed to read config file: %s", err)
 	}
-
-	metas := make([]model.PluginMeta, 0)
-	if err := json.Unmarshal(raw, &metas); err != nil {
-		log.Fatal(err)
-	}
-	return metas
+	return raw, nil
 }

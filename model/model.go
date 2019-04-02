@@ -68,6 +68,12 @@ type PluginMeta struct {
 	Extensions []string `json:"extensions" yaml:"extensions"`
 }
 
+type PluginFQN struct {
+	Registry string `json:"registry,omitempty" yaml:"registry,omitempty"`
+	ID       string `json:"id" yaml:"id"`
+	Version  string `json:"version" yaml:"version"`
+}
+
 type Endpoint struct {
 	Name       string            `json:"name" yaml:"name"`
 	Public     bool              `json:"public" yaml:"public"`
@@ -184,6 +190,6 @@ func (e *PluginBrokerLogEvent) Type() string { return BrokerLogEventType }
 
 // PackageJSON represents package.json file of JS based projects
 type PackageJSON struct {
-	Name      string  `json:"name" yaml:"name"`
-	Publisher string  `json:"publisher" yaml:"publisher"`
+	Name      string `json:"name" yaml:"name"`
+	Publisher string `json:"publisher" yaml:"publisher"`
 }

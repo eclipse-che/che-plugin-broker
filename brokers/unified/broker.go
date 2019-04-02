@@ -15,16 +15,19 @@ package unified
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/eclipse/che-go-jsonrpc"
-	"github.com/eclipse/che-plugin-broker/brokers/che-plugin-broker"
+	"log"
+	"net/http"
+	"strings"
+
+	jsonrpc "github.com/eclipse/che-go-jsonrpc"
+	broker "github.com/eclipse/che-plugin-broker/brokers/che-plugin-broker"
 	"github.com/eclipse/che-plugin-broker/brokers/theia"
 	"github.com/eclipse/che-plugin-broker/brokers/vscode"
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
 	"github.com/eclipse/che-plugin-broker/utils"
-	"net/http"
-	"strings"
+	"gopkg.in/yaml.v2"
 )
 
 const ChePluginType = "che plugin"
@@ -32,10 +35,15 @@ const EditorPluginType = "che editor"
 const TheiaPluginType = "theia plugin"
 const VscodePluginType = "vs code extension"
 
+// RegistryURLFormat specifies the format string for registry urls
+// when downloading metas
+const RegistryURLFormat = "%s/plugins/%s/%s/meta.yaml"
+
 // Broker is used to process Che plugins
 type Broker struct {
 	common.Broker
 	Storage *storage.Storage
+	utils   utils.IoUtil
 
 	theiaBroker  common.BrokerImpl
 	vscodeBroker common.BrokerImpl
@@ -54,13 +62,24 @@ func NewBroker() *Broker {
 	theiaBroker := theia.NewBrokerWithParams(commonBroker, ioUtils, storageObj, rand)
 	vscodeBroker := vscode.NewBrokerWithParams(commonBroker, ioUtils, storageObj, rand, httpClient)
 	return &Broker{
-		Storage: storageObj,
 		Broker:  commonBroker,
+		Storage: storageObj,
+		utils:   ioUtils,
 
 		theiaBroker:  theiaBroker,
 		vscodeBroker: vscodeBroker,
 		cheBroker:    cheBroker,
 	}
+}
+
+// DownloadMetasAndStart downloads metas from plugin registry for specified
+// pluginFQNs and then calls Start for those metas
+func (b *Broker) DownloadMetasAndStart(pluginFQNs []model.PluginFQN, defaultRegistry string) {
+	pluginMetas, err := b.getPluginMetas(pluginFQNs, defaultRegistry)
+	if err != nil {
+		b.PrintFatal("Failed to download plugin metas: %s", err)
+	}
+	b.Start(pluginMetas)
 }
 
 // Start executes plugins metas processing and sending data to Che master
@@ -125,10 +144,46 @@ func (b *Broker) ProcessPlugins(metas []model.PluginMeta) error {
 	return nil
 }
 
+// getPluginMetas downloads the metadata for each plugin in plugins. If specified,
+// defaultRegistry is used as the registry for plugins that do not specify their registry.
+// If defaultRegistry is empty, and any plugin does not specify a registry, an error is returned.
+func (b *Broker) getPluginMetas(plugins []model.PluginFQN, defaultRegistry string) ([]model.PluginMeta, error) {
+	metas := make([]model.PluginMeta, len(plugins))
+	for _, plugin := range plugins {
+		log.Printf("Fetching plugin meta.yaml for %s:%s", plugin.ID, plugin.Version)
+		registry, err := getRegistryURL(plugin, defaultRegistry)
+		if err != nil {
+			return nil, err
+		}
+		pluginURL := fmt.Sprintf(RegistryURLFormat, registry, plugin.ID, plugin.Version)
+		pluginRaw, err := b.utils.Fetch(pluginURL)
+		if err != nil {
+			if httpErr, ok := err.(*utils.HTTPError); ok {
+				return nil, fmt.Errorf(
+					"failed to fetch plugin meta.yaml for plugin '%s:%s' from registry '%s': %s. Response body: %s",
+					plugin.ID, plugin.Version, registry, httpErr, httpErr.Body)
+			} else {
+				return nil, fmt.Errorf(
+					"failed to fetch plugin meta.yaml for plugin '%s:%s' from registry '%s': %s",
+					plugin.ID, plugin.Version, registry, err)
+			}
+		}
+
+		var pluginMeta model.PluginMeta
+		if err := yaml.Unmarshal(pluginRaw, &pluginMeta); err != nil {
+			return nil, fmt.Errorf(
+				"failed to unmarshal downloaded meta.yaml for plugin '%s:%s': %s",
+				plugin.ID, plugin.Version, err)
+		}
+		metas = append(metas, pluginMeta)
+	}
+	return metas, nil
+}
+
 func (b *Broker) serializeTooling() (string, error) {
 	plugins, err := b.Storage.Plugins()
 	if err != nil {
-		return "",err
+		return "", err
 	}
 	pluginsBytes, err := json.Marshal(plugins)
 	if err != nil {
@@ -160,4 +215,17 @@ func sortMetas(metas []model.PluginMeta) (che []model.PluginMeta, theia []model.
 	}
 
 	return cheBrokerMetas, theiaMetas, vscodeMetas, nil
+}
+
+func getRegistryURL(plugin model.PluginFQN, defaultRegistry string) (string, error) {
+	var registry string
+	if plugin.Registry != "" {
+		registry = strings.TrimSuffix(plugin.Registry, "/")
+	} else {
+		if defaultRegistry == "" {
+			return "", fmt.Errorf("plugin '%s' does not specify registry and no default is provided", plugin.ID)
+		}
+		registry = strings.TrimSuffix(defaultRegistry, "/")
+	}
+	return registry, nil
 }

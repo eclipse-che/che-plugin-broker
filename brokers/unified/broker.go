@@ -37,9 +37,9 @@ type Broker struct {
 	common.Broker
 	Storage *storage.Storage
 
-	theiaBroker  theia.Broker
-	vscodeBroker vscode.Broker
-	cheBroker    broker.ChePluginBroker
+	theiaBroker  common.BrokerImpl
+	vscodeBroker common.BrokerImpl
+	cheBroker    common.BrokerImpl
 }
 
 // NewBroker creates Che broker instance

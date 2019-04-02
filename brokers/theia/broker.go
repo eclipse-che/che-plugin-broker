@@ -18,20 +18,13 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/eclipse/che-go-jsonrpc"
+	jsonrpc "github.com/eclipse/che-go-jsonrpc"
+	"github.com/eclipse/che-plugin-broker/cfg"
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
 	"github.com/eclipse/che-plugin-broker/utils"
-	"github.com/eclipse/che-plugin-broker/cfg"
 )
-
-// Broker is used to process .theia and remote plugins
-type Broker interface {
-	Start(metas []model.PluginMeta)
-	PushEvents(tun *jsonrpc.Tunnel)
-	ProcessPlugin(meta model.PluginMeta) error
-}
 
 type brokerImpl struct {
 	common.Broker
@@ -41,7 +34,7 @@ type brokerImpl struct {
 }
 
 // NewBroker creates Che Theia plugin broker instance
-func NewBroker() Broker {
+func NewBroker() common.BrokerImpl {
 	return &brokerImpl{
 		Broker:  common.NewBroker(),
 		ioUtil:  utils.New(),
@@ -50,8 +43,8 @@ func NewBroker() Broker {
 	}
 }
 
-// NewBroker creates Che Theia plugin broker instance
-func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage *storage.Storage, rand common.Random) Broker {
+// NewBrokerWithParams creates Che Theia plugin broker instance
+func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage *storage.Storage, rand common.Random) common.BrokerImpl {
 	return &brokerImpl{
 		Broker:  broker,
 		ioUtil:  ioUtil,
@@ -147,7 +140,7 @@ func (b *brokerImpl) ProcessPlugin(meta model.PluginMeta) error {
 	}
 	if pluginImage == "" {
 		// regular plugin
-		if (! cfg.OnlyApplyMetadataActions) {
+		if !cfg.OnlyApplyMetadataActions {
 			err = b.injectTheiaFile(meta, archivePath)
 			if err != nil {
 				return err
@@ -188,7 +181,7 @@ func (b *brokerImpl) injectTheiaFile(meta model.PluginMeta, archivePath string) 
 }
 
 func (b *brokerImpl) injectTheiaRemotePlugin(meta model.PluginMeta, archiveFolder string, image string, pj *PackageJSON) error {
-	if (! cfg.OnlyApplyMetadataActions) {
+	if !cfg.OnlyApplyMetadataActions {
 		pluginFolderPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
 		b.PrintDebug("Copying Theia remote plugin '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, archiveFolder, pluginFolderPath)
 		err := b.ioUtil.CopyResource(archiveFolder, pluginFolderPath)

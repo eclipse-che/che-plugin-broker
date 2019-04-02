@@ -13,10 +13,18 @@
 package common
 
 import (
-	"github.com/eclipse/che-go-jsonrpc"
+	jsonrpc "github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-go-jsonrpc/event"
 	"github.com/eclipse/che-plugin-broker/model"
 )
+
+// BrokerImpl specifies the interface for a Broker implementation that processes
+// plugins of a specific type
+type BrokerImpl interface {
+	Start([]model.PluginMeta)
+	PushEvents(tun *jsonrpc.Tunnel)
+	ProcessPlugin(meta model.PluginMeta) error
+}
 
 // Broker holds utilities to interact with Che master to push different events
 type Broker interface {

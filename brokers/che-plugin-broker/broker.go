@@ -23,12 +23,12 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/eclipse/che-go-jsonrpc"
+	jsonrpc "github.com/eclipse/che-go-jsonrpc"
+	"github.com/eclipse/che-plugin-broker/cfg"
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
 	"github.com/eclipse/che-plugin-broker/utils"
-	"github.com/eclipse/che-plugin-broker/cfg"
 )
 
 const pluginFileName = "che-plugin.yaml"
@@ -43,13 +43,6 @@ const (
 	Yaml
 )
 
-// ChePluginBroker is used to process Che plugins
-type ChePluginBroker interface {
-	Start([]model.PluginMeta)
-	PushEvents(tun *jsonrpc.Tunnel)
-	ProcessPlugin(meta model.PluginMeta) error
-}
-
 type chePluginBrokerImpl struct {
 	common.Broker
 	ioUtil  utils.IoUtil
@@ -57,7 +50,7 @@ type chePluginBrokerImpl struct {
 }
 
 // NewBroker creates Che plugin broker instance
-func NewBroker() ChePluginBroker {
+func NewBroker() common.BrokerImpl {
 	return &chePluginBrokerImpl{
 		common.NewBroker(),
 		utils.New(),
@@ -65,8 +58,8 @@ func NewBroker() ChePluginBroker {
 	}
 }
 
-// NewBroker creates Che plugin broker instance
-func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage *storage.Storage) ChePluginBroker {
+// NewBrokerWithParams creates Che plugin broker instance
+func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage *storage.Storage) common.BrokerImpl {
 	return &chePluginBrokerImpl{
 		Broker:  broker,
 		ioUtil:  ioUtil,
@@ -191,7 +184,7 @@ func (cheBroker *chePluginBrokerImpl) processArchive(meta *model.PluginMeta, url
 	if cfg.OnlyApplyMetadataActions {
 		return nil
 	}
-	
+
 	cheBroker.PrintDebug("Copying dependencies for '%s:%s'", meta.ID, meta.Version)
 	return cheBroker.copyDependencies(pluginPath)
 }

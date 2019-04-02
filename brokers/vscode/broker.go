@@ -24,13 +24,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/eclipse/che-go-jsonrpc"
+	jsonrpc "github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-plugin-broker/brokers/theia"
+	"github.com/eclipse/che-plugin-broker/cfg"
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
 	"github.com/eclipse/che-plugin-broker/utils"
-	"github.com/eclipse/che-plugin-broker/cfg"
 )
 
 const marketplace = "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery"
@@ -38,13 +38,6 @@ const bodyFmt = `{"filters":[{"criteria":[{"filterType":7,"value":"%s"}],"pageNu
 const assetType = "Microsoft.VisualStudio.Services.VSIXPackage"
 const errorMutuallyExclusiveExtFieldsTemplate = "VS Code extension description of the plugin '%s:%s' contains more than one mutually exclusive field 'attributes.extension', 'url', 'extensions'"
 const errorNoExtFieldsTemplate = "Neither 'extension' nor 'url' nor 'extensions' field found in VS Code extension description of the plugin '%s:%s'"
-
-// Broker is used to process VS Code extensions to run them as Che plugins
-type Broker interface {
-	Start(metas []model.PluginMeta)
-	PushEvents(tun *jsonrpc.Tunnel)
-	ProcessPlugin(meta model.PluginMeta) error
-}
 
 type brokerImpl struct {
 	common.Broker
@@ -55,7 +48,7 @@ type brokerImpl struct {
 }
 
 // NewBroker creates Che VS Code extension broker instance
-func NewBroker() *brokerImpl {
+func NewBroker() common.BrokerImpl {
 	return &brokerImpl{
 		Broker:  common.NewBroker(),
 		ioUtil:  utils.New(),
@@ -65,8 +58,8 @@ func NewBroker() *brokerImpl {
 	}
 }
 
-// NewBroker creates Che VS Code extension broker instance
-func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage *storage.Storage, rand common.Random, httpClient *http.Client) *brokerImpl {
+// NewBrokerWithParams creates Che VS Code extension broker instance
+func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage *storage.Storage, rand common.Random, httpClient *http.Client) common.BrokerImpl {
 	return &brokerImpl{
 		Broker:  broker,
 		ioUtil:  ioUtil,
@@ -135,7 +128,7 @@ func (b *brokerImpl) ProcessPlugin(meta model.PluginMeta) error {
 
 	image := meta.Attributes["containerImage"]
 	if image == "" {
-		if (! cfg.OnlyApplyMetadataActions) {
+		if !cfg.OnlyApplyMetadataActions {
 			// regular plugin
 			err = b.injectLocalPlugin(meta, archivesPaths)
 			if err != nil {
@@ -178,7 +171,7 @@ func (b *brokerImpl) injectRemotePlugin(meta model.PluginMeta, image string, arc
 			return err
 		}
 
-		if (! cfg.OnlyApplyMetadataActions) {
+		if !cfg.OnlyApplyMetadataActions {
 			pluginName := b.generatePluginFolderName(meta, *pj)
 
 			pluginFolderPath := filepath.Join("/plugins", pluginName)

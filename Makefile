@@ -43,7 +43,7 @@ test-local:
 		./main \
 			--disable-push \
 			--runtime-id wsId:env:ownerId \
-			--registry-address https://che-plugin-registry.openshift.io/plugins \
+			--registry-address https://che-plugin-registry.openshift.io \
 			--metas ./config-plugin-ids.json \
 			--download-metas
 

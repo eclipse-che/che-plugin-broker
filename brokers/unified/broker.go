@@ -148,7 +148,7 @@ func (b *Broker) ProcessPlugins(metas []model.PluginMeta) error {
 // defaultRegistry is used as the registry for plugins that do not specify their registry.
 // If defaultRegistry is empty, and any plugin does not specify a registry, an error is returned.
 func (b *Broker) getPluginMetas(plugins []model.PluginFQN, defaultRegistry string) ([]model.PluginMeta, error) {
-	metas := make([]model.PluginMeta, len(plugins))
+	metas := make([]model.PluginMeta, 0, len(plugins))
 	for _, plugin := range plugins {
 		log.Printf("Fetching plugin meta.yaml for %s:%s", plugin.ID, plugin.Version)
 		registry, err := getRegistryURL(plugin, defaultRegistry)

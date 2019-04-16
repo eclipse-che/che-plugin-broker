@@ -2,6 +2,15 @@
 
 set -e
 
+if [ -z "${GITHUB_TAG}" ]; then
+  echo "Variable GITHUB_TAG is missing"
+  exit 1
+fi
+if [ -z "${IMAGE_TAG}" ]; then
+  echo "Variable IMAGE_TAG is missing"
+  exit 1
+fi
+
 ROOT_DIR=$(cd "$(dirname "$0")"; pwd)/..
 
 docker login -u ${DOCKER_HUB_LOGIN} -p ${DOCKER_HUB_PASSWORD}

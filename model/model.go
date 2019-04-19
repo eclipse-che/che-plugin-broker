@@ -51,6 +51,10 @@ type PluginMeta struct {
 
 	Name string `json:"name" yaml:"name"`
 
+	DisplayName string `json:"displayName" yaml:"displayName"`
+
+	Publisher string `json:"publisher" yaml:"publisher"`
+
 	Type string `json:"type" yaml:"type"`
 
 	Description string `json:"description" yaml:"description"`
@@ -69,9 +73,8 @@ type PluginMeta struct {
 }
 
 type PluginFQN struct {
-	Registry string `json:"registry,omitempty" yaml:"registry,omitempty"`
-	ID       string `json:"id" yaml:"id"`
-	Version  string `json:"version" yaml:"version"`
+	Registry  string `json:"registry,omitempty" yaml:"registry,omitempty"`
+	ID        string `json:"id" yaml:"id"`
 }
 
 type Endpoint struct {

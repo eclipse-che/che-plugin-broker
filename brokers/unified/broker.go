@@ -37,7 +37,7 @@ const VscodePluginType = "vs code extension"
 
 // RegistryURLFormat specifies the format string for registry urls
 // when downloading metas
-const RegistryURLFormat = "%s/plugins/%s/%s/meta.yaml"
+const RegistryURLFormat = "%s/plugins/%s/meta.yaml"
 
 // Broker is used to process Che plugins
 type Broker struct {
@@ -150,30 +150,29 @@ func (b *Broker) ProcessPlugins(metas []model.PluginMeta) error {
 func (b *Broker) getPluginMetas(plugins []model.PluginFQN, defaultRegistry string) ([]model.PluginMeta, error) {
 	metas := make([]model.PluginMeta, 0, len(plugins))
 	for _, plugin := range plugins {
-		log.Printf("Fetching plugin meta.yaml for %s:%s", plugin.ID, plugin.Version)
+		log.Printf("Fetching plugin meta.yaml for %s", plugin.ID)
 		registry, err := getRegistryURL(plugin, defaultRegistry)
 		if err != nil {
 			return nil, err
 		}
-		pluginURL := fmt.Sprintf(RegistryURLFormat, registry, plugin.ID, plugin.Version)
+		pluginURL := fmt.Sprintf(RegistryURLFormat, registry, plugin.ID)
 		pluginRaw, err := b.utils.Fetch(pluginURL)
 		if err != nil {
 			if httpErr, ok := err.(*utils.HTTPError); ok {
 				return nil, fmt.Errorf(
-					"failed to fetch plugin meta.yaml for plugin '%s:%s' from registry '%s': %s. Response body: %s",
-					plugin.ID, plugin.Version, registry, httpErr, httpErr.Body)
+					"failed to fetch plugin meta.yaml for plugin '%s' from registry '%s': %s. Response body: %s",
+					plugin.ID, registry, httpErr, httpErr.Body)
 			} else {
 				return nil, fmt.Errorf(
-					"failed to fetch plugin meta.yaml for plugin '%s:%s' from registry '%s': %s",
-					plugin.ID, plugin.Version, registry, err)
+					"failed to fetch plugin meta.yaml for plugin '%s' from registry '%s': %s",
+					plugin.ID, registry, err)
 			}
 		}
 
 		var pluginMeta model.PluginMeta
 		if err := yaml.Unmarshal(pluginRaw, &pluginMeta); err != nil {
 			return nil, fmt.Errorf(
-				"failed to unmarshal downloaded meta.yaml for plugin '%s:%s': %s",
-				plugin.ID, plugin.Version, err)
+				"failed to unmarshal downloaded meta.yaml for plugin '%s': %s", plugin.ID, err)
 		}
 		metas = append(metas, pluginMeta)
 	}

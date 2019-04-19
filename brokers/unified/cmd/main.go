@@ -34,17 +34,9 @@ func main() {
 		broker.PushEvents(statusTun)
 	}
 
-	if cfg.DownloadMetas {
-		pluginFQNs, err := cfg.ParsePluginFQNs()
-		if err != nil {
-			broker.PrintFatal("Failed to process plugin fully qualified names from config: %s", err)
-		}
-		broker.DownloadMetasAndStart(pluginFQNs, cfg.RegistryAddress)
-	} else {
-		pluginMetas, err := cfg.ReadConfig()
-		if err != nil {
-			broker.PrintFatal("Failed to process plugin fully qualified names from config: %s", err)
-		}
-		broker.Start(pluginMetas)
+	pluginFQNs, err := cfg.ParsePluginFQNs()
+	if err != nil {
+		broker.PrintFatal("Failed to process plugin fully qualified names from config: %s", err)
 	}
+	broker.Start(pluginFQNs, cfg.RegistryAddress)
 }

@@ -73,23 +73,18 @@ func NewBroker() *Broker {
 }
 
 // DownloadMetasAndStart downloads metas from plugin registry for specified
-// pluginFQNs and then calls Start for those metas
-func (b *Broker) DownloadMetasAndStart(pluginFQNs []model.PluginFQN, defaultRegistry string) {
+// pluginFQNs and then executes plugins metas processing and sending data to Che master
+func (b *Broker) Start(pluginFQNs []model.PluginFQN, defaultRegistry string) {
 	pluginMetas, err := b.getPluginMetas(pluginFQNs, defaultRegistry)
 	if err != nil {
 		b.PrintFatal("Failed to download plugin metas: %s", err)
 	}
-	b.Start(pluginMetas)
-}
-
-// Start executes plugins metas processing and sending data to Che master
-func (b *Broker) Start(metas []model.PluginMeta) {
 	defer b.CloseConsumers()
 	b.PubStarted()
 	b.PrintInfo("Unified Che Plugin Broker")
-	b.PrintPlan(metas)
+	b.PrintPlan(pluginMetas)
 
-	err := b.ProcessPlugins(metas)
+	err = b.ProcessPlugins(pluginMetas)
 	if err != nil {
 		b.PubFailed(err.Error())
 		b.PrintFatal(err.Error())

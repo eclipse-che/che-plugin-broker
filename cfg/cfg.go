@@ -62,11 +62,6 @@ var (
 	// RegistryAddress address of the plugin registry, if plugin IDs are specified in config instead of metas.
 	// Used as a default registry if a plugin fully-qualified name does not specify a registry.
 	RegistryAddress string
-
-	// DownloadMetas specifies whether the broker should download plugin metas from the registry. If
-	// true, then config file should be a list of plugin fully-qualified names. Otherwise, the config
-	// file should contain the plugin metas to be processed.
-	DownloadMetas bool
 )
 
 func init() {
@@ -126,12 +121,6 @@ func init() {
 		"",
 		"Default address of registry from which to retrieve meta.yamls when plugin FQNs do not specify a registry. Ignored unless --download-metas is set",
 	)
-	flag.BoolVar(
-		&DownloadMetas,
-		"download-metas",
-		false,
-		"Download plugin metadata from registry instead of process already-downloaded metas",
-	)
 }
 
 // Parse parses configuration.
@@ -178,24 +167,6 @@ func Print() {
 	log.Printf("    Workspace: %s", RuntimeID.Workspace)
 	log.Printf("    Environment: %s", RuntimeID.Environment)
 	log.Printf("    OwnerId: %s", RuntimeID.OwnerId)
-}
-
-// ReadConfig reads content of file by path cfg.FilePath,
-// parses its content as array of Che plugin meta objects and returns it.
-// If any error occurs during read, log.Fatal is called.
-//
-// Deprecated
-func ReadConfig() ([]model.PluginMeta, error) {
-	raw, err := readConfigFile()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %s", err)
-	}
-
-	metas := make([]model.PluginMeta, 0)
-	if err := json.Unmarshal(raw, &metas); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal plugin metas: %s", err)
-	}
-	return metas, nil
 }
 
 // ParsePluginFQNs reads content of file at path cfg.Filepath and parses its

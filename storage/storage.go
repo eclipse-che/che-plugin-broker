@@ -69,6 +69,8 @@ func (s *Storage) AddPlugin(meta *model.PluginMeta, tooling *model.ToolingConf) 
 	defer s.Unlock()
 	plugin := &model.ChePlugin{
 		ID:           meta.ID,
+		Name:         meta.Name,
+		Publisher:    meta.Publisher,
 		Version:      meta.Version,
 		Containers:   tooling.Containers,
 		Editors:      tooling.Editors,

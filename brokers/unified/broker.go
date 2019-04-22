@@ -169,6 +169,10 @@ func (b *Broker) getPluginMetas(plugins []model.PluginFQN, defaultRegistry strin
 			return nil, fmt.Errorf(
 				"failed to unmarshal downloaded meta.yaml for plugin '%s': %s", plugin.ID, err)
 		}
+		// Ensure ID field is set since it is used all over the place in broker
+		if pluginMeta.ID == "" {
+			pluginMeta.ID = plugin.ID
+		}
 		metas = append(metas, pluginMeta)
 	}
 	return metas, nil
@@ -202,9 +206,9 @@ func sortMetas(metas []model.PluginMeta) (che []model.PluginMeta, theia []model.
 		case TheiaPluginType:
 			theiaMetas = append(theiaMetas, meta)
 		case "":
-			return nil, nil, nil, fmt.Errorf("Type field is missing in meta information of plugin '%s:%s'", meta.ID, meta.Version)
+			return nil, nil, nil, fmt.Errorf("Type field is missing in meta information of plugin '%s'", meta.ID)
 		default:
-			return nil, nil, nil, fmt.Errorf("Type '%s' of plugin '%s:%s' is unsupported", meta.Type, meta.ID, meta.Version)
+			return nil, nil, nil, fmt.Errorf("Type '%s' of plugin '%s' is unsupported", meta.Type, meta.ID)
 		}
 	}
 

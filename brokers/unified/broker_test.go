@@ -256,11 +256,13 @@ func TestBroker_processPlugins(t *testing.T) {
 						Type:    "Unsupported type",
 						ID:      "test id",
 						Version: "test version",
+						Publisher: "test publisher",
+						Name: "test name",
 					},
 				},
 			},
 			want: want{
-				err: "Type 'Unsupported type' of plugin 'test id:test version' is unsupported",
+				err: "Type 'Unsupported type' of plugin 'test id' is unsupported",
 			},
 		},
 		{
@@ -271,11 +273,13 @@ func TestBroker_processPlugins(t *testing.T) {
 						Type:    "",
 						ID:      "test id",
 						Version: "test version",
+						Publisher: "test publisher",
+						Name: "test name",
 					},
 				},
 			},
 			want: want{
-				err: "Type field is missing in meta information of plugin 'test id:test version'",
+				err: "Type field is missing in meta information of plugin 'test id'",
 			},
 		},
 	}

@@ -104,7 +104,7 @@ func (b *brokerImpl) PushEvents(tun *jsonrpc.Tunnel) {
 }
 
 func (b *brokerImpl) ProcessPlugin(meta model.PluginMeta) error {
-	b.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
+	b.PrintDebug("Started processing plugin '%s'", meta.ID)
 	url := meta.URL
 
 	workDir, err := b.ioUtil.TempDir("", "theia-plugin-broker")
@@ -116,14 +116,14 @@ func (b *brokerImpl) ProcessPlugin(meta model.PluginMeta) error {
 	unpackedPath := filepath.Join(workDir, "plugin")
 
 	// Download an archive
-	b.PrintDebug("Downloading archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
+	b.PrintDebug("Downloading archive '%s' for plugin '%s' to '%s'", url, meta.ID, archivePath)
 	err = b.ioUtil.Download(url, archivePath)
 	if err != nil {
 		return err
 	}
 
 	// Unzip it
-	b.PrintDebug("Unzipping archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, unpackedPath)
+	b.PrintDebug("Unzipping archive '%s' for plugin '%s' to '%s'", url, meta.ID, unpackedPath)
 	err = b.ioUtil.Unzip(archivePath, unpackedPath)
 	if err != nil {
 		return err
@@ -171,8 +171,8 @@ func (b *brokerImpl) getPluginImage(pj *PackageJSON) (string, error) {
 }
 
 func (b *brokerImpl) injectTheiaFile(meta model.PluginMeta, archivePath string) error {
-	b.PrintDebug("Copying Theia plugin '%s:%s'", meta.ID, meta.Version)
-	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.theia", meta.ID, meta.Version))
+	b.PrintDebug("Copying Theia plugin '%s'", meta.ID)
+	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.%s.theia", meta.Publisher, meta.Name, meta.Version))
 	err := b.ioUtil.CopyFile(archivePath, pluginPath)
 	if err != nil {
 		return err
@@ -182,8 +182,8 @@ func (b *brokerImpl) injectTheiaFile(meta model.PluginMeta, archivePath string) 
 
 func (b *brokerImpl) injectTheiaRemotePlugin(meta model.PluginMeta, archiveFolder string, image string, pj *PackageJSON) error {
 	if !cfg.OnlyApplyMetadataActions {
-		pluginFolderPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
-		b.PrintDebug("Copying Theia remote plugin '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, archiveFolder, pluginFolderPath)
+		pluginFolderPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.%s", meta.Publisher, meta.Name, meta.Version))
+		b.PrintDebug("Copying Theia remote plugin '%s' from '%s' to '%s'", meta.ID, archiveFolder, pluginFolderPath)
 		err := b.ioUtil.CopyResource(archiveFolder, pluginFolderPath)
 		if err != nil {
 			return err

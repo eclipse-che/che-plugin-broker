@@ -37,7 +37,7 @@ var (
 		Broker:  bMock,
 		ioUtil:  uMock,
 		storage: storage.New(),
-		rand: randMock,
+		rand:    randMock,
 	}
 )
 
@@ -46,7 +46,7 @@ func TestProcessRemotePlugin(t *testing.T) {
 		Broker:  bMock,
 		ioUtil:  uMock,
 		storage: storage.New(),
-		rand: randMock,
+		rand:    randMock,
 	}
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)
@@ -54,11 +54,13 @@ func TestProcessRemotePlugin(t *testing.T) {
 	unarchivedPath := filepath.Join(workDir, "plugin")
 	packageJSONPath := filepath.Join(unarchivedPath, "package.json")
 	meta := model.PluginMeta{
-		ID:      "test-id",
-		Version: "test-v",
-		URL:     "http://test.url",
+		ID:        "test-id",
+		Name:      "test-name",
+		Publisher: "test-publisher",
+		Version:   "test-v",
+		URL:       "http://test.url",
 	}
-	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
+	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.%s", meta.Publisher, meta.Name, meta.Version))
 	packageJSON := PackageJSON{
 		PackageJSON: model.PackageJSON{
 			Name:      "test-name",
@@ -101,8 +103,10 @@ func expectedPlugins(meta model.PluginMeta, image string, publisher string, pubN
 	prettyID := re.ReplaceAllString(publisher+"_"+pubName, `_`)
 	expectedPlugins := []model.ChePlugin{
 		{
-			ID:      meta.ID,
-			Version: meta.Version,
+			ID:        meta.ID,
+			Version:   meta.Version,
+			Name:      meta.Name,
+			Publisher: meta.Publisher,
 			Endpoints: []model.Endpoint{
 				{
 					Name:       "randomEndpointName",
@@ -153,7 +157,7 @@ func TestProcessRegularPlugin(t *testing.T) {
 		Broker:  bMock,
 		ioUtil:  uMock,
 		storage: storage.New(),
-		rand: randMock,
+		rand:    randMock,
 	}
 	workDir := tests.CreateTestWorkDir()
 	defer tests.RemoveAll(workDir)
@@ -165,7 +169,7 @@ func TestProcessRegularPlugin(t *testing.T) {
 		Version: "test-v",
 		URL:     "http://test.url",
 	}
-	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.theia", meta.ID, meta.Version))
+	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.%s.theia", meta.Publisher, meta.Name, meta.Version))
 	packageJSON := PackageJSON{
 		PackageJSON: model.PackageJSON{
 			Name:      "test-name",
@@ -320,11 +324,13 @@ func TestProcessPluginErrorIfArchiveCopyingFails(t *testing.T) {
 	unarchivedPath := filepath.Join(workDir, "plugin")
 	packageJSONPath := filepath.Join(unarchivedPath, "package.json")
 	meta := model.PluginMeta{
-		ID:      "test-id",
-		Version: "test-v",
-		URL:     "http://test.url",
+		ID:        "test-id",
+		Version:   "test-v",
+		Name:      "test-name",
+		Publisher: "test-publisher",
+		URL:       "http://test.url",
 	}
-	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.theia", meta.ID, meta.Version))
+	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.%s.theia", meta.Publisher, meta.Name, meta.Version))
 	packageJSON := PackageJSON{
 		PackageJSON: model.PackageJSON{
 			Name:      "test-name",
@@ -359,11 +365,13 @@ func TestProcessPluginErrorIfArchiveFolderCopyingFails(t *testing.T) {
 	unarchivedPath := filepath.Join(workDir, "plugin")
 	packageJSONPath := filepath.Join(unarchivedPath, "package.json")
 	meta := model.PluginMeta{
-		ID:      "test-id",
-		Version: "test-v",
-		URL:     "http://test.url",
+		ID:        "test-id",
+		Version:   "test-v",
+		Name:      "test-name",
+		Publisher: "test-publisher",
+		URL:       "http://test.url",
 	}
-	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s", meta.ID, meta.Version))
+	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.%s", meta.Publisher, meta.Name, meta.Version))
 	packageJSON := PackageJSON{
 		PackageJSON: model.PackageJSON{
 			Name:      "test-name",

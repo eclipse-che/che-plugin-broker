@@ -315,7 +315,7 @@ func TestBroker_processPlugins(t *testing.T) {
 
 func TestBroker_getPluginMetas(t *testing.T) {
 	const defaultRegistry = "defaultRegistry"
-	const RegistryURLFormat = "%s/plugins/%s/%s/meta.yaml"
+	const RegistryURLFormat = "%s/%s/%s/meta.yaml"
 
 	type args struct {
 		fqns            []model.PluginFQN
@@ -365,7 +365,7 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				errRegexp: nil,
 				fetchURL: fmt.Sprintf(
 					RegistryURLFormat,
-					defaultRegistry,
+					defaultRegistry+"/plugins",
 					pluginFQNWithoutRegistry.ID,
 					pluginFQNWithoutRegistry.Version),
 			},
@@ -441,7 +441,7 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				errRegexp: nil,
 				fetchURL: fmt.Sprintf(
 					RegistryURLFormat,
-					defaultRegistry,
+					defaultRegistry+"/plugins",
 					pluginFQNWithoutRegistry.ID,
 					pluginFQNWithoutRegistry.Version),
 			},

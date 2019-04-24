@@ -46,5 +46,5 @@ docker push eclipse/che-unified-plugin-broker:${IMAGE_LATEST_TAG}
 docker build -t eclipse/che-init-plugin-broker:${IMAGE_TAG} -f ${ROOT_DIR}/build/init/Dockerfile ${ROOT_DIR}
 docker push eclipse/che-init-plugin-broker:${IMAGE_TAG}
 # Push latest bugfix image
-docker push eclipse/che-init-plugin-broker:${IMAGE_LATEST_TAG}
 docker tag eclipse/che-init-plugin-broker:${IMAGE_TAG} eclipse/che-init-plugin-broker:${IMAGE_LATEST_TAG}
+docker push eclipse/che-init-plugin-broker:${IMAGE_LATEST_TAG}

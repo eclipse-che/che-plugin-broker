@@ -319,7 +319,7 @@ func TestBroker_processPlugins(t *testing.T) {
 
 func TestBroker_getPluginMetas(t *testing.T) {
 	const defaultRegistry = "http://defaultRegistry.com"
-	const RegistryURLFormat = "%s/plugins/%s/meta.yaml"
+	const RegistryURLFormat = "%s/%s/meta.yaml"
 
 	type args struct {
 		fqns            []model.PluginFQN
@@ -369,7 +369,7 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				errRegexp: nil,
 				fetchURL: fmt.Sprintf(
 					RegistryURLFormat,
-					defaultRegistry,
+					defaultRegistry+"/plugins",
 					pluginFQNWithoutRegistry.ID),
 			},
 			mocks: successMock,
@@ -441,7 +441,7 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				errRegexp: nil,
 				fetchURL: fmt.Sprintf(
 					RegistryURLFormat,
-					defaultRegistry,
+					defaultRegistry+"/plugins",
 					pluginFQNWithoutRegistry.ID),
 			},
 			mocks: successMock,
@@ -456,7 +456,7 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				errRegexp: nil,
 				fetchURL: fmt.Sprintf(
 					RegistryURLFormat,
-					defaultRegistry+"/v2",
+					defaultRegistry+"/v2/plugins",
 					pluginFQNWithoutRegistry.ID),
 			},
 			mocks: successMock,
@@ -471,7 +471,7 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				errRegexp: nil,
 				fetchURL: fmt.Sprintf(
 					RegistryURLFormat,
-					defaultRegistry+"/v2",
+					defaultRegistry+"/v2/plugins",
 					pluginFQNWithoutRegistry.ID),
 			},
 			mocks: successMock,

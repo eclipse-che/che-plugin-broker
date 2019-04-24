@@ -10,6 +10,6 @@
   {
     "id": "org.eclipse.che.vscode-redhat.java",
     "version": "0.38.0",
-    "registry": "https://raw.githubusercontent.com/eclipse/che-plugin-registry/master/"
+    "registry": "https://raw.githubusercontent.com/eclipse/che-plugin-registry/master/plugins"
   }
 ]

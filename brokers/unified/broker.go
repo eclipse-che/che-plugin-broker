@@ -37,7 +37,7 @@ const VscodePluginType = "vs code extension"
 
 // RegistryURLFormat specifies the format string for registry urls
 // when downloading metas
-const RegistryURLFormat = "%s/plugins/%s/meta.yaml"
+const RegistryURLFormat = "%s/%s/meta.yaml"
 
 // Broker is used to process Che plugins
 type Broker struct {
@@ -223,7 +223,7 @@ func getRegistryURL(plugin model.PluginFQN, defaultRegistry string) (string, err
 		if defaultRegistry == "" {
 			return "", fmt.Errorf("plugin '%s' does not specify registry and no default is provided", plugin.ID)
 		}
-		registry = strings.TrimSuffix(defaultRegistry, "/")
+		registry = strings.TrimSuffix(defaultRegistry, "/") + "/plugins"
 	}
 	return registry, nil
 }

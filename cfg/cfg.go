@@ -119,7 +119,7 @@ func init() {
 		&RegistryAddress,
 		"registry-address",
 		"",
-		"Default address of registry from which to retrieve meta.yamls when plugin FQNs do not specify a registry. Ignored unless --download-metas is set",
+		"Default address of registry from which to retrieve meta.yaml's when plugin FQNs do not specify a registry",
 	)
 }
 

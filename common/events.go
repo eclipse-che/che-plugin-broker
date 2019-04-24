@@ -58,7 +58,7 @@ func (broker *brokerImpl) PrintPlan(metas []model.PluginMeta) {
 
 	buffer.WriteString("List of plugins and editors to install\n")
 	for _, plugin := range metas {
-		buffer.WriteString(fmt.Sprintf("- %s:%s - %s\n", plugin.ID, plugin.Version, plugin.Description))
+		buffer.WriteString(fmt.Sprintf("- %s/%s/%s - %s\n", plugin.Publisher, plugin.Name, plugin.Version, plugin.Description))
 	}
 
 	broker.PrintInfo(buffer.String())

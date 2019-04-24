@@ -256,11 +256,13 @@ func TestBroker_processPlugins(t *testing.T) {
 						Type:    "Unsupported type",
 						ID:      "test id",
 						Version: "test version",
+						Publisher: "test publisher",
+						Name: "test name",
 					},
 				},
 			},
 			want: want{
-				err: "Type 'Unsupported type' of plugin 'test id:test version' is unsupported",
+				err: "Type 'Unsupported type' of plugin 'test id' is unsupported",
 			},
 		},
 		{
@@ -271,11 +273,13 @@ func TestBroker_processPlugins(t *testing.T) {
 						Type:    "",
 						ID:      "test id",
 						Version: "test version",
+						Publisher: "test publisher",
+						Name: "test name",
 					},
 				},
 			},
 			want: want{
-				err: "Type field is missing in meta information of plugin 'test id:test version'",
+				err: "Type field is missing in meta information of plugin 'test id'",
 			},
 		},
 	}
@@ -314,8 +318,8 @@ func TestBroker_processPlugins(t *testing.T) {
 }
 
 func TestBroker_getPluginMetas(t *testing.T) {
-	const defaultRegistry = "defaultRegistry"
-	const RegistryURLFormat = "%s/%s/%s/meta.yaml"
+	const defaultRegistry = "http://defaultRegistry.com"
+	const RegistryURLFormat = "%s/%s/meta.yaml"
 
 	type args struct {
 		fqns            []model.PluginFQN
@@ -366,8 +370,7 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				fetchURL: fmt.Sprintf(
 					RegistryURLFormat,
 					defaultRegistry+"/plugins",
-					pluginFQNWithoutRegistry.ID,
-					pluginFQNWithoutRegistry.Version),
+					pluginFQNWithoutRegistry.ID),
 			},
 			mocks: successMock,
 		},
@@ -382,8 +385,7 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				fetchURL: fmt.Sprintf(
 					RegistryURLFormat,
 					pluginFQNWithRegistry.Registry,
-					pluginFQNWithRegistry.ID,
-					pluginFQNWithRegistry.Version),
+					pluginFQNWithRegistry.ID),
 			},
 			mocks: successMock,
 		},
@@ -398,8 +400,7 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				fetchURL: fmt.Sprintf(
 					RegistryURLFormat,
 					pluginFQNWithRegistry.Registry,
-					pluginFQNWithRegistry.ID,
-					pluginFQNWithRegistry.Version),
+					pluginFQNWithRegistry.ID),
 			},
 			mocks: successMock,
 		},
@@ -426,8 +427,7 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				fetchURL: fmt.Sprintf(
 					RegistryURLFormat,
 					strings.TrimSuffix(pluginFQNWithRegistryTrailingSlash.Registry, "/"),
-					pluginFQNWithRegistryTrailingSlash.ID,
-					pluginFQNWithRegistryTrailingSlash.Version),
+					pluginFQNWithRegistryTrailingSlash.ID),
 			},
 			mocks: successMock,
 		},
@@ -442,8 +442,75 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				fetchURL: fmt.Sprintf(
 					RegistryURLFormat,
 					defaultRegistry+"/plugins",
-					pluginFQNWithoutRegistry.ID,
-					pluginFQNWithoutRegistry.Version),
+					pluginFQNWithoutRegistry.ID),
+			},
+			mocks: successMock,
+		},
+		{
+			name: "Supports default registry address with path with trailing slash",
+			args: args{
+				fqns:            []model.PluginFQN{pluginFQNWithoutRegistry},
+				defaultRegistry: defaultRegistry + "/v2/",
+			},
+			want: want{
+				errRegexp: nil,
+				fetchURL: fmt.Sprintf(
+					RegistryURLFormat,
+					defaultRegistry+"/v2/plugins",
+					pluginFQNWithoutRegistry.ID),
+			},
+			mocks: successMock,
+		},
+		{
+			name: "Supports default registry address with path with no trailing slash",
+			args: args{
+				fqns:            []model.PluginFQN{pluginFQNWithoutRegistry},
+				defaultRegistry: defaultRegistry + "/v2",
+			},
+			want: want{
+				errRegexp: nil,
+				fetchURL: fmt.Sprintf(
+					RegistryURLFormat,
+					defaultRegistry+"/v2/plugins",
+					pluginFQNWithoutRegistry.ID),
+			},
+			mocks: successMock,
+		},
+		{
+			name: "Supports custom registry address with path with trailing slash",
+			args: args{
+				fqns: []model.PluginFQN{
+					{
+						ID:       "test-with-registry/2.0",
+						Registry: "http://test-registry.com/v3/",
+					}},
+				defaultRegistry: defaultRegistry,
+			},
+			want: want{
+				errRegexp: nil,
+				fetchURL: fmt.Sprintf(
+					RegistryURLFormat,
+					"http://test-registry.com/v3",
+					"test-with-registry/2.0"),
+			},
+			mocks: successMock,
+		},
+		{
+			name: "Supports custom registry address with path with no trailing slash",
+			args: args{
+				fqns: []model.PluginFQN{
+					{
+						ID:       "test-with-registry/2.0",
+						Registry: "http://test-registry.com/v4",
+					}},
+				defaultRegistry: defaultRegistry,
+			},
+			want: want{
+				errRegexp: nil,
+				fetchURL: fmt.Sprintf(
+					RegistryURLFormat,
+					"http://test-registry.com/v4",
+					"test-with-registry/2.0"),
 			},
 			mocks: successMock,
 		},
@@ -506,19 +573,16 @@ func createCheEditorMeta(ID string) model.PluginMeta {
 }
 
 var pluginFQNWithoutRegistry = model.PluginFQN{
-	ID:      "test-no-registry",
-	Version: "1.0",
+	ID: "test-no-registry/1.0",
 }
 
 var pluginFQNWithRegistry = model.PluginFQN{
-	ID:       "test-with-registry",
-	Version:  "2.0",
+	ID:       "test-with-registry/2.0",
 	Registry: "test-registry",
 }
 
 var pluginFQNWithRegistryTrailingSlash = model.PluginFQN{
-	ID:       "test-with-registry-suffix",
-	Version:  "3.0",
+	ID:       "test-with-registry-suffix/3.0",
 	Registry: "test-registry/",
 }
 

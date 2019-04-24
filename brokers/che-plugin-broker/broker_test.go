@@ -221,6 +221,7 @@ func TestProcessPlugin(t *testing.T) {
 		{
 			ID:           meta.ID,
 			Version:      meta.Version,
+			Name:         meta.Name,
 			Endpoints:    toolingConf.Endpoints,
 			Containers:   toolingConf.Containers,
 			Editors:      toolingConf.Editors,
@@ -321,6 +322,7 @@ func TestProcessPluginWithYaml(t *testing.T) {
 		{
 			ID:           meta.ID,
 			Version:      meta.Version,
+			Name:         meta.Name,
 			Endpoints:    toolingConf.Endpoints,
 			Containers:   toolingConf.Containers,
 			Editors:      toolingConf.Editors,

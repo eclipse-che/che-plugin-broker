@@ -118,7 +118,7 @@ func (cheBroker *chePluginBrokerImpl) PushEvents(tun *jsonrpc.Tunnel) {
 }
 
 func (cheBroker *chePluginBrokerImpl) ProcessPlugin(meta model.PluginMeta) error {
-	cheBroker.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
+	cheBroker.PrintDebug("Stared processing plugin '%s'", meta.ID)
 	url := meta.URL
 
 	switch getTypeOfURL(url) {
@@ -139,13 +139,13 @@ func (cheBroker *chePluginBrokerImpl) processYAML(meta *model.PluginMeta, url st
 	}
 
 	chePluginYamlPath := filepath.Join(workDir, pluginFileName)
-	cheBroker.PrintDebug("Downloading plugin definition '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, chePluginYamlPath)
+	cheBroker.PrintDebug("Downloading plugin definition '%s' for plugin '%s' to '%s'", url, meta.ID, chePluginYamlPath)
 	err = cheBroker.ioUtil.Download(url, chePluginYamlPath)
 	if err != nil {
 		return err
 	}
 
-	cheBroker.PrintDebug("Resolving '%s:%s'", meta.ID, meta.Version)
+	cheBroker.PrintDebug("Resolving '%s'", meta.ID)
 	err = cheBroker.resolveToolingConfig(meta, workDir)
 	if err != nil {
 		return err
@@ -162,20 +162,20 @@ func (cheBroker *chePluginBrokerImpl) processArchive(meta *model.PluginMeta, url
 	pluginPath := filepath.Join(workDir, "plugin")
 
 	// Download an archive
-	cheBroker.PrintDebug("Downloading archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
+	cheBroker.PrintDebug("Downloading archive '%s' for plugin '%s' to '%s'", url, meta.ID, archivePath)
 	err = cheBroker.ioUtil.Download(url, archivePath)
 	if err != nil {
 		return err
 	}
 
 	// Untar it
-	cheBroker.PrintDebug("Untarring archive '%s' for plugin '%s:%s' to '%s'", url, meta.ID, meta.Version, archivePath)
+	cheBroker.PrintDebug("Unpacking archive '%s' for plugin '%s' to '%s'", url, meta.ID, archivePath)
 	err = cheBroker.ioUtil.Untar(archivePath, pluginPath)
 	if err != nil {
 		return err
 	}
 
-	cheBroker.PrintDebug("Resolving '%s:%s'", meta.ID, meta.Version)
+	cheBroker.PrintDebug("Resolving '%s'", meta.ID)
 	err = cheBroker.resolveToolingConfig(meta, pluginPath)
 	if err != nil {
 		return err
@@ -185,7 +185,7 @@ func (cheBroker *chePluginBrokerImpl) processArchive(meta *model.PluginMeta, url
 		return nil
 	}
 
-	cheBroker.PrintDebug("Copying dependencies for '%s:%s'", meta.ID, meta.Version)
+	cheBroker.PrintDebug("Copying dependencies for '%s'", meta.ID)
 	return cheBroker.copyDependencies(pluginPath)
 }
 

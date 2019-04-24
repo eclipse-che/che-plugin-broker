@@ -34,13 +34,15 @@ import (
 )
 
 const (
-	extName       = "Test-name"
-	extPublisher  = "Test-publisher"
-	vsixURL       = "http://test.url"
-	vsixBrokenURL = "http://broken.test.url"
-	pluginID      = "tid"
-	pluginVersion = "tv"
-	image         = "test/test:tag"
+	extName         = "Test-name"
+	extPublisher    = "Test-publisher"
+	vsixURL         = "http://test.url"
+	vsixBrokenURL   = "http://broken.test.url"
+	pluginID        = "tid"
+	pluginVersion   = "tv"
+	image           = "test/test:tag"
+	pluginPublisher = "test publisher"
+	pluginName      = "test name"
 )
 
 type mocks struct {
@@ -127,70 +129,84 @@ func TestBroker_processPlugin(t *testing.T) {
 		{
 			name: "Return error when neither extension nor URL nor extensions are present",
 			meta: model.PluginMeta{
-				ID:      pluginID,
-				Version: pluginVersion,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
 				Attributes: map[string]string{
 					"containerImage": image,
 				},
 			},
-			err: fmt.Sprintf(errorNoExtFieldsTemplate, "tid", "tv"),
+			err: fmt.Sprintf(errorNoExtFieldsTemplate, "tid"),
 		},
 		{
 			name: "Return error when neither attributes nor URL nor extensions are present",
 			meta: model.PluginMeta{
-				ID:      pluginID,
-				Version: pluginVersion,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
 			},
-			err: fmt.Sprintf(errorNoExtFieldsTemplate, "tid", "tv"),
+			err: fmt.Sprintf(errorNoExtFieldsTemplate, "tid"),
 		},
 		{
 			name: "Return error when neither attributes nor URL are present and extensions are nil",
 			meta: model.PluginMeta{
 				ID:         pluginID,
 				Version:    pluginVersion,
+				Publisher:  pluginPublisher,
+				Name:       pluginName,
 				Extensions: nil,
 			},
-			err: fmt.Sprintf(errorNoExtFieldsTemplate, "tid", "tv"),
+			err: fmt.Sprintf(errorNoExtFieldsTemplate, "tid"),
 		},
 		{
 			name: "Return error when neither attributes nor URL are present and extensions are empty",
 			meta: model.PluginMeta{
 				ID:         pluginID,
 				Version:    pluginVersion,
+				Publisher:  pluginPublisher,
+				Name:       pluginName,
 				Extensions: []string{},
 			},
-			err: fmt.Sprintf(errorNoExtFieldsTemplate, "tid", "tv"),
+			err: fmt.Sprintf(errorNoExtFieldsTemplate, "tid"),
 		},
 		{
 			name: "Return error when both extension and URL fields are present",
 			meta: model.PluginMeta{
-				ID:      pluginID,
-				Version: pluginVersion,
-				URL:     vsixURL,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				URL:       vsixURL,
 				Attributes: map[string]string{
 					"extension":      "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
 					"containerImage": image,
 				},
 			},
-			err: fmt.Sprintf(errorMutuallyExclusiveExtFieldsTemplate, "tid", "tv"),
+			err: fmt.Sprintf(errorMutuallyExclusiveExtFieldsTemplate, "tid"),
 		},
 		{
 			name: "Return error when both extensions and URL fields are present",
 			meta: model.PluginMeta{
-				ID:      pluginID,
-				Version: pluginVersion,
-				URL:     vsixURL,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				URL:       vsixURL,
 				Extensions: []string{
 					"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
 				},
 			},
-			err: fmt.Sprintf(errorMutuallyExclusiveExtFieldsTemplate, "tid", "tv"),
+			err: fmt.Sprintf(errorMutuallyExclusiveExtFieldsTemplate, "tid"),
 		},
 		{
 			name: "Return error when both extensions and extension fields are present",
 			meta: model.PluginMeta{
-				ID:      pluginID,
-				Version: pluginVersion,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
 				Extensions: []string{
 					"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
 				},
@@ -198,13 +214,15 @@ func TestBroker_processPlugin(t *testing.T) {
 					"extension": "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
 				},
 			},
-			err: fmt.Sprintf(errorMutuallyExclusiveExtFieldsTemplate, "tid", "tv"),
+			err: fmt.Sprintf(errorMutuallyExclusiveExtFieldsTemplate, "tid"),
 		},
 		{
 			name: "Successful brokering of remote plugin with extension field",
 			meta: model.PluginMeta{
-				ID:      pluginID,
-				Version: pluginVersion,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
 				Attributes: map[string]string{
 					"extension":      "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
 					"containerImage": image,
@@ -215,9 +233,11 @@ func TestBroker_processPlugin(t *testing.T) {
 		{
 			name: "Successful brokering of remote plugin with URL field",
 			meta: model.PluginMeta{
-				ID:      pluginID,
-				Version: pluginVersion,
-				URL:     vsixURL,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				URL:       vsixURL,
 				Attributes: map[string]string{
 					"containerImage": image,
 				},
@@ -227,8 +247,10 @@ func TestBroker_processPlugin(t *testing.T) {
 		{
 			name: "Successful brokering of local plugin with extension field",
 			meta: model.PluginMeta{
-				ID:      pluginID,
-				Version: pluginVersion,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
 				Attributes: map[string]string{
 					"extension": "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
 				},
@@ -238,9 +260,11 @@ func TestBroker_processPlugin(t *testing.T) {
 		{
 			name: "Successful brokering of local plugin with URL field and empty attributes",
 			meta: model.PluginMeta{
-				ID:      pluginID,
-				Version: pluginVersion,
-				URL:     vsixURL,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				URL:       vsixURL,
 				Attributes: map[string]string{
 				},
 			},
@@ -249,17 +273,21 @@ func TestBroker_processPlugin(t *testing.T) {
 		{
 			name: "Successful brokering of local plugin with URL field",
 			meta: model.PluginMeta{
-				ID:      pluginID,
-				Version: pluginVersion,
-				URL:     vsixURL,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				URL:       vsixURL,
 			},
 			want: expectedPluginsWithSingleLocalPlugin(),
 		},
 		{
 			name: "Successful brokering of local plugin with extensions field",
 			meta: model.PluginMeta{
-				ID:      pluginID,
-				Version: pluginVersion,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
 				Extensions: []string{
 					"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
 				},
@@ -269,8 +297,10 @@ func TestBroker_processPlugin(t *testing.T) {
 		{
 			name: "Successful brokering of local plugin with extensions field and empty attributes",
 			meta: model.PluginMeta{
-				ID:      pluginID,
-				Version: pluginVersion,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
 				Attributes: map[string]string{
 				},
 				Extensions: []string{
@@ -282,8 +312,10 @@ func TestBroker_processPlugin(t *testing.T) {
 		{
 			name: "Successful brokering of local plugin with extensions field with several extensions",
 			meta: model.PluginMeta{
-				ID:      pluginID,
-				Version: pluginVersion,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
 				Extensions: []string{
 					"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
 					"vscode:extension/redhat-com.vscode-jdt-ls",
@@ -295,8 +327,10 @@ func TestBroker_processPlugin(t *testing.T) {
 		{
 			name: "Successful brokering of local plugin with extensions field with mixed extensions and archives URLs",
 			meta: model.PluginMeta{
-				ID:      pluginID,
-				Version: pluginVersion,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
 				Extensions: []string{
 					"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
 					"vscode:extension/redhat-com.vscode-jdt-ls",
@@ -308,8 +342,10 @@ func TestBroker_processPlugin(t *testing.T) {
 		{
 			name: "Successful brokering of remote plugin with extensions field with several extensions",
 			meta: model.PluginMeta{
-				ID:      pluginID,
-				Version: pluginVersion,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
 				Extensions: []string{
 					"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
 					"vscode:extension/redhat-com.vscode-jdt-ls",
@@ -331,8 +367,10 @@ func TestBroker_processPlugin(t *testing.T) {
 		{
 			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs",
 			meta: model.PluginMeta{
-				ID:      pluginID,
-				Version: pluginVersion,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
 				Extensions: []string{
 					"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
 					vsixURL,
@@ -354,8 +392,10 @@ func TestBroker_processPlugin(t *testing.T) {
 		{
 			name: "Successful brokering of remote plugin with extensions field",
 			meta: model.PluginMeta{
-				ID:      pluginID,
-				Version: pluginVersion,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
 				Extensions: []string{
 					"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
 				},
@@ -411,8 +451,10 @@ func generateTheiaEnvVar(prettyID string) string {
 
 func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(pluginTheiaEndpointVars ...string) []model.ChePlugin {
 	expectedPlugin := model.ChePlugin{
-		ID:      pluginID,
-		Version: pluginVersion,
+		ID:        pluginID,
+		Version:   pluginVersion,
+		Publisher: pluginPublisher,
+		Name:      pluginName,
 		Endpoints: []model.Endpoint{
 			{
 				Name:       "randomString1234567890",
@@ -464,8 +506,10 @@ func expectedPluginsWithSingleRemotePlugin() []model.ChePlugin {
 	prettyID := "Test_publisher_Test_name"
 	expectedPlugins := []model.ChePlugin{
 		{
-			ID:      pluginID,
-			Version: pluginVersion,
+			ID:        pluginID,
+			Version:   pluginVersion,
+			Publisher: pluginPublisher,
+			Name:      pluginName,
 			Endpoints: []model.Endpoint{
 				{
 					Name:       "randomString1234567890",
@@ -514,8 +558,10 @@ func expectedPluginsWithSingleRemotePlugin() []model.ChePlugin {
 func expectedPluginsWithSingleLocalPlugin() []model.ChePlugin {
 	expectedPlugins := []model.ChePlugin{
 		{
-			ID:      pluginID,
-			Version: pluginVersion,
+			ID:        pluginID,
+			Version:   pluginVersion,
+			Publisher: pluginPublisher,
+			Name:      pluginName,
 		},
 	}
 	return expectedPlugins
@@ -528,7 +574,7 @@ func setUpSuccessfulCase(workDir string, meta model.PluginMeta, m *mocks, unzipF
 	}
 	m.u.On("Unzip", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Run(_unzipFunc).Return(nil)
 	m.u.On("CopyResource", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
-	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.randomString1234567890.vsix", meta.ID, meta.Version))
+	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.%s.randomString1234567890.vsix", meta.Publisher, meta.Name, meta.Version))
 	m.u.On("CopyFile", mock.AnythingOfType("string"), pluginPath).Return(nil)
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
@@ -590,7 +636,7 @@ func TestFetchExtensionInfo(t *testing.T) {
 		roundTF test.RoundTripFunc
 	}{
 		{
-			err: "Parsing of VS Code extension ID 'invalidExt' failed for plugin 'tid:tv'. Extension should start from 'vscode:extension/'",
+			err: "Parsing of VS Code extension ID 'invalidExt' failed for plugin 'tid'. Extension should start from 'vscode:extension/'",
 			ext: "invalidExt",
 		},
 		{
@@ -631,7 +677,7 @@ func TestFetchExtensionInfo(t *testing.T) {
 		},
 		{
 			ext: "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
-			err: "VS Code extension downloading failed tid:tv. Status: 400. Body: ",
+			err: "VS Code extension downloading failed tid. Status: 400. Body: ",
 			roundTF: func(req *http.Request) *http.Response {
 				return &http.Response{
 					StatusCode: 400,
@@ -641,7 +687,7 @@ func TestFetchExtensionInfo(t *testing.T) {
 		},
 		{
 			ext: "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
-			err: "VS Code extension downloading failed tid:tv. Status: 400. Body: " + "test error",
+			err: "VS Code extension downloading failed tid. Status: 400. Body: " + "test error",
 			roundTF: func(req *http.Request) *http.Response {
 				return &http.Response{
 					StatusCode: 400,
@@ -689,23 +735,23 @@ func TestFindAssetURL(t *testing.T) {
 		err      string
 	}{
 		{
-			err:      "Failed to parse VS Code extension marketplace response for plugin tid:v",
+			err:      "Failed to parse VS Code extension marketplace response for plugin tid",
 			response: []byte("{"),
 		},
 		{
-			err:      "Failed to parse VS Code extension marketplace response for plugin tid:v",
+			err:      "Failed to parse VS Code extension marketplace response for plugin tid",
 			response: []byte("{}"),
 		},
 		{
-			err:      "Failed to parse VS Code extension marketplace response for plugin tid:v",
+			err:      "Failed to parse VS Code extension marketplace response for plugin tid",
 			response: []byte(`{"results":[]}`),
 		},
 		{
-			err:      "Failed to parse VS Code extension marketplace response for plugin tid:v",
+			err:      "Failed to parse VS Code extension marketplace response for plugin tid",
 			response: []byte(`{"results":null}`),
 		},
 		{
-			err: "Failed to parse VS Code extension marketplace response for plugin tid:v",
+			err: "Failed to parse VS Code extension marketplace response for plugin tid",
 			response: []byte(
 				`{
 				     "results":[
@@ -725,7 +771,7 @@ func TestFindAssetURL(t *testing.T) {
 			     }`),
 		},
 		{
-			err: "Failed to parse VS Code extension marketplace response for plugin tid:v",
+			err: "Failed to parse VS Code extension marketplace response for plugin tid",
 			response: []byte(
 				`{
 				     "results":[
@@ -744,7 +790,7 @@ func TestFindAssetURL(t *testing.T) {
 			     }`),
 		},
 		{
-			err: "Failed to parse VS Code extension marketplace response for plugin tid:v",
+			err: "Failed to parse VS Code extension marketplace response for plugin tid",
 			response: []byte(
 				`{
 				     "results":[
@@ -760,7 +806,7 @@ func TestFindAssetURL(t *testing.T) {
 			     }`),
 		},
 		{
-			err: "Failed to parse VS Code extension marketplace response for plugin tid:v",
+			err: "Failed to parse VS Code extension marketplace response for plugin tid",
 			response: []byte(
 				`{
 				     "results":[
@@ -775,7 +821,7 @@ func TestFindAssetURL(t *testing.T) {
 			     }`),
 		},
 		{
-			err: "Failed to parse VS Code extension marketplace response for plugin tid:v",
+			err: "Failed to parse VS Code extension marketplace response for plugin tid",
 			response: []byte(
 				`{
 				     "results":[
@@ -787,7 +833,7 @@ func TestFindAssetURL(t *testing.T) {
 			     }`),
 		},
 		{
-			err: "Failed to parse VS Code extension marketplace response for plugin tid:v",
+			err: "Failed to parse VS Code extension marketplace response for plugin tid",
 			response: []byte(
 				`{
 				     "results":[
@@ -798,7 +844,7 @@ func TestFindAssetURL(t *testing.T) {
 			     }`),
 		},
 		{
-			err: "VS Code extension archive information is not found in marketplace response for plugin tid:v",
+			err: "VS Code extension archive information is not found in marketplace response for plugin tid",
 			response: []byte(
 				`{
 				     "results":[

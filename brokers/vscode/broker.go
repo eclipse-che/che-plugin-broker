@@ -36,8 +36,8 @@ import (
 const marketplace = "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery"
 const bodyFmt = `{"filters":[{"criteria":[{"filterType":7,"value":"%s"}],"pageNumber":1,"pageSize":1,"sortBy":0, "sortOrder":0 }],"assetTypes":["Microsoft.VisualStudio.Services.VSIXPackage"],"flags":131}`
 const assetType = "Microsoft.VisualStudio.Services.VSIXPackage"
-const errorMutuallyExclusiveExtFieldsTemplate = "VS Code extension description of the plugin '%s:%s' contains more than one mutually exclusive field 'attributes.extension', 'url', 'extensions'"
-const errorNoExtFieldsTemplate = "Neither 'extension' nor 'url' nor 'extensions' field found in VS Code extension description of the plugin '%s:%s'"
+const errorMutuallyExclusiveExtFieldsTemplate = "VS Code extension description of the plugin '%s' contains more than one mutually exclusive field 'attributes.extension', 'url', 'extensions'"
+const errorNoExtFieldsTemplate = "Neither 'extension' nor 'url' nor 'extensions' field found in VS Code extension description of the plugin '%s'"
 
 type brokerImpl struct {
 	common.Broker
@@ -109,7 +109,7 @@ func (b *brokerImpl) PushEvents(tun *jsonrpc.Tunnel) {
 }
 
 func (b *brokerImpl) ProcessPlugin(meta model.PluginMeta) error {
-	b.PrintDebug("Stared processing plugin '%s:%s'", meta.ID, meta.Version)
+	b.PrintDebug("Started processing plugin '%s'", meta.ID)
 
 	URLs, err := b.getBinariesURLs(meta)
 	if err != nil {
@@ -142,11 +142,11 @@ func (b *brokerImpl) ProcessPlugin(meta model.PluginMeta) error {
 }
 
 func (b *brokerImpl) injectLocalPlugin(meta model.PluginMeta, archivesPaths []string) error {
-	b.PrintDebug("Copying VS Code plugin '%s:%s'", meta.ID, meta.Version)
+	b.PrintDebug("Copying VS Code plugin '%s'", meta.ID)
 	for _, path := range archivesPaths {
 		pluginName := b.generatePluginArchiveName(meta)
 		pluginPath := filepath.Join("/plugins", pluginName)
-		b.PrintDebug("Copying VS Code extension archive from '%s' to '%s' for plugin '%s:%s'", path, pluginPath, meta.ID, meta.Version)
+		b.PrintDebug("Copying VS Code extension archive from '%s' to '%s' for plugin '%s'", path, pluginPath, meta.ID)
 		err := b.ioUtil.CopyFile(path, pluginPath)
 		if err != nil {
 			return err
@@ -160,7 +160,7 @@ func (b *brokerImpl) injectRemotePlugin(meta model.PluginMeta, image string, arc
 	for _, archive := range archivesPaths {
 		// Unzip it
 		unpackedPath := filepath.Join(workDir, "extension", b.rand.String(10))
-		b.PrintDebug("Unzipping archive '%s' for plugin '%s:%s' to '%s'", archive, meta.ID, meta.Version, unpackedPath)
+		b.PrintDebug("Unzipping archive '%s' for plugin '%s' to '%s'", archive, meta.ID, unpackedPath)
 		err := b.ioUtil.Unzip(archive, unpackedPath)
 		if err != nil {
 			return err
@@ -175,7 +175,7 @@ func (b *brokerImpl) injectRemotePlugin(meta model.PluginMeta, image string, arc
 			pluginName := b.generatePluginFolderName(meta, *pj)
 
 			pluginFolderPath := filepath.Join("/plugins", pluginName)
-			b.PrintDebug("Copying VS Code extension '%s:%s' from '%s' to '%s'", meta.ID, meta.Version, unpackedPath, pluginFolderPath)
+			b.PrintDebug("Copying VS Code extension '%s' from '%s' to '%s'", meta.ID, unpackedPath, pluginFolderPath)
 			err = b.ioUtil.CopyResource(unpackedPath, pluginFolderPath)
 			if err != nil {
 				return err
@@ -191,8 +191,8 @@ func (b *brokerImpl) downloadArchives(URLs []string, meta model.PluginMeta, work
 	paths := make([]string, 0)
 	for _, URL := range URLs {
 		archivePath := filepath.Join(workDir, "pluginArchive"+b.rand.String(10))
-		b.PrintDebug("Downloading VS Code extension archive '%s' for plugin '%s:%s' to '%s'", URL, meta.ID, meta.Version, archivePath)
-		b.PrintInfo("Downloading VS Code extension for plugin '%s:%s'", meta.ID, meta.Version)
+		b.PrintDebug("Downloading VS Code extension archive '%s' for plugin '%s' to '%s'", URL, meta.ID, archivePath)
+		b.PrintInfo("Downloading VS Code extension for plugin '%s'", meta.ID)
 		err := b.downloadArchive(URL, archivePath)
 		paths = append(paths, archivePath)
 		if err != nil {
@@ -213,14 +213,14 @@ func (b *brokerImpl) getExtensionsAndURLs(meta model.PluginMeta) (e []string, u 
 	}
 	if meta.Attributes != nil && meta.Attributes["extension"] != "" {
 		if isSet {
-			return nil, nil, fmt.Errorf(errorMutuallyExclusiveExtFieldsTemplate, meta.ID, meta.Version)
+			return nil, nil, fmt.Errorf(errorMutuallyExclusiveExtFieldsTemplate, meta.ID)
 		}
 		isSet = true
 		extensions = append(extensions, meta.Attributes["extension"])
 	}
 	if meta.Extensions != nil && len(meta.Extensions) != 0 {
 		if isSet {
-			return nil, nil, fmt.Errorf(errorMutuallyExclusiveExtFieldsTemplate, meta.ID, meta.Version)
+			return nil, nil, fmt.Errorf(errorMutuallyExclusiveExtFieldsTemplate, meta.ID)
 		}
 		isSet = true
 		for _, v := range meta.Extensions {
@@ -234,7 +234,7 @@ func (b *brokerImpl) getExtensionsAndURLs(meta model.PluginMeta) (e []string, u 
 		}
 	}
 	if !isSet {
-		return nil, nil, fmt.Errorf(errorNoExtFieldsTemplate, meta.ID, meta.Version)
+		return nil, nil, fmt.Errorf(errorNoExtFieldsTemplate, meta.ID)
 	}
 	return extensions, URLs, nil
 }
@@ -265,11 +265,11 @@ func extensionOrURL(extensionOrURL string) (extension string, URL string) {
 func (b *brokerImpl) generatePluginFolderName(meta model.PluginMeta, pj model.PackageJSON) string {
 	var re = regexp.MustCompile(`[^a-zA-Z_0-9]+`)
 	prettyID := re.ReplaceAllString(pj.Publisher+"_"+pj.Name, "")
-	return fmt.Sprintf("%s.%s.%s", meta.ID, meta.Version, prettyID)
+	return fmt.Sprintf("%s.%s.%s.%s", meta.Publisher, meta.Name, meta.Version, prettyID)
 }
 
 func (b *brokerImpl) generatePluginArchiveName(meta model.PluginMeta) string {
-	return fmt.Sprintf("%s.%s.%s.vsix", meta.ID, meta.Version, b.rand.String(10))
+	return fmt.Sprintf("%s.%s.%s.%s.vsix", meta.Publisher, meta.Name, meta.Version, b.rand.String(10))
 }
 
 func (b *brokerImpl) getExtensionArchiveURL(extension string, meta model.PluginMeta) (string, error) {
@@ -316,29 +316,29 @@ func (b *brokerImpl) fetchExtensionInfo(extension string, meta model.PluginMeta)
 	re := regexp.MustCompile(`^vscode:extension/(.*)`)
 	groups := re.FindStringSubmatch(extension)
 	if len(groups) != 2 {
-		return nil, fmt.Errorf("Parsing of VS Code extension ID '%s' failed for plugin '%s:%s'. Extension should start from 'vscode:extension/'", extension, meta.ID, meta.Version)
+		return nil, fmt.Errorf("Parsing of VS Code extension ID '%s' failed for plugin '%s'. Extension should start from 'vscode:extension/'", extension, meta.ID)
 	}
 	extName := groups[1]
 	body := []byte(fmt.Sprintf(bodyFmt, extName))
 	req, err := http.NewRequest("POST", marketplace, bytes.NewBuffer(body))
 	if err != nil {
-		return nil, fmt.Errorf("VS Code extension id '%s' fetching failed for plugin %s:%s. Error: %s", extension, meta.ID, meta.Version, err)
+		return nil, fmt.Errorf("VS Code extension id '%s' fetching failed for plugin %s. Error: %s", extension, meta.ID, err)
 	}
 	req.Header.Set("Accept", "application/json;api-version=3.0-preview.1")
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := b.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("VS Code extension downloading failed %s:%s. Error: %s", meta.ID, meta.Version, err)
+		return nil, fmt.Errorf("VS Code extension downloading failed %s. Error: %s", meta.ID, err)
 	}
 	defer utils.Close(resp.Body)
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("VS Code extension downloading failed %s:%s. Error: %s", meta.ID, meta.Version, err)
+		return nil, fmt.Errorf("VS Code extension downloading failed %s. Error: %s", meta.ID, err)
 	}
 	if resp.StatusCode != 200 {
-		errMsg := "VS Code extension downloading failed %s:%s. Status: %v. Body: " + string(body)
-		return nil, fmt.Errorf(errMsg, meta.ID, meta.Version, resp.StatusCode)
+		errMsg := "VS Code extension downloading failed %s. Status: %v. Body: " + string(body)
+		return nil, fmt.Errorf(errMsg, meta.ID, resp.StatusCode)
 	}
 
 	return body, nil
@@ -348,7 +348,7 @@ func findAssetURL(response []byte, meta model.PluginMeta) (string, error) {
 	obj := &marketplaceResponse{}
 	err := json.Unmarshal(response, obj)
 	if err != nil {
-		return "", fmt.Errorf("Failed to parse VS Code extension marketplace response for plugin %s:%s", meta.ID, meta.Version)
+		return "", fmt.Errorf("Failed to parse VS Code extension marketplace response for plugin %s", meta.ID)
 	}
 	switch {
 	case len(obj.Results) == 0,
@@ -356,14 +356,14 @@ func findAssetURL(response []byte, meta model.PluginMeta) (string, error) {
 		len(obj.Results[0].Extensions[0].Versions) == 0,
 		len(obj.Results[0].Extensions[0].Versions[0].Files) == 0:
 
-		return "", fmt.Errorf("Failed to parse VS Code extension marketplace response for plugin %s:%s", meta.ID, meta.Version)
+		return "", fmt.Errorf("Failed to parse VS Code extension marketplace response for plugin %s", meta.ID)
 	}
 	for _, f := range obj.Results[0].Extensions[0].Versions[0].Files {
 		if f.AssetType == assetType {
 			return f.Source, nil
 		}
 	}
-	return "", fmt.Errorf("VS Code extension archive information is not found in marketplace response for plugin %s:%s", meta.ID, meta.Version)
+	return "", fmt.Errorf("VS Code extension archive information is not found in marketplace response for plugin %s", meta.ID)
 }
 
 func (b *brokerImpl) getPackageJSON(pluginFolder string) (*model.PackageJSON, error) {

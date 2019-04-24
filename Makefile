@@ -44,8 +44,7 @@ test-local:
 			--disable-push \
 			--runtime-id wsId:env:ownerId \
 			--registry-address https://che-plugin-registry.openshift.io \
-			--metas ./config-plugin-ids.json \
-			--download-metas
+			--metas ./config-plugin-ids.json
 
 .PHONY: test-local-legacy
 test-local-legacy:

@@ -37,7 +37,7 @@ const VscodePluginType = "vs code extension"
 
 // RegistryURLFormat specifies the format string for registry urls
 // when downloading metas
-const RegistryURLFormat = "%s/%s/%s/meta.yaml"
+const RegistryURLFormat = "%s/%s/meta.yaml"
 
 // Broker is used to process Che plugins
 type Broker struct {
@@ -73,23 +73,18 @@ func NewBroker() *Broker {
 }
 
 // DownloadMetasAndStart downloads metas from plugin registry for specified
-// pluginFQNs and then calls Start for those metas
-func (b *Broker) DownloadMetasAndStart(pluginFQNs []model.PluginFQN, defaultRegistry string) {
+// pluginFQNs and then executes plugins metas processing and sending data to Che master
+func (b *Broker) Start(pluginFQNs []model.PluginFQN, defaultRegistry string) {
 	pluginMetas, err := b.getPluginMetas(pluginFQNs, defaultRegistry)
 	if err != nil {
 		b.PrintFatal("Failed to download plugin metas: %s", err)
 	}
-	b.Start(pluginMetas)
-}
-
-// Start executes plugins metas processing and sending data to Che master
-func (b *Broker) Start(metas []model.PluginMeta) {
 	defer b.CloseConsumers()
 	b.PubStarted()
 	b.PrintInfo("Unified Che Plugin Broker")
-	b.PrintPlan(metas)
+	b.PrintPlan(pluginMetas)
 
-	err := b.ProcessPlugins(metas)
+	err = b.ProcessPlugins(pluginMetas)
 	if err != nil {
 		b.PubFailed(err.Error())
 		b.PrintFatal(err.Error())
@@ -150,30 +145,33 @@ func (b *Broker) ProcessPlugins(metas []model.PluginMeta) error {
 func (b *Broker) getPluginMetas(plugins []model.PluginFQN, defaultRegistry string) ([]model.PluginMeta, error) {
 	metas := make([]model.PluginMeta, 0, len(plugins))
 	for _, plugin := range plugins {
-		log.Printf("Fetching plugin meta.yaml for %s:%s", plugin.ID, plugin.Version)
+		log.Printf("Fetching plugin meta.yaml for %s", plugin.ID)
 		registry, err := getRegistryURL(plugin, defaultRegistry)
 		if err != nil {
 			return nil, err
 		}
-		pluginURL := fmt.Sprintf(RegistryURLFormat, registry, plugin.ID, plugin.Version)
+		pluginURL := fmt.Sprintf(RegistryURLFormat, registry, plugin.ID)
 		pluginRaw, err := b.utils.Fetch(pluginURL)
 		if err != nil {
 			if httpErr, ok := err.(*utils.HTTPError); ok {
 				return nil, fmt.Errorf(
-					"failed to fetch plugin meta.yaml for plugin '%s:%s' from registry '%s': %s. Response body: %s",
-					plugin.ID, plugin.Version, registry, httpErr, httpErr.Body)
+					"failed to fetch plugin meta.yaml for plugin '%s' from registry '%s': %s. Response body: %s",
+					plugin.ID, registry, httpErr, httpErr.Body)
 			} else {
 				return nil, fmt.Errorf(
-					"failed to fetch plugin meta.yaml for plugin '%s:%s' from registry '%s': %s",
-					plugin.ID, plugin.Version, registry, err)
+					"failed to fetch plugin meta.yaml for plugin '%s' from registry '%s': %s",
+					plugin.ID, registry, err)
 			}
 		}
 
 		var pluginMeta model.PluginMeta
 		if err := yaml.Unmarshal(pluginRaw, &pluginMeta); err != nil {
 			return nil, fmt.Errorf(
-				"failed to unmarshal downloaded meta.yaml for plugin '%s:%s': %s",
-				plugin.ID, plugin.Version, err)
+				"failed to unmarshal downloaded meta.yaml for plugin '%s': %s", plugin.ID, err)
+		}
+		// Ensure ID field is set since it is used all over the place in broker
+		if pluginMeta.ID == "" {
+			pluginMeta.ID = plugin.ID
 		}
 		metas = append(metas, pluginMeta)
 	}
@@ -208,9 +206,9 @@ func sortMetas(metas []model.PluginMeta) (che []model.PluginMeta, theia []model.
 		case TheiaPluginType:
 			theiaMetas = append(theiaMetas, meta)
 		case "":
-			return nil, nil, nil, fmt.Errorf("Type field is missing in meta information of plugin '%s:%s'", meta.ID, meta.Version)
+			return nil, nil, nil, fmt.Errorf("Type field is missing in meta information of plugin '%s'", meta.ID)
 		default:
-			return nil, nil, nil, fmt.Errorf("Type '%s' of plugin '%s:%s' is unsupported", meta.Type, meta.ID, meta.Version)
+			return nil, nil, nil, fmt.Errorf("Type '%s' of plugin '%s' is unsupported", meta.Type, meta.ID)
 		}
 	}
 

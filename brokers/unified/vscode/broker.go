@@ -19,13 +19,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
 	jsonrpc "github.com/eclipse/che-go-jsonrpc"
-	"github.com/eclipse/che-plugin-broker/brokers/theia"
 	"github.com/eclipse/che-plugin-broker/cfg"
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/model"
@@ -36,13 +36,12 @@ import (
 const marketplace = "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery"
 const bodyFmt = `{"filters":[{"criteria":[{"filterType":7,"value":"%s"}],"pageNumber":1,"pageSize":1,"sortBy":0, "sortOrder":0 }],"assetTypes":["Microsoft.VisualStudio.Services.VSIXPackage"],"flags":131}`
 const assetType = "Microsoft.VisualStudio.Services.VSIXPackage"
-const errorMutuallyExclusiveExtFieldsTemplate = "VS Code extension description of the plugin '%s' contains more than one mutually exclusive field 'attributes.extension', 'url', 'extensions'"
-const errorNoExtFieldsTemplate = "Neither 'extension' nor 'url' nor 'extensions' field found in VS Code extension description of the plugin '%s'"
+const errorNoExtFieldsTemplate = "Field 'extensions' is not found in the description of the plugin '%s'"
 
 type brokerImpl struct {
 	common.Broker
 	ioUtil  utils.IoUtil
-	Storage *storage.Storage
+	Storage storage.Storage
 	client  *http.Client
 	rand    common.Random
 }
@@ -59,7 +58,7 @@ func NewBroker() common.BrokerImpl {
 }
 
 // NewBrokerWithParams creates Che VS Code extension broker instance
-func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage *storage.Storage, rand common.Random, httpClient *http.Client) common.BrokerImpl {
+func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage storage.Storage, rand common.Random, httpClient *http.Client) common.BrokerImpl {
 	return &brokerImpl{
 		Broker:  broker,
 		ioUtil:  ioUtil,
@@ -69,6 +68,7 @@ func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage *sto
 	}
 }
 
+// TODO remove
 // Start executes plugins metas processing and sends data to Che master
 func (b *brokerImpl) Start(metas []model.PluginMeta) {
 	b.PubStarted()
@@ -110,6 +110,7 @@ func (b *brokerImpl) PushEvents(tun *jsonrpc.Tunnel) {
 
 func (b *brokerImpl) ProcessPlugin(meta model.PluginMeta) error {
 	b.PrintDebug("Started processing plugin '%s'", meta.ID)
+	plugin := convertMetaToPlugin(meta)
 
 	URLs, err := b.getBinariesURLs(meta)
 	if err != nil {
@@ -126,27 +127,20 @@ func (b *brokerImpl) ProcessPlugin(meta model.PluginMeta) error {
 		return err
 	}
 
-	image := meta.Attributes["containerImage"]
-	if image == "" {
-		if !cfg.OnlyApplyMetadataActions {
-			// regular plugin
-			err = b.injectLocalPlugin(meta, archivesPaths)
-			if err != nil {
-				return err
-			}
-		}
-		return b.Storage.AddPlugin(&meta, &model.ToolingConf{})
+	// we only copy files for local plugin, so if local but copying is disabled do nothing
+	if len(meta.Spec.Containers) == 0 && !cfg.OnlyApplyMetadataActions {
+		err = b.injectLocalPlugin(plugin, archivesPaths)
+		return err
 	}
-	// remote plugin
-	return b.injectRemotePlugin(meta, image, archivesPaths, workDir)
+	return b.injectRemotePlugin(plugin, archivesPaths, workDir)
 }
 
-func (b *brokerImpl) injectLocalPlugin(meta model.PluginMeta, archivesPaths []string) error {
-	b.PrintDebug("Copying VS Code plugin '%s'", meta.ID)
+func (b *brokerImpl) injectLocalPlugin(plugin model.ChePlugin, archivesPaths []string) error {
+	b.PrintDebug("Copying VS Code plugin '%s'", plugin.ID)
 	for _, path := range archivesPaths {
-		pluginName := b.generatePluginArchiveName(meta)
+		pluginName := b.generatePluginArchiveName(plugin)
 		pluginPath := filepath.Join("/plugins", pluginName)
-		b.PrintDebug("Copying VS Code extension archive from '%s' to '%s' for plugin '%s'", path, pluginPath, meta.ID)
+		b.PrintDebug("Copying VS Code extension archive from '%s' to '%s' for plugin '%s'", path, pluginPath, plugin.ID)
 		err := b.ioUtil.CopyFile(path, pluginPath)
 		if err != nil {
 			return err
@@ -155,12 +149,12 @@ func (b *brokerImpl) injectLocalPlugin(meta model.PluginMeta, archivesPaths []st
 	return nil
 }
 
-func (b *brokerImpl) injectRemotePlugin(meta model.PluginMeta, image string, archivesPaths []string, workDir string) error {
-	tooling := theia.GenerateSidecar(image, b.rand)
+func (b *brokerImpl) injectRemotePlugin(plugin model.ChePlugin, archivesPaths []string, workDir string) error {
+	plugin = AddPluginRunnerRequirements(plugin, b.rand)
 	for _, archive := range archivesPaths {
 		// Unzip it
 		unpackedPath := filepath.Join(workDir, "extension", b.rand.String(10))
-		b.PrintDebug("Unzipping archive '%s' for plugin '%s' to '%s'", archive, meta.ID, unpackedPath)
+		b.PrintDebug("Unzipping archive '%s' for plugin '%s' to '%s'", archive, plugin.ID, unpackedPath)
 		err := b.ioUtil.Unzip(archive, unpackedPath)
 		if err != nil {
 			return err
@@ -172,19 +166,31 @@ func (b *brokerImpl) injectRemotePlugin(meta model.PluginMeta, image string, arc
 		}
 
 		if !cfg.OnlyApplyMetadataActions {
-			pluginName := b.generatePluginFolderName(meta, *pj)
+			pluginName := b.generatePluginFolderName(plugin, *pj)
 
 			pluginFolderPath := filepath.Join("/plugins", pluginName)
-			b.PrintDebug("Copying VS Code extension '%s' from '%s' to '%s'", meta.ID, unpackedPath, pluginFolderPath)
+			b.PrintDebug("Copying VS Code extension '%s' from '%s' to '%s'", plugin.ID, unpackedPath, pluginFolderPath)
 			err = b.ioUtil.CopyResource(unpackedPath, pluginFolderPath)
 			if err != nil {
 				return err
 			}
 		}
-		theia.AddExtension(tooling, *pj)
+		plugin = AddExtension(plugin, *pj)
 	}
 
-	return b.Storage.AddPlugin(&meta, tooling)
+	return b.Storage.AddPlugin(plugin)
+}
+
+func convertMetaToPlugin(meta model.PluginMeta) model.ChePlugin {
+	return model.ChePlugin{
+		ID:           meta.ID,
+		Name:         meta.Name,
+		Publisher:    meta.Publisher,
+		Version:      meta.Version,
+		Containers:   meta.Spec.Containers,
+		Endpoints:    meta.Spec.Endpoints,
+		WorkspaceEnv: meta.Spec.WorkspaceEnv,
+	}
 }
 
 func (b *brokerImpl) downloadArchives(URLs []string, meta model.PluginMeta, workDir string) ([]string, error) {
@@ -205,36 +211,18 @@ func (b *brokerImpl) downloadArchives(URLs []string, meta model.PluginMeta, work
 func (b *brokerImpl) getExtensionsAndURLs(meta model.PluginMeta) (e []string, u []string, err error) {
 	extensions := make([]string, 0)
 	URLs := make([]string, 0)
-	isSet := false
 
-	if meta.URL != "" {
-		isSet = true
-		URLs = append(URLs, meta.URL)
-	}
-	if meta.Attributes != nil && meta.Attributes["extension"] != "" {
-		if isSet {
-			return nil, nil, fmt.Errorf(errorMutuallyExclusiveExtFieldsTemplate, meta.ID)
-		}
-		isSet = true
-		extensions = append(extensions, meta.Attributes["extension"])
-	}
-	if meta.Extensions != nil && len(meta.Extensions) != 0 {
-		if isSet {
-			return nil, nil, fmt.Errorf(errorMutuallyExclusiveExtFieldsTemplate, meta.ID)
-		}
-		isSet = true
-		for _, v := range meta.Extensions {
-			ext, URL := extensionOrURL(v)
-			switch {
-			case ext != "":
-				extensions = append(extensions, ext)
-			case URL != "":
-				URLs = append(URLs, URL)
-			}
-		}
-	}
-	if !isSet {
+	if len(meta.Spec.Extensions) == 0 {
 		return nil, nil, fmt.Errorf(errorNoExtFieldsTemplate, meta.ID)
+	}
+	for _, v := range meta.Spec.Extensions {
+		ext, URL := extensionOrURL(v)
+		switch {
+		case ext != "":
+			extensions = append(extensions, ext)
+		case URL != "":
+			URLs = append(URLs, URL)
+		}
 	}
 	return extensions, URLs, nil
 }
@@ -262,14 +250,14 @@ func extensionOrURL(extensionOrURL string) (extension string, URL string) {
 	}
 }
 
-func (b *brokerImpl) generatePluginFolderName(meta model.PluginMeta, pj model.PackageJSON) string {
+func (b *brokerImpl) generatePluginFolderName(plugin model.ChePlugin, pj PackageJSON) string {
 	var re = regexp.MustCompile(`[^a-zA-Z_0-9]+`)
 	prettyID := re.ReplaceAllString(pj.Publisher+"_"+pj.Name, "")
-	return fmt.Sprintf("%s.%s.%s.%s", meta.Publisher, meta.Name, meta.Version, prettyID)
+	return fmt.Sprintf("%s.%s.%s.%s", plugin.Publisher, plugin.Name, plugin.Version, prettyID)
 }
 
-func (b *brokerImpl) generatePluginArchiveName(meta model.PluginMeta) string {
-	return fmt.Sprintf("%s.%s.%s.%s.vsix", meta.Publisher, meta.Name, meta.Version, b.rand.String(10))
+func (b *brokerImpl) generatePluginArchiveName(plugin model.ChePlugin) string {
+	return fmt.Sprintf("%s.%s.%s.%s", plugin.Publisher, plugin.Name, plugin.Version, b.rand.String(10))
 }
 
 func (b *brokerImpl) getExtensionArchiveURL(extension string, meta model.PluginMeta) (string, error) {
@@ -366,13 +354,25 @@ func findAssetURL(response []byte, meta model.PluginMeta) (string, error) {
 	return "", fmt.Errorf("VS Code extension archive information is not found in marketplace response for plugin %s", meta.ID)
 }
 
-func (b *brokerImpl) getPackageJSON(pluginFolder string) (*model.PackageJSON, error) {
-	packageJSONPath := filepath.Join(pluginFolder, "extension", "package.json")
+func (b *brokerImpl) getPackageJSON(pluginFolder string) (*PackageJSON, error) {
+	vsixManifestPath := filepath.Join(pluginFolder, "extension.vsixmanifest")
+	vsixPackageJSONPath := filepath.Join(pluginFolder, "extension", "package.json")
+	theiaPackageJSONPath := filepath.Join(pluginFolder, "package.json")
+
+	// VS code extension archive must contain file `extension.vsixmanifest` in root of the archive
+	// Otherwise we consider it Theia plugin
+	var packageJSONPath string
+	if _, err := os.Stat(vsixManifestPath); err == nil {
+		packageJSONPath = vsixPackageJSONPath
+	} else {
+		packageJSONPath = theiaPackageJSONPath
+	}
+
 	f, err := ioutil.ReadFile(packageJSONPath)
 	if err != nil {
 		return nil, err
 	}
-	pj := &model.PackageJSON{}
+	pj := &PackageJSON{}
 	err = json.Unmarshal(f, pj)
 	return pj, err
 }

@@ -12,27 +12,6 @@
 
 package model
 
-import "time"
-
-type BrokerStatus string
-
-// Broker statuses
-const (
-	StatusIdle BrokerStatus = "IDLE"
-
-	StatusStarted BrokerStatus = "STARTED"
-
-	StatusDone BrokerStatus = "DONE"
-
-	StatusFailed BrokerStatus = "FAILED"
-
-	BrokerStatusEventType = "broker/statusChanged"
-
-	BrokerResultEventType = "broker/result"
-
-	BrokerLogEventType = "broker/log"
-)
-
 // RuntimeID is an identifier of running workspace.
 // Included to the plugin broker log events.
 type RuntimeID struct {
@@ -47,6 +26,10 @@ type RuntimeID struct {
 }
 
 type PluginMeta struct {
+	APIVersion string `json:"apiVersion" yaml:"apiVersion"`
+
+	Spec PluginMetaSpec `json:"spec" yaml:"spec"`
+
 	ID string `json:"id" yaml:"id"`
 
 	Name string `json:"name" yaml:"name"`
@@ -64,12 +47,13 @@ type PluginMeta struct {
 	Title string `json:"title" yaml:"title"`
 
 	Icon string `json:"icon" yaml:"icon"`
+}
 
-	URL string `json:"url" yaml:"url"`
-
-	Attributes map[string]string `json:"attributes" yaml:"attributes"`
-
-	Extensions []string `json:"extensions" yaml:"extensions"`
+type PluginMetaSpec struct {
+	Endpoints    []Endpoint  `json:"endpoints" yaml:"endpoints"`
+	Containers   []Container `json:"containers" yaml:"containers"`
+	WorkspaceEnv []EnvVar    `json:"workspaceEnv" yaml:"workspaceEnv"`
+	Extensions   []string    `json:"extensions" yaml:"extensions"`
 }
 
 type PluginFQN struct {
@@ -89,7 +73,7 @@ type EnvVar struct {
 	Value string `json:"value" yaml:"value"`
 }
 
-type EditorCommand struct {
+type Command struct {
 	Name       string   `json:"name" yaml:"name"`
 	WorkingDir string   `json:"workingDir" yaml:"workingDir"`
 	Command    []string `json:"command" yaml:"command"`
@@ -105,26 +89,14 @@ type ExposedPort struct {
 }
 
 type Container struct {
-	Name           string          `json:"name" yaml:"name"`
-	Image          string          `json:"image" yaml:"image"`
-	Env            []EnvVar        `json:"env" yaml:"env"`
-	EditorCommands []EditorCommand `json:"editorCommands" yaml:"editorCommands"`
-	Volumes        []Volume        `json:"volumes" yaml:"volumes"`
-	Ports          []ExposedPort   `json:"ports" yaml:"ports"`
-	MemoryLimit    string          `json:"memoryLimit" yaml:"memoryLimit"`
-	MountSources   bool            `json:"mountSources" yaml:"mountSources"`
-}
-
-type Editor struct {
-	ID      string   `json:"id" yaml:"id"`
-	Plugins []string `json:"plugins" yaml:"plugins"`
-}
-
-type ToolingConf struct {
-	Endpoints    []Endpoint  `json:"endpoints" yaml:"endpoints"`
-	Containers   []Container `json:"containers" yaml:"containers"`
-	Editors      []Editor    `json:"editors" yaml:"editors"`
-	WorkspaceEnv []EnvVar    `json:"workspaceEnv" yaml:"workspaceEnv"`
+	Name         string        `json:"name" yaml:"name"`
+	Image        string        `json:"image" yaml:"image"`
+	Env          []EnvVar      `json:"env" yaml:"env"`
+	Commands     []Command     `json:"commands" yaml:"commands"`
+	Volumes      []Volume      `json:"volumes" yaml:"volumes"`
+	Ports        []ExposedPort `json:"ports" yaml:"ports"`
+	MemoryLimit  string        `json:"memoryLimit" yaml:"memoryLimit"`
+	MountSources bool          `json:"mountSources" yaml:"mountSources"`
 }
 
 type ChePlugin struct {
@@ -134,63 +106,5 @@ type ChePlugin struct {
 	Publisher    string      `json:"publisher" yaml:"publisher"`
 	Endpoints    []Endpoint  `json:"endpoints" yaml:"endpoints"`
 	Containers   []Container `json:"containers" yaml:"containers"`
-	Editors      []Editor    `json:"editors" yaml:"editors"`
 	WorkspaceEnv []EnvVar    `json:"workspaceEnv" yaml:"workspaceEnv"`
-}
-
-type CheDependency struct {
-	ID       string `json:"id" yaml:"id"`
-	Version  string `json:"version" yaml:"version"`
-	Location string `json:"location" yaml:"location"`
-	URL      string `json:"url" yaml:"url"`
-}
-
-type CheDependencies struct {
-	Plugins []CheDependency `json:"plugins" yaml:"plugins"`
-}
-
-type StartedEvent struct {
-	Status    BrokerStatus `json:"status" yaml:"status"`
-	RuntimeID RuntimeID    `json:"runtimeId" yaml:"runtimeId"`
-}
-
-// Type returns BrokerStatusEventType.
-func (e *StartedEvent) Type() string { return BrokerStatusEventType }
-
-type ErrorEvent struct {
-	Status    BrokerStatus `json:"status" yaml:"status"`
-	RuntimeID RuntimeID    `json:"runtimeId" yaml:"runtimeId"`
-	Error     string       `json:"error" yaml:"error"`
-}
-
-// Type returns BrokerStatusEventType.
-func (e *ErrorEvent) Type() string { return BrokerStatusEventType }
-
-// SuccessEvent is used to send encoded workspace tooling configuration to Che master
-type SuccessEvent struct {
-	Status    BrokerStatus `json:"status" yaml:"status"`
-	RuntimeID RuntimeID    `json:"runtimeId" yaml:"runtimeId"`
-	Tooling   string       `json:"tooling" yaml:"tooling"`
-}
-
-// Type returns BrokerResultEventType.
-func (e *SuccessEvent) Type() string { return BrokerResultEventType }
-
-type PluginBrokerLogEvent struct {
-	RuntimeID RuntimeID `json:"runtimeId" yaml:"runtimeId"`
-
-	// Time when this event occurred.
-	Time time.Time `json:"time" yaml:"text"`
-
-	// Text is written by plugin broker line of text.
-	Text string `json:"text" yaml:"text"`
-}
-
-// Type returns BrokerLogEventType.
-func (e *PluginBrokerLogEvent) Type() string { return BrokerLogEventType }
-
-// PackageJSON represents package.json file of JS based projects
-type PackageJSON struct {
-	Name      string `json:"name" yaml:"name"`
-	Publisher string `json:"publisher" yaml:"publisher"`
 }

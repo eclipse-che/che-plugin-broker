@@ -15,15 +15,12 @@ package vscode
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"github.com/eclipse/che-plugin-broker/utils"
 	"io/ioutil"
 	"net/http"
-	"path/filepath"
 	"testing"
 
 	"github.com/eclipse/che-plugin-broker/brokers/test"
-	tests "github.com/eclipse/che-plugin-broker/brokers/test"
 	"github.com/eclipse/che-plugin-broker/common"
 	cmock "github.com/eclipse/che-plugin-broker/common/mocks"
 	"github.com/eclipse/che-plugin-broker/model"
@@ -85,7 +82,7 @@ func TestStart(t *testing.T) {
 	m.cb.AssertExpectations(t)
 }
 
-func TestProcessPluginBrokenUrl(t *testing.T) {
+/*func TestProcessPluginBrokenUrl(t *testing.T) {
 	m := initMocks()
 	meta := model.PluginMeta{
 		ID:      pluginID,
@@ -438,13 +435,6 @@ func TestBroker_processPlugin(t *testing.T) {
 	}
 }
 
-func generatePackageJSON(publisher string, name string) model.PackageJSON {
-	return model.PackageJSON{
-		Name:      name,
-		Publisher: publisher,
-	}
-}
-
 func generateTheiaEnvVar(prettyID string) string {
 	return "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID
 }
@@ -615,7 +605,7 @@ func createUnzipFuncStub(pjs ...model.PackageJSON) UnzipFunc {
 		}
 		tests.CreateFileWithContent(packageJSONPath, tests.ToJSONQuiet(json))
 	}
-}
+}*/
 
 func setUpDownloadFailureCase(workDir string, m *mocks) {
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))

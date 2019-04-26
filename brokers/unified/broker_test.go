@@ -21,12 +21,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	cheBrokerMocks "github.com/eclipse/che-plugin-broker/brokers/che-plugin-broker/mocks"
-	theiaBrokerMocks "github.com/eclipse/che-plugin-broker/brokers/theia/mocks"
-	vscodeBrokerMocks "github.com/eclipse/che-plugin-broker/brokers/vscode/mocks"
+	vscodeBrokerMocks "github.com/eclipse/che-plugin-broker/brokers/unified/vscode/mocks"
 	cmock "github.com/eclipse/che-plugin-broker/common/mocks"
 	"github.com/eclipse/che-plugin-broker/model"
-	"github.com/eclipse/che-plugin-broker/storage"
+	storageMocks "github.com/eclipse/che-plugin-broker/storage/mocks"
 	fmock "github.com/eclipse/che-plugin-broker/utils/mocks"
 	"github.com/stretchr/testify/mock"
 )
@@ -41,18 +39,16 @@ type mocks struct {
 	u            *fmock.IoUtil
 	randMock     *cmock.Random
 	b            *Broker
-	theiaBroker  *theiaBrokerMocks.Broker
 	vscodeBroker *vscodeBrokerMocks.Broker
-	cheBroker    *cheBrokerMocks.ChePluginBroker
+	storage      *storageMocks.Storage
 }
 
 func createMocks() *mocks {
 	cb := &cmock.Broker{}
 	u := &fmock.IoUtil{}
 	randMock := &cmock.Random{}
-	theiaBroker := &theiaBrokerMocks.Broker{}
 	vscodeBroker := &vscodeBrokerMocks.Broker{}
-	cheBroker := &cheBrokerMocks.ChePluginBroker{}
+	storageMock := &storageMocks.Storage{}
 
 	cb.On("PrintInfo", mock.AnythingOfType("string"))
 
@@ -61,17 +57,13 @@ func createMocks() *mocks {
 		u:        u,
 		randMock: randMock,
 		b: &Broker{
-			Broker:  cb,
-			Storage: storage.New(),
-			utils:   u,
-
-			theiaBroker:  theiaBroker,
+			Broker:       cb,
+			Storage:      storageMock,
+			utils:        u,
 			vscodeBroker: vscodeBroker,
-			cheBroker:    cheBroker,
 		},
-		theiaBroker:  theiaBroker,
 		vscodeBroker: vscodeBroker,
-		cheBroker:    cheBroker,
+		storage:      storageMock,
 	}
 }
 
@@ -80,15 +72,13 @@ func TestBroker_processPlugins(t *testing.T) {
 		metas []model.PluginMeta
 	}
 	type want struct {
-		err            string
-		theiaMetas     []model.PluginMeta
-		vscodeMetas    []model.PluginMeta
-		cheBrokerMetas []model.PluginMeta
+		err           string
+		vscodeMetas   []model.PluginMeta
+		commonPlugins []model.ChePlugin
 	}
 	type mocks struct {
-		vsCodeError    error
-		theiaError     error
-		cheBrokerError error
+		vsCodeError  error
+		storageError error
 	}
 	tests := []struct {
 		name  string
@@ -109,27 +99,111 @@ func TestBroker_processPlugins(t *testing.T) {
 			},
 		},
 		{
-			name: "Returns error on Theia broker error",
-			mocks: mocks{
-				theiaError: errors.New("test theia error"),
-			},
+			name: "Returns error when apiVersion is not specified in meta.yaml",
 			args: args{
-				metas: []model.PluginMeta{createDefaultVSCodeMeta(), createDefaultTheiaMeta(), createDefaultChePluginMeta()},
+				metas: []model.PluginMeta{createDefaultVSCodeMetaWithApiVersion("", "id1111")},
 			},
 			want: want{
-				err: "test theia error",
+				err: "Plugin 'id1111' is invalid. Field 'apiVersion' must be present",
 			},
 		},
 		{
-			name: "Returns error on Che plugin broker error",
-			mocks: mocks{
-				theiaError: errors.New("test che plugin broker error"),
-			},
+			name: "Returns error when apiVersion is not specified in meta.yaml",
 			args: args{
-				metas: []model.PluginMeta{createDefaultVSCodeMeta(), createDefaultChePluginMeta(), createDefaultTheiaMeta()},
+				metas: []model.PluginMeta{createDefaultVSCodeMetaWithApiVersion("v1", "id2111")},
 			},
 			want: want{
-				err: "test che plugin broker error",
+				err: "Plugin 'id2111' is invalid. Field 'apiVersion' contains invalid version 'v1'",
+			},
+		},
+		{
+			name: "Returns error when apiVersion is not specified in meta.yaml",
+			args: args{
+				metas: []model.PluginMeta{createDefaultVSCodeMetaWithApiVersion("v100", "id3111")},
+			},
+			want: want{
+				err: "Plugin 'id3111' is invalid. Field 'apiVersion' contains invalid version 'v100'",
+			},
+		},
+		{
+			name: "Returns error when apiVersion is not specified in meta.yaml",
+			args: args{
+				metas: []model.PluginMeta{createDefaultTheiaMetaWithApiVersion("", "id111")},
+			},
+			want: want{
+				err: "Plugin 'id111' is invalid. Field 'apiVersion' must be present",
+			},
+		},
+		{
+			name: "Returns error when apiVersion is not specified in meta.yaml",
+			args: args{
+				metas: []model.PluginMeta{createDefaultTheiaMetaWithApiVersion("v1", "id211")},
+			},
+			want: want{
+				err: "Plugin 'id211' is invalid. Field 'apiVersion' contains invalid version 'v1'",
+			},
+		},
+		{
+			name: "Returns error when apiVersion is not specified in meta.yaml",
+			args: args{
+				metas: []model.PluginMeta{createDefaultTheiaMetaWithApiVersion("v100", "id311")},
+			},
+			want: want{
+				err: "Plugin 'id311' is invalid. Field 'apiVersion' contains invalid version 'v100'",
+			},
+		},
+		{
+			name: "Returns error when apiVersion is not specified in meta.yaml",
+			args: args{
+				metas: []model.PluginMeta{createDefaultChePluginMetaWithApiVersion("", "id11")},
+			},
+			want: want{
+				err: "Plugin 'id11' is invalid. Field 'apiVersion' must be present",
+			},
+		},
+		{
+			name: "Returns error when apiVersion is not specified in meta.yaml",
+			args: args{
+				metas: []model.PluginMeta{createDefaultChePluginMetaWithApiVersion("v1", "id21")},
+			},
+			want: want{
+				err: "Plugin 'id21' is invalid. Field 'apiVersion' contains invalid version 'v1'",
+			},
+		},
+		{
+			name: "Returns error when apiVersion is not specified in meta.yaml",
+			args: args{
+				metas: []model.PluginMeta{createDefaultChePluginMetaWithApiVersion("v100", "id31")},
+			},
+			want: want{
+				err: "Plugin 'id31' is invalid. Field 'apiVersion' contains invalid version 'v100'",
+			},
+		},
+		{
+			name: "Returns error when apiVersion is not specified in meta.yaml",
+			args: args{
+				metas: []model.PluginMeta{createDefaultCheEditorMetaWithApiVersion("", "id1")},
+			},
+			want: want{
+				err: "Plugin 'id1' is invalid. Field 'apiVersion' must be present",
+			},
+		},
+		{
+			name: "Returns error when apiVersion is not specified in meta.yaml",
+			args: args{
+				metas: []model.PluginMeta{createDefaultCheEditorMetaWithApiVersion("v1", "id2")},
+			},
+			want: want{
+				err: "Plugin 'id2' is invalid. Field 'apiVersion' contains invalid version 'v1'",
+			},
+		},
+		{
+			name: "Returns error when apiVersion in meta.yaml is unsupported",
+			args: args{
+				metas: []model.PluginMeta{createDefaultCheEditorMetaWithApiVersion("v100", "id3")},
+			},
+			want: want{
+				err: "Plugin 'id3' is invalid. Field 'apiVersion' contains invalid version 'v100'",
 			},
 		},
 		{
@@ -146,9 +220,8 @@ func TestBroker_processPlugins(t *testing.T) {
 				},
 			},
 			want: want{
-				cheBrokerMetas: []model.PluginMeta{createChePluginMeta("id2"), createChePluginMeta("id6")},
-				vscodeMetas:    []model.PluginMeta{createVSCodeMeta("id1"), createVSCodeMeta("id4")},
-				theiaMetas:     []model.PluginMeta{createTheiaMeta("id3"), createTheiaMeta("id5")},
+				commonPlugins: []model.ChePlugin{createChePlugin("id2"), createChePlugin("id6")},
+				vscodeMetas:   []model.PluginMeta{createVSCodeMeta("id1"), createVSCodeMeta("id4"), createTheiaMeta("id3"), createTheiaMeta("id5")},
 			},
 		},
 		{
@@ -158,7 +231,139 @@ func TestBroker_processPlugins(t *testing.T) {
 				metas: []model.PluginMeta{createChePluginMeta("id1"), createCheEditorMeta("id2")},
 			},
 			want: want{
-				cheBrokerMetas: []model.PluginMeta{createChePluginMeta("id1"), createCheEditorMeta("id2")},
+				commonPlugins: []model.ChePlugin{createChePlugin("id1"), createChePlugin("id2")},
+			},
+		},
+		{
+			name:  "Properly converts PluginMeta to ChePlugin",
+			mocks: mocks{},
+			args: args{
+				metas: []model.PluginMeta{
+					{
+						APIVersion:  "v2",
+						Publisher:   "pub1",
+						Name:        "name1",
+						Version:     "v0.13",
+						ID:          "id1",
+						Type:        ChePluginType,
+						Title:       "test title",
+						DisplayName: "test display name",
+						Description: "test description",
+						Icon:        "https://icon.com/icon.svg",
+						Spec: model.PluginMetaSpec{
+							Endpoints: []model.Endpoint{
+								{
+									Name:       "end1",
+									TargetPort: 80,
+									Public:     true,
+									Attributes: map[string]string{
+										"attr1":     "val1",
+										"testAttr2": "value2",
+									},
+								},
+							},
+							Containers: []model.Container{
+								createContainer("container1"),
+								createContainer("container2"),
+							},
+							WorkspaceEnv: []model.EnvVar{
+								{
+									Name:  "workspaceEnv1",
+									Value: "something",
+								},
+								{
+									Name:  "workspaceEnv2",
+									Value: "somethingElse",
+								},
+							},
+						},
+					},
+					{
+						APIVersion:  "v2",
+						Publisher:   "pub2",
+						Name:        "name2",
+						Version:     "v0",
+						ID:          "id2",
+						Type:        EditorPluginType,
+						Title:       "test title",
+						DisplayName: "test display name",
+						Description: "test description",
+						Icon:        "https://icon.com/icon.svg",
+						Spec: model.PluginMetaSpec{
+							Endpoints: []model.Endpoint{
+								{
+									Name:       "end2",
+									TargetPort: 8080,
+									Public:     false,
+								},
+							},
+							Containers: []model.Container{
+								createContainer("container3"),
+							},
+							WorkspaceEnv: []model.EnvVar{
+								{
+									Name:  "workspaceEnv3",
+									Value: "something3",
+								},
+							},
+						},
+					}},
+			},
+			want: want{
+				commonPlugins: []model.ChePlugin{
+					{
+						Publisher: "pub1",
+						Name:      "name1",
+						Version:   "v0.13",
+						ID:        "id1",
+						Endpoints: []model.Endpoint{
+							{
+								Name:       "end1",
+								TargetPort: 80,
+								Public:     true,
+								Attributes: map[string]string{
+									"attr1":     "val1",
+									"testAttr2": "value2",
+								},
+							},
+						},
+						Containers: []model.Container{
+							createContainer("container1"),
+							createContainer("container2"),
+						},
+						WorkspaceEnv: []model.EnvVar{
+							{
+								Name:  "workspaceEnv1",
+								Value: "something",
+							},
+							{
+								Name:  "workspaceEnv2",
+								Value: "somethingElse",
+							},
+						},
+					},
+					{
+						Publisher: "pub2",
+						Name:      "name2",
+						Version:   "v0",
+						ID:        "id2",
+						Endpoints: []model.Endpoint{
+							{
+								Name:       "end2",
+								TargetPort: 8080,
+								Public:     false,
+							},
+						},
+						Containers: []model.Container{
+							createContainer("container3"),
+						},
+						WorkspaceEnv: []model.EnvVar{
+							{
+								Name:  "workspaceEnv3",
+								Value: "something3",
+							},
+						},
+					}},
 			},
 		},
 		{
@@ -166,84 +371,94 @@ func TestBroker_processPlugins(t *testing.T) {
 			args: args{
 				metas: []model.PluginMeta{
 					{
-						Type: "che plugin",
-						ID:   "id11",
+						Type:       "che plugin",
+						ID:         "id11",
+						APIVersion: "v2",
 					},
 					{
-						Type: "Che Plugin",
-						ID:   "id12",
+						Type:       "Che Plugin",
+						ID:         "id12",
+						APIVersion: "v2",
 					},
 					{
-						Type: "cHE plugIN",
-						ID:   "id13",
+						Type:       "cHE plugIN",
+						ID:         "id13",
+						APIVersion: "v2",
 					},
 					{
-						Type: "vs code extension",
-						ID:   "id21",
+						Type:       "vs code extension",
+						ID:         "id21",
+						APIVersion: "v2",
 					},
 					{
-						Type: "VS CODE EXTENSION",
-						ID:   "id22",
+						Type:       "VS CODE EXTENSION",
+						ID:         "id22",
+						APIVersion: "v2",
 					},
 					{
-						Type: "vs cODE EXTENSION",
-						ID:   "id23",
+						Type:       "vs cODE EXTENSION",
+						ID:         "id23",
+						APIVersion: "v2",
 					},
 					{
-						Type: "theia plugin",
-						ID:   "id31",
+						Type:       "theia plugin",
+						ID:         "id31",
+						APIVersion: "v2",
 					},
 					{
-						Type: "Theia Plugin",
-						ID:   "id32",
+						Type:       "Theia Plugin",
+						ID:         "id32",
+						APIVersion: "v2",
 					},
 					{
-						Type: "THEIA PLUGIN",
-						ID:   "id33",
+						Type:       "THEIA PLUGIN",
+						ID:         "id33",
+						APIVersion: "v2",
 					},
 				},
 			},
 			want: want{
-				theiaMetas: []model.PluginMeta{
-					{
-						Type: "theia plugin",
-						ID:   "id31",
-					},
-					{
-						Type: "Theia Plugin",
-						ID:   "id32",
-					},
-					{
-						Type: "THEIA PLUGIN",
-						ID:   "id33",
-					},
-				},
 				vscodeMetas: []model.PluginMeta{
 					{
-						Type: "vs code extension",
-						ID:   "id21",
+						Type:       "vs code extension",
+						ID:         "id21",
+						APIVersion: "v2",
 					},
 					{
-						Type: "VS CODE EXTENSION",
-						ID:   "id22",
+						Type:       "VS CODE EXTENSION",
+						ID:         "id22",
+						APIVersion: "v2",
 					},
 					{
-						Type: "vs cODE EXTENSION",
-						ID:   "id23",
+						Type:       "vs cODE EXTENSION",
+						ID:         "id23",
+						APIVersion: "v2",
+					},
+					{
+						Type:       "theia plugin",
+						ID:         "id31",
+						APIVersion: "v2",
+					},
+					{
+						Type:       "Theia Plugin",
+						ID:         "id32",
+						APIVersion: "v2",
+					},
+					{
+						Type:       "THEIA PLUGIN",
+						ID:         "id33",
+						APIVersion: "v2",
 					},
 				},
-				cheBrokerMetas: []model.PluginMeta{
+				commonPlugins: []model.ChePlugin{
 					{
-						Type: "che plugin",
-						ID:   "id11",
+						ID: "id11",
 					},
 					{
-						Type: "Che Plugin",
-						ID:   "id12",
+						ID: "id12",
 					},
 					{
-						Type: "cHE plugIN",
-						ID:   "id13",
+						ID: "id13",
 					},
 				},
 			},
@@ -253,11 +468,12 @@ func TestBroker_processPlugins(t *testing.T) {
 			args: args{
 				metas: []model.PluginMeta{
 					{
-						Type:    "Unsupported type",
-						ID:      "test id",
-						Version: "test version",
-						Publisher: "test publisher",
-						Name: "test name",
+						Type:       "Unsupported type",
+						ID:         "test id",
+						Version:    "test version",
+						Publisher:  "test publisher",
+						Name:       "test name",
+						APIVersion: "v2",
 					},
 				},
 			},
@@ -270,11 +486,12 @@ func TestBroker_processPlugins(t *testing.T) {
 			args: args{
 				metas: []model.PluginMeta{
 					{
-						Type:    "",
-						ID:      "test id",
-						Version: "test version",
-						Publisher: "test publisher",
-						Name: "test name",
+						Type:       "",
+						ID:         "test id",
+						Version:    "test version",
+						Publisher:  "test publisher",
+						Name:       "test name",
+						APIVersion: "v2",
 					},
 				},
 			},
@@ -282,30 +499,45 @@ func TestBroker_processPlugins(t *testing.T) {
 				err: "Type field is missing in meta information of plugin 'test id'",
 			},
 		},
+		{
+			name: "Returns error when storing common plugin fails",
+			args: args{
+				metas: []model.PluginMeta{
+					{
+						Type:       ChePluginType,
+						ID:         "test id",
+						Version:    "test version",
+						Publisher:  "test publisher",
+						Name:       "test name",
+						APIVersion: "v2",
+					},
+				},
+			},
+			mocks: mocks{
+				storageError: errors.New("test error"),
+			},
+			want: want{
+				err: "test error",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := createMocks()
 
-			m.cheBroker.On("ProcessPlugin", mock.AnythingOfType("model.PluginMeta")).Return(tt.mocks.cheBrokerError)
-			m.theiaBroker.On("ProcessPlugin", mock.AnythingOfType("model.PluginMeta")).Return(tt.mocks.theiaError)
 			m.vscodeBroker.On("ProcessPlugin", mock.AnythingOfType("model.PluginMeta")).Return(tt.mocks.vsCodeError)
+			m.storage.On("AddPlugin", mock.AnythingOfType("model.ChePlugin")).Return(tt.mocks.storageError)
 
 			err := m.b.ProcessPlugins(tt.args.metas)
 
 			if err != nil || tt.want.err != "" {
 				assert.EqualError(t, err, tt.want.err)
-			} else if tt.want.cheBrokerMetas == nil && tt.want.theiaMetas == nil && tt.want.vscodeMetas == nil {
+			} else if tt.want.commonPlugins == nil && tt.want.vscodeMetas == nil {
 				assert.Fail(t, "Neither expected error nor expected ProcessPlugin method arguments are set in test")
 			}
-			if tt.want.cheBrokerMetas != nil {
-				for _, meta := range tt.want.cheBrokerMetas {
-					m.cheBroker.AssertCalled(t, "ProcessPlugin", meta)
-				}
-			}
-			if tt.want.theiaMetas != nil {
-				for _, meta := range tt.want.theiaMetas {
-					m.theiaBroker.AssertCalled(t, "ProcessPlugin", meta)
+			if tt.want.commonPlugins != nil {
+				for _, plugin := range tt.want.commonPlugins {
+					m.storage.AssertCalled(t, "AddPlugin", plugin)
 				}
 			}
 			if tt.want.vscodeMetas != nil {
@@ -544,31 +776,98 @@ func createDefaultChePluginMeta() model.PluginMeta {
 	return createChePluginMeta("test ID")
 }
 
+func createDefaultVSCodeMetaWithApiVersion(APIVersion string, ID string) model.PluginMeta {
+	meta := createVSCodeMeta(ID)
+	meta.APIVersion = APIVersion
+	return meta
+}
+
+func createDefaultTheiaMetaWithApiVersion(APIVersion string, ID string) model.PluginMeta {
+	meta := createTheiaMeta(ID)
+	meta.APIVersion = APIVersion
+	return meta
+}
+
+func createDefaultChePluginMetaWithApiVersion(APIVersion string, ID string) model.PluginMeta {
+	meta := createChePluginMeta(ID)
+	meta.APIVersion = APIVersion
+	return meta
+}
+
+func createDefaultCheEditorMetaWithApiVersion(APIVersion string, ID string) model.PluginMeta {
+	meta := createCheEditorMeta(ID)
+	meta.APIVersion = APIVersion
+	return meta
+}
+
 func createVSCodeMeta(ID string) model.PluginMeta {
 	return model.PluginMeta{
-		Type: TestVscodePluginType,
-		ID:   ID,
+		Type:       TestVscodePluginType,
+		ID:         ID,
+		APIVersion: "v2",
 	}
 }
 
 func createTheiaMeta(ID string) model.PluginMeta {
 	return model.PluginMeta{
-		Type: TestTheiaPluginType,
-		ID:   ID,
+		Type:       TestTheiaPluginType,
+		ID:         ID,
+		APIVersion: "v2",
 	}
 }
 
 func createChePluginMeta(ID string) model.PluginMeta {
 	return model.PluginMeta{
-		Type: TestChePluginType,
-		ID:   ID,
+		Type:       TestChePluginType,
+		ID:         ID,
+		APIVersion: "v2",
 	}
 }
 
 func createCheEditorMeta(ID string) model.PluginMeta {
 	return model.PluginMeta{
-		Type: TestEditorPluginType,
-		ID:   ID,
+		Type:       TestEditorPluginType,
+		ID:         ID,
+		APIVersion: "v2",
+	}
+}
+
+func createChePlugin(ID string) model.ChePlugin {
+	return model.ChePlugin{
+		ID: ID,
+	}
+}
+
+func createContainer(name string) model.Container {
+	return model.Container{
+		Name:         name,
+		MountSources: true,
+		Volumes: []model.Volume{
+			{
+				Name:      "volume1",
+				MountPath: "/some/where",
+			},
+		},
+		Env: []model.EnvVar{
+			{
+				Name:  "env1",
+				Value: "value1",
+			},
+		},
+		Image: "testRegistry.com/user/repo:latest",
+		Ports: []model.ExposedPort{
+			{
+				ExposedPort: 10000,
+			},
+		},
+		MemoryLimit: "100GB",
+		Commands: []model.Command{
+			{
+				Name:       "command1",
+				Command:    []string{"tail", "-f", "/dev/null"},
+				WorkingDir: "/plugins",
+			},
+		},
 	}
 }
 

@@ -21,6 +21,7 @@ import (
 // BrokerImpl specifies the interface for a Broker implementation that processes
 // plugins of a specific type
 type BrokerImpl interface {
+	// TODO we don't need this interface
 	Start([]model.PluginMeta)
 	PushEvents(tun *jsonrpc.Tunnel)
 	ProcessPlugin(meta model.PluginMeta) error

@@ -14,15 +14,14 @@ package unified
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
 
 	jsonrpc "github.com/eclipse/che-go-jsonrpc"
-	broker "github.com/eclipse/che-plugin-broker/brokers/che-plugin-broker"
-	"github.com/eclipse/che-plugin-broker/brokers/theia"
-	"github.com/eclipse/che-plugin-broker/brokers/vscode"
+	"github.com/eclipse/che-plugin-broker/brokers/unified/vscode"
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
@@ -42,12 +41,10 @@ const RegistryURLFormat = "%s/%s/meta.yaml"
 // Broker is used to process Che plugins
 type Broker struct {
 	common.Broker
-	Storage *storage.Storage
+	Storage storage.Storage
 	utils   utils.IoUtil
 
-	theiaBroker  common.BrokerImpl
 	vscodeBroker common.BrokerImpl
-	cheBroker    common.BrokerImpl
 }
 
 // NewBroker creates Che broker instance
@@ -58,17 +55,12 @@ func NewBroker() *Broker {
 	httpClient := &http.Client{}
 	rand := common.NewRand()
 
-	cheBroker := broker.NewBrokerWithParams(commonBroker, ioUtils, storageObj)
-	theiaBroker := theia.NewBrokerWithParams(commonBroker, ioUtils, storageObj, rand)
 	vscodeBroker := vscode.NewBrokerWithParams(commonBroker, ioUtils, storageObj, rand, httpClient)
 	return &Broker{
-		Broker:  commonBroker,
-		Storage: storageObj,
-		utils:   ioUtils,
-
-		theiaBroker:  theiaBroker,
+		Broker:       commonBroker,
+		Storage:      storageObj,
+		utils:        ioUtils,
 		vscodeBroker: vscodeBroker,
-		cheBroker:    cheBroker,
 	}
 }
 
@@ -109,26 +101,25 @@ func (b *Broker) PushEvents(tun *jsonrpc.Tunnel) {
 // ProcessPlugins processes metas of different plugin types and passes metas of each particular type
 // to the appropriate plugin broker
 func (b *Broker) ProcessPlugins(metas []model.PluginMeta) error {
-	cheMetas, theiaMetas, vscodeMetas, err := sortMetas(metas)
+	err := validateMetas(metas)
 	if err != nil {
 		return err
 	}
 
-	b.PrintInfo("Starting Che common plugins processing")
+	cheMetas, vscodeMetas, err := sortMetas(metas)
+	if err != nil {
+		return err
+	}
+
 	for _, meta := range cheMetas {
-		err := b.cheBroker.ProcessPlugin(meta)
+		plugin := convertMetaToPlugin(meta)
+		err = b.Storage.AddPlugin(plugin)
 		if err != nil {
 			return err
 		}
 	}
-	b.PrintInfo("Starting Theia plugins processing")
-	for _, meta := range theiaMetas {
-		err := b.theiaBroker.ProcessPlugin(meta)
-		if err != nil {
-			return err
-		}
-	}
-	b.PrintInfo("Starting VS Code plugins processing")
+
+	b.PrintInfo("Starting VS Code and Theia plugins processing")
 	for _, meta := range vscodeMetas {
 		err := b.vscodeBroker.ProcessPlugin(meta)
 		if err != nil {
@@ -136,6 +127,20 @@ func (b *Broker) ProcessPlugins(metas []model.PluginMeta) error {
 		}
 	}
 
+	return nil
+}
+
+func validateMetas(metas []model.PluginMeta) error {
+	for _, meta := range metas {
+		switch meta.APIVersion {
+		case "":
+			return errors.New(fmt.Sprintf("Plugin '%s' is invalid. Field 'apiVersion' must be present", meta.ID))
+		case "v2":
+			// validate here something
+		default:
+			return errors.New(fmt.Sprintf("Plugin '%s' is invalid. Field 'apiVersion' contains invalid version '%s'", meta.ID, meta.APIVersion))
+		}
+	}
 	return nil
 }
 
@@ -191,9 +196,8 @@ func (b *Broker) serializeTooling() (string, error) {
 	return string(pluginsBytes), nil
 }
 
-func sortMetas(metas []model.PluginMeta) (che []model.PluginMeta, theia []model.PluginMeta, vscode []model.PluginMeta, err error) {
+func sortMetas(metas []model.PluginMeta) (che []model.PluginMeta, vscode []model.PluginMeta, err error) {
 	vscodeMetas := make([]model.PluginMeta, 0)
-	theiaMetas := make([]model.PluginMeta, 0)
 	cheBrokerMetas := make([]model.PluginMeta, 0)
 	for _, meta := range metas {
 		switch strings.ToLower(meta.Type) {
@@ -201,18 +205,18 @@ func sortMetas(metas []model.PluginMeta) (che []model.PluginMeta, theia []model.
 			fallthrough
 		case EditorPluginType:
 			cheBrokerMetas = append(cheBrokerMetas, meta)
+		case TheiaPluginType:
+			fallthrough
 		case VscodePluginType:
 			vscodeMetas = append(vscodeMetas, meta)
-		case TheiaPluginType:
-			theiaMetas = append(theiaMetas, meta)
 		case "":
-			return nil, nil, nil, fmt.Errorf("Type field is missing in meta information of plugin '%s'", meta.ID)
+			return nil, nil, fmt.Errorf("Type field is missing in meta information of plugin '%s'", meta.ID)
 		default:
-			return nil, nil, nil, fmt.Errorf("Type '%s' of plugin '%s' is unsupported", meta.Type, meta.ID)
+			return nil, nil, fmt.Errorf("Type '%s' of plugin '%s' is unsupported", meta.Type, meta.ID)
 		}
 	}
 
-	return cheBrokerMetas, theiaMetas, vscodeMetas, nil
+	return cheBrokerMetas, vscodeMetas, nil
 }
 
 func getRegistryURL(plugin model.PluginFQN, defaultRegistry string) (string, error) {
@@ -226,4 +230,16 @@ func getRegistryURL(plugin model.PluginFQN, defaultRegistry string) (string, err
 		registry = strings.TrimSuffix(defaultRegistry, "/") + "/plugins"
 	}
 	return registry, nil
+}
+
+func convertMetaToPlugin(meta model.PluginMeta) model.ChePlugin {
+	return model.ChePlugin{
+		ID:           meta.ID,
+		Name:         meta.Name,
+		Publisher:    meta.Publisher,
+		Version:      meta.Version,
+		Containers:   meta.Spec.Containers,
+		Endpoints:    meta.Spec.Endpoints,
+		WorkspaceEnv: meta.Spec.WorkspaceEnv,
+	}
 }

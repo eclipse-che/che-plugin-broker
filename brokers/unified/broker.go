@@ -77,6 +77,7 @@ func NewBroker() *Broker {
 func (b *Broker) Start(pluginFQNs []model.PluginFQN, defaultRegistry string) {
 	pluginMetas, err := b.getPluginMetas(pluginFQNs, defaultRegistry)
 	if err != nil {
+		b.PubFailed(err.Error())
 		b.PrintFatal("Failed to download plugin metas: %s", err)
 	}
 	defer b.CloseConsumers()

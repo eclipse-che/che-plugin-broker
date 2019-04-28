@@ -38,5 +38,8 @@ func main() {
 	if err != nil {
 		broker.PrintFatal("Failed to process plugin fully qualified names from config: %s", err)
 	}
-	broker.Start(pluginFQNs, cfg.RegistryAddress)
+	err = broker.Start(pluginFQNs, cfg.RegistryAddress)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 }

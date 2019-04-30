@@ -76,6 +76,9 @@ func (broker *brokerImpl) PrintInfo(format string, v ...interface{}) {
 	log.Print(message)
 }
 
+// Deprecated: it is not convenient in tests with mocks.
+// It should exit current context but when mocked it does not exit.
+// Instead use: PubLog, log.Fatal
 func (broker *brokerImpl) PrintFatal(format string, v ...interface{}) {
 	message := fmt.Sprintf(format, v...)
 	broker.PubLog(message)

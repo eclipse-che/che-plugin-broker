@@ -19,8 +19,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	cheBrokerMocks "github.com/eclipse/che-plugin-broker/brokers/che-plugin-broker/mocks"
 	theiaBrokerMocks "github.com/eclipse/che-plugin-broker/brokers/theia/mocks"
 	vscodeBrokerMocks "github.com/eclipse/che-plugin-broker/brokers/vscode/mocks"
@@ -28,6 +26,7 @@ import (
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
 	fmock "github.com/eclipse/che-plugin-broker/utils/mocks"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -72,6 +71,36 @@ func createMocks() *mocks {
 		theiaBroker:  theiaBroker,
 		vscodeBroker: vscodeBroker,
 		cheBroker:    cheBroker,
+	}
+}
+
+
+func TestBroker_Start(t *testing.T) {
+	type args struct {
+		pluginFQNs      []model.PluginFQN
+		defaultRegistry string
+	}
+	tests := []struct {
+		name   string
+		args   args
+	}{
+		{
+			name: "Publishes error if error happens on metas fetching",
+			args:args{
+				pluginFQNs:[]model.PluginFQN{pluginFQNWithoutRegistry},
+				defaultRegistry: "http://defaultRegistry.com",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := createMocks()
+
+			err := m.b.Start(tt.args.pluginFQNs, tt.args.defaultRegistry)
+
+			m.cb.On("PubFailed", mock.AnythingOfType("string"))
+			m.cb.On("PrintFatal", mock.AnythingOfType("string"))
+		})
 	}
 }
 
@@ -253,11 +282,11 @@ func TestBroker_processPlugins(t *testing.T) {
 			args: args{
 				metas: []model.PluginMeta{
 					{
-						Type:    "Unsupported type",
-						ID:      "test id",
-						Version: "test version",
+						Type:      "Unsupported type",
+						ID:        "test id",
+						Version:   "test version",
 						Publisher: "test publisher",
-						Name: "test name",
+						Name:      "test name",
 					},
 				},
 			},
@@ -270,11 +299,11 @@ func TestBroker_processPlugins(t *testing.T) {
 			args: args{
 				metas: []model.PluginMeta{
 					{
-						Type:    "",
-						ID:      "test id",
-						Version: "test version",
+						Type:      "",
+						ID:        "test id",
+						Version:   "test version",
 						Publisher: "test publisher",
-						Name: "test name",
+						Name:      "test name",
 					},
 				},
 			},

@@ -14,6 +14,7 @@ package unified
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -74,11 +75,13 @@ func NewBroker() *Broker {
 
 // DownloadMetasAndStart downloads metas from plugin registry for specified
 // pluginFQNs and then executes plugins metas processing and sending data to Che master
-func (b *Broker) Start(pluginFQNs []model.PluginFQN, defaultRegistry string) {
+func (b *Broker) Start(pluginFQNs []model.PluginFQN, defaultRegistry string) error {
 	pluginMetas, err := b.getPluginMetas(pluginFQNs, defaultRegistry)
 	if err != nil {
-		b.PubFailed(err.Error())
-		b.PrintFatal("Failed to download plugin metas: %s", err)
+		message := fmt.Sprintf("Failed to download plugin meta: %s", err)
+		b.PubFailed(message)
+		b.PubLog(message)
+		return errors.New(message)
 	}
 	defer b.CloseConsumers()
 	b.PubStarted()
@@ -88,18 +91,21 @@ func (b *Broker) Start(pluginFQNs []model.PluginFQN, defaultRegistry string) {
 	err = b.ProcessPlugins(pluginMetas)
 	if err != nil {
 		b.PubFailed(err.Error())
-		b.PrintFatal(err.Error())
+		b.PubLog(err.Error())
+		return err
 	}
 
 	result, err := b.serializeTooling()
 	if err != nil {
 		b.PubFailed(err.Error())
-		b.PrintFatal(err.Error())
+		b.PubLog(err.Error())
+		return err
 	}
 
 	b.PrintInfo("All plugins have been successfully processed")
 	b.PrintDebug(result)
 	b.PubDone(result)
+	return nil
 }
 
 // PushEvents sets given tunnel as consumer of broker events.

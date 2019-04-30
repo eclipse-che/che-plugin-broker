@@ -13,6 +13,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -36,10 +37,13 @@ func main() {
 
 	pluginFQNs, err := cfg.ParsePluginFQNs()
 	if err != nil {
-		broker.PrintFatal("Failed to process plugin fully qualified names from config: %s", err)
+		message := fmt.Sprintf("Failed to process plugin fully qualified names from config: %s", err)
+		broker.PubFailed(message)
+		broker.PubLog(message)
+		log.Fatal(err)
 	}
 	err = broker.Start(pluginFQNs, cfg.RegistryAddress)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 }

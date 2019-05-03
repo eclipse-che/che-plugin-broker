@@ -53,7 +53,8 @@ var (
 	// UseLocalhostInPluginUrls configures the broker to use the `localhost` name
 	// instead of the Kubernetes service name to build Theia or VSCode plugin
 	// endpoint URL
-	UseLocalhostInPluginUrls bool
+	// True by default, at least as long as all the plugin containers are in the same POD
+	UseLocalhostInPluginUrls = true
 
 	// OnlyApplyMetadataActions configures the broker to only apply metadata-related
 	// steps, without copying any file into the `plugins` directory

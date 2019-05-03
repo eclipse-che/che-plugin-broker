@@ -31,7 +31,9 @@ func GenerateSidecarTooling(image string, pj model.PackageJSON, rand common.Rand
 	endpoint := generateTheiaSidecarEndpoint(rand)
 	setEndpoint(tooling, endpoint)
 	AddExtension(tooling, pj)
-
+  if cfg.UseLocalhostInPluginUrls {
+		tooling.Endpoints = tooling.Endpoints[1:]
+	}
 	return tooling
 }
 

@@ -183,6 +183,9 @@ func (b *brokerImpl) injectRemotePlugin(meta model.PluginMeta, image string, arc
 		}
 		theia.AddExtension(tooling, *pj)
 	}
+	if cfg.UseLocalhostInPluginUrls {
+		tooling.Endpoints = tooling.Endpoints[1:]
+	}
 
 	return b.Storage.AddPlugin(&meta, tooling)
 }

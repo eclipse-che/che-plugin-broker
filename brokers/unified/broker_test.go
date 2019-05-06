@@ -726,6 +726,172 @@ func TestBroker_processPlugins(t *testing.T) {
 				err: "Plugin 'test id' is invalid. Field 'spec.containers' must not be empty",
 			},
 		},
+		{
+			name: "Returns error when there are 2 containers in vs code extension",
+			args: args{
+				metas: []model.PluginMeta{{
+					Type:       TestVscodePluginType,
+					ID:         "test id",
+					APIVersion: "v2",
+					Spec: model.PluginMetaSpec{
+						Containers: []model.Container{
+							{
+								Image: defaultImage,
+							},
+							{
+								Image: defaultImage,
+							},
+						},
+						Extensions: []string{
+							"some extensions is here",
+						},
+					},
+				}},
+			},
+			want: want{
+				err: "Plugin 'test id' is invalid. Containers list 'spec.containers' must not contain more than 1 container, but '2' found",
+			},
+		},
+		{
+			name: "Returns error when there are 3 containers in vs code extension",
+			args: args{
+				metas: []model.PluginMeta{{
+					Type:       TestVscodePluginType,
+					ID:         "test id",
+					APIVersion: "v2",
+					Spec: model.PluginMetaSpec{
+						Containers: []model.Container{
+							{
+								Image: defaultImage,
+							},
+							{
+								Image: defaultImage,
+							},
+							{
+								Image: defaultImage,
+							},
+						},
+						Extensions: []string{
+							"some extensions is here",
+						},
+					},
+				}},
+			},
+			want: want{
+				err: "Plugin 'test id' is invalid. Containers list 'spec.containers' must not contain more than 1 container, but '3' found",
+			},
+		},
+		{
+			name: "Returns error when there are 2 containers in theia plugin",
+			args: args{
+				metas: []model.PluginMeta{{
+					Type:       TestTheiaPluginType,
+					ID:         "test id",
+					APIVersion: "v2",
+					Spec: model.PluginMetaSpec{
+						Containers: []model.Container{
+							{
+								Image: defaultImage,
+							},
+							{
+								Image: defaultImage,
+							},
+						},
+						Extensions: []string{
+							"some extensions is here",
+						},
+					},
+				}},
+			},
+			want: want{
+				err: "Plugin 'test id' is invalid. Containers list 'spec.containers' must not contain more than 1 container, but '2' found",
+			},
+		},
+		{
+			name: "Returns error when there are 3 containers in theia plugin",
+			args: args{
+				metas: []model.PluginMeta{{
+					Type:       TestTheiaPluginType,
+					ID:         "test id",
+					APIVersion: "v2",
+					Spec: model.PluginMetaSpec{
+						Containers: []model.Container{
+							{
+								Image: defaultImage,
+							},
+							{
+								Image: defaultImage,
+							},
+							{
+								Image: defaultImage,
+							},
+						},
+						Extensions: []string{
+							"some extensions is here",
+						},
+					},
+				}},
+			},
+			want: want{
+				err: "Plugin 'test id' is invalid. Containers list 'spec.containers' must not contain more than 1 container, but '3' found",
+			},
+		},
+		{
+			name: "Returns error when there is endpoint in vs code extension",
+			args: args{
+				metas: []model.PluginMeta{{
+					Type:       TestVscodePluginType,
+					ID:         "test id",
+					APIVersion: "v2",
+					Spec: model.PluginMetaSpec{
+						Endpoints: []model.Endpoint{
+							{
+								TargetPort: 80,
+							},
+						},
+						Containers: []model.Container{
+							{
+								Image: defaultImage,
+							},
+						},
+						Extensions: []string{
+							"some extensions is here",
+						},
+					},
+				}},
+			},
+			want: want{
+				err: "Plugin 'test id' is invalid. Setting endpoints at 'spec.endpoints' is not allowed in plugins of type 'VS Code extension'",
+			},
+		},
+		{
+			name: "Returns error when there is endpoint in theia plugin",
+			args: args{
+				metas: []model.PluginMeta{{
+					Type:       TestTheiaPluginType,
+					ID:         "test id",
+					APIVersion: "v2",
+					Spec: model.PluginMetaSpec{
+						Endpoints: []model.Endpoint{
+							{
+								TargetPort: 80,
+							},
+						},
+						Containers: []model.Container{
+							{
+								Image: defaultImage,
+							},
+						},
+						Extensions: []string{
+							"some extensions is here",
+						},
+					},
+				}},
+			},
+			want: want{
+				err: "Plugin 'test id' is invalid. Setting endpoints at 'spec.endpoints' is not allowed in plugins of type 'Theia plugin'",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

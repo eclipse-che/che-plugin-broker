@@ -19,13 +19,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	vscodeBrokerMocks "github.com/eclipse/che-plugin-broker/brokers/unified/vscode/mocks"
 	cmock "github.com/eclipse/che-plugin-broker/common/mocks"
 	"github.com/eclipse/che-plugin-broker/model"
 	storageMocks "github.com/eclipse/che-plugin-broker/storage/mocks"
 	fmock "github.com/eclipse/che-plugin-broker/utils/mocks"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -52,6 +51,13 @@ func createMocks() *mocks {
 	storageMock := &storageMocks.Storage{}
 
 	cb.On("PrintInfo", mock.AnythingOfType("string"))
+	cb.On("PrintDebug", mock.AnythingOfType("string"))
+	cb.On("PubFailed", mock.AnythingOfType("string"))
+	cb.On("PubLog", mock.AnythingOfType("string"))
+	cb.On("PubStarted")
+	cb.On("PrintPlan", mock.AnythingOfType("[]model.PluginMeta"))
+	cb.On("CloseConsumers")
+	cb.On("PubDone", mock.AnythingOfType("string"))
 
 	return &mocks{
 		cb:       cb,
@@ -66,6 +72,53 @@ func createMocks() *mocks {
 		vscodeBroker: vscodeBroker,
 		storage:      storageMock,
 	}
+}
+
+func TestBroker_StartPublishesErrorOnFetchError(t *testing.T) {
+	m := createMocks()
+	m.u.On("Fetch", mock.AnythingOfType("string")).Return(nil, errors.New("Test error"))
+
+	err := m.b.Start([]model.PluginFQN{pluginFQNWithoutRegistry}, "http://defaultRegistry.com")
+
+	expectedMessage := "Failed to download plugin meta: failed to fetch plugin meta.yaml for plugin 'test-no-registry/1.0' from registry 'http://defaultRegistry.com/plugins': Test error"
+	assert.EqualError(t, err, expectedMessage)
+	m.cb.AssertCalled(t, "PubFailed", expectedMessage)
+	m.cb.AssertCalled(t, "PubLog", expectedMessage)
+	m.cb.AssertNotCalled(t, "PubDone", mock.AnythingOfType("string"))
+}
+
+func TestBroker_StartPublishesErrorOnProcessError(t *testing.T) {
+	m := createMocks()
+	m.u.On("Fetch", mock.AnythingOfType("string")).Return([]byte(""), nil)
+
+	err := m.b.Start([]model.PluginFQN{pluginFQNWithoutRegistry}, "http://defaultRegistry.com")
+
+	expectedMessage := "Plugin 'test-no-registry/1.0' is invalid. Field 'apiVersion' must be present"
+	assert.EqualError(t, err, expectedMessage)
+	m.cb.AssertCalled(t, "PubFailed", expectedMessage)
+	m.cb.AssertCalled(t, "PubLog", expectedMessage)
+	m.cb.AssertNotCalled(t, "PubDone", mock.AnythingOfType("string"))
+}
+
+func TestBroker_StartPublishesResults(t *testing.T) {
+	vscodeMetaContent := `
+type: VS Code extension
+apiVersion: v2
+spec:
+  extensions:
+    - http://localhost/test.vsix
+`
+	m := createMocks()
+	m.u.On("Fetch", mock.AnythingOfType("string")).Return([]byte(vscodeMetaContent), nil)
+	m.vscodeBroker.On("ProcessPlugin", mock.AnythingOfType("model.PluginMeta")).Return(nil)
+	m.storage.On("Plugins").Return([]model.ChePlugin{}, nil)
+
+	err := m.b.Start([]model.PluginFQN{pluginFQNWithoutRegistry}, "http://defaultRegistry.com")
+
+	assert.Nil(t, err)
+	m.cb.AssertNotCalled(t, "PubFailed", mock.AnythingOfType("string"))
+	m.cb.AssertNotCalled(t, "PubLog", mock.AnythingOfType("string"))
+	m.cb.AssertCalled(t, "PubDone", mock.AnythingOfType("string"))
 }
 
 func TestBroker_processPlugins(t *testing.T) {
@@ -209,7 +262,6 @@ func TestBroker_processPlugins(t *testing.T) {
 		},
 		{
 			name: "Sorts metas by type",
-			//mocks: mocks{},
 			args: args{
 				metas: []model.PluginMeta{
 					createVSCodeMeta("id1"),

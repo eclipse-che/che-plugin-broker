@@ -19,8 +19,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	cheBrokerMocks "github.com/eclipse/che-plugin-broker/brokers/che-plugin-broker/mocks"
 	theiaBrokerMocks "github.com/eclipse/che-plugin-broker/brokers/theia/mocks"
 	vscodeBrokerMocks "github.com/eclipse/che-plugin-broker/brokers/vscode/mocks"
@@ -28,6 +26,7 @@ import (
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/storage"
 	fmock "github.com/eclipse/che-plugin-broker/utils/mocks"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -55,6 +54,13 @@ func createMocks() *mocks {
 	cheBroker := &cheBrokerMocks.ChePluginBroker{}
 
 	cb.On("PrintInfo", mock.AnythingOfType("string"))
+	cb.On("PrintDebug", mock.AnythingOfType("string"))
+	cb.On("PubFailed", mock.AnythingOfType("string"))
+	cb.On("PubLog", mock.AnythingOfType("string"))
+	cb.On("PubStarted")
+	cb.On("PrintPlan", mock.AnythingOfType("[]model.PluginMeta"))
+	cb.On("CloseConsumers")
+	cb.On("PubDone", mock.AnythingOfType("string"))
 
 	return &mocks{
 		cb:       cb,
@@ -73,6 +79,45 @@ func createMocks() *mocks {
 		vscodeBroker: vscodeBroker,
 		cheBroker:    cheBroker,
 	}
+}
+
+func TestBroker_StartPublishesErrorOnFetchError(t *testing.T) {
+	m := createMocks()
+	m.u.On("Fetch", mock.AnythingOfType("string")).Return(nil, errors.New("Test error"))
+
+	err := m.b.Start([]model.PluginFQN{pluginFQNWithoutRegistry}, "http://defaultRegistry.com")
+
+	expectedMessage := "Failed to download plugin meta: failed to fetch plugin meta.yaml for plugin 'test-no-registry/1.0' from registry 'http://defaultRegistry.com/plugins': Test error"
+	assert.EqualError(t, err, expectedMessage)
+	m.cb.AssertCalled(t, "PubFailed", expectedMessage)
+	m.cb.AssertCalled(t, "PubLog", expectedMessage)
+	m.cb.AssertNotCalled(t, "PubDone", mock.AnythingOfType("string"))
+}
+
+func TestBroker_StartPublishesErrorOnProcessError(t *testing.T) {
+	m := createMocks()
+	m.u.On("Fetch", mock.AnythingOfType("string")).Return([]byte(""), nil)
+
+	err := m.b.Start([]model.PluginFQN{pluginFQNWithoutRegistry}, "http://defaultRegistry.com")
+
+	expectedMessage := "Type field is missing in meta information of plugin 'test-no-registry/1.0'"
+	assert.EqualError(t, err, expectedMessage)
+	m.cb.AssertCalled(t, "PubFailed", expectedMessage)
+	m.cb.AssertCalled(t, "PubLog", expectedMessage)
+	m.cb.AssertNotCalled(t, "PubDone", mock.AnythingOfType("string"))
+}
+
+func TestBroker_StartPublishesResults(t *testing.T) {
+	m := createMocks()
+	m.u.On("Fetch", mock.AnythingOfType("string")).Return([]byte("type: Che plugin"), nil)
+	m.cheBroker.On("ProcessPlugin", mock.AnythingOfType("model.PluginMeta")).Return(nil)
+
+	err := m.b.Start([]model.PluginFQN{pluginFQNWithoutRegistry}, "http://defaultRegistry.com")
+
+	assert.Nil(t, err)
+	m.cb.AssertNotCalled(t, "PubFailed", mock.AnythingOfType("string"))
+	m.cb.AssertNotCalled(t, "PubLog", mock.AnythingOfType("string"))
+	m.cb.AssertCalled(t, "PubDone", mock.AnythingOfType("string"))
 }
 
 func TestBroker_processPlugins(t *testing.T) {
@@ -134,7 +179,6 @@ func TestBroker_processPlugins(t *testing.T) {
 		},
 		{
 			name: "Sorts metas by type",
-			//mocks: mocks{},
 			args: args{
 				metas: []model.PluginMeta{
 					createVSCodeMeta("id1"),
@@ -253,11 +297,11 @@ func TestBroker_processPlugins(t *testing.T) {
 			args: args{
 				metas: []model.PluginMeta{
 					{
-						Type:    "Unsupported type",
-						ID:      "test id",
-						Version: "test version",
+						Type:      "Unsupported type",
+						ID:        "test id",
+						Version:   "test version",
 						Publisher: "test publisher",
-						Name: "test name",
+						Name:      "test name",
 					},
 				},
 			},
@@ -270,11 +314,11 @@ func TestBroker_processPlugins(t *testing.T) {
 			args: args{
 				metas: []model.PluginMeta{
 					{
-						Type:    "",
-						ID:      "test id",
-						Version: "test version",
+						Type:      "",
+						ID:        "test id",
+						Version:   "test version",
 						Publisher: "test publisher",
-						Name: "test name",
+						Name:      "test name",
 					},
 				},
 			},

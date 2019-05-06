@@ -88,8 +88,9 @@ func TestAddPluginRunnerRequirements(t *testing.T) {
 
 func TestAddExtension(t *testing.T) {
 	type args struct {
-		plugin model.ChePlugin
-		pj     PackageJSON
+		plugin           model.ChePlugin
+		pj               PackageJSON
+		localhostSidecar bool
 	}
 	tests := []struct {
 		name string
@@ -152,10 +153,19 @@ func TestAddExtension(t *testing.T) {
 			},
 			want: generateDefaultTestChePluginWithPluginRunnerConfigWithExtension("plugin_Name8", "publisherName1_0__"),
 		},
+		{
+			name: "Test adding extension when localhost for sidecar URLs is enabled",
+			args: args{
+				plugin:           generateDefaultTestChePluginWithPluginRunnerConfig(),
+				pj:               generatePackageJSON("publisherName1_0_", "pluginName8"),
+				localhostSidecar: true,
+			},
+			want: generateDefaultTestChePluginWithPluginRunnerConfigWithExtensionWithLocalhost("pluginName8", "publisherName1_0_"),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := AddExtension(tt.args.plugin, tt.args.pj)
+			actual := AddExtension(tt.args.plugin, tt.args.pj, tt.args.localhostSidecar)
 			assert.Equal(t, actual, tt.want)
 		})
 	}
@@ -166,7 +176,7 @@ func TestAddSeveralExtensions(t *testing.T) {
 	pj := generatePackageJSON("publisherName1_0_", "pluginName1")
 	expected := generateDefaultTestChePluginWithPluginRunnerConfigWithExtension("pluginName1", "publisherName1_0_")
 
-	actual := AddExtension(plugin, pj)
+	actual := AddExtension(plugin, pj, false)
 	assert.Equal(t, actual, expected)
 
 	pj2 := generatePackageJSON("publisherName2_0_", "pluginName2")
@@ -175,7 +185,7 @@ func TestAddSeveralExtensions(t *testing.T) {
 		Name:  "THEIA_PLUGIN_REMOTE_ENDPOINT_" + "publisherName2_0_" + "_" + "pluginName2",
 		Value: "ws://" + defaultEndpointName + ":" + strconv.Itoa(defaultPort),
 	})
-	actual2 := AddExtension(actual, pj2)
+	actual2 := AddExtension(actual, pj2, false)
 	assert.Equal(t, actual2, expected2)
 }
 
@@ -191,6 +201,15 @@ func generateDefaultTestChePluginWithPluginRunnerConfigWithExtension(extName str
 	plugin.WorkspaceEnv = append(plugin.WorkspaceEnv, model.EnvVar{
 		Name:  "THEIA_PLUGIN_REMOTE_ENDPOINT_" + extPublisher + "_" + extName,
 		Value: "ws://" + defaultEndpointName + ":" + strconv.Itoa(defaultPort),
+	})
+	return plugin
+}
+
+func generateDefaultTestChePluginWithPluginRunnerConfigWithExtensionWithLocalhost(extName string, extPublisher string) model.ChePlugin {
+	plugin := generateTestChePluginWithPluginRunnerConfig(defaultPort, defaultEndpointName)
+	plugin.WorkspaceEnv = append(plugin.WorkspaceEnv, model.EnvVar{
+		Name:  "THEIA_PLUGIN_REMOTE_ENDPOINT_" + extPublisher + "_" + extName,
+		Value: "ws://localhost:" + strconv.Itoa(defaultPort),
 	})
 	return plugin
 }

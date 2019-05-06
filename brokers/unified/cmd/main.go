@@ -27,7 +27,7 @@ func main() {
 	cfg.Parse()
 	cfg.Print()
 
-	broker := unified.NewBroker()
+	broker := unified.NewBroker(cfg.UseLocalhostInPluginUrls)
 
 	if !cfg.DisablePushingToEndpoint {
 		statusTun := common.ConnectOrFail(cfg.PushStatusesEndpoint, cfg.Token)

@@ -16,7 +16,6 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/eclipse/che-plugin-broker/cfg"
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/model"
 )
@@ -50,13 +49,13 @@ func AddPluginRunnerRequirements(plugin model.ChePlugin, rand common.Random) mod
 // Extension publisher and plugin name taken by retrieving info from package.json and replacing all
 // chars matching [^a-z_0-9]+ with a dash character
 // ChePlugin with a single endpoint is supported only.
-func AddExtension(plugin model.ChePlugin, pj PackageJSON) model.ChePlugin {
+func AddExtension(plugin model.ChePlugin, pj PackageJSON, useLocalHost bool) model.ChePlugin {
 	// TODO limitation to have just one endpoint
 	sidecarEndpoint := plugin.Endpoints[0]
 	prettyID := re.ReplaceAllString(pj.Publisher+"_"+pj.Name, `_`)
 	sidecarTheiaEnvVarName := "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID
 	sidecarHostname := sidecarEndpoint.Name
-	if cfg.UseLocalhostInPluginUrls {
+	if useLocalHost {
 		sidecarHostname = "localhost"
 	}
 	sidecarTheiaEnvVarValue := "ws://" + sidecarHostname + ":" + strconv.Itoa(sidecarEndpoint.TargetPort)

@@ -47,14 +47,14 @@ type Broker struct {
 }
 
 // NewBroker creates Che broker instance
-func NewBroker() *Broker {
+func NewBroker(localhostSidecar bool) *Broker {
 	commonBroker := common.NewBroker()
 	ioUtils := utils.New()
 	storageObj := storage.New()
 	httpClient := &http.Client{}
 	rand := common.NewRand()
 
-	vscodeBroker := vscode.NewBrokerWithParams(commonBroker, ioUtils, storageObj, rand, httpClient)
+	vscodeBroker := vscode.NewBrokerWithParams(commonBroker, ioUtils, storageObj, rand, httpClient, localhostSidecar)
 	return &Broker{
 		Broker:       commonBroker,
 		Storage:      storageObj,
@@ -138,6 +138,24 @@ func validateMetas(metas []model.PluginMeta) error {
 			// validate here something
 		default:
 			return fmt.Errorf("Plugin '%s' is invalid. Field 'apiVersion' contains invalid version '%s'", meta.ID, meta.APIVersion)
+		}
+
+		switch strings.ToLower(meta.Type) {
+		case ChePluginType:
+			fallthrough
+		case EditorPluginType:
+			if len(meta.Spec.Extensions) != 0 {
+				return fmt.Errorf("Plugin '%s' is invalid. Field 'spec.extensions' is not allowed in plugin of type '%s'", meta.ID, meta.Type)
+			}
+			if len(meta.Spec.Containers) == 0 {
+				return fmt.Errorf("Plugin '%s' is invalid. Field 'spec.containers' must not be empty", meta.ID)
+			}
+		case TheiaPluginType:
+			fallthrough
+		case VscodePluginType:
+			if len(meta.Spec.Extensions) == 0 {
+				return fmt.Errorf("Plugin '%s' is invalid. Field 'spec.extensions' must not be empty", meta.ID)
+			}
 		}
 	}
 	return nil

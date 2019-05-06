@@ -42,20 +42,28 @@ const vsixPackageJSONFolderName = "extension"
 
 type brokerImpl struct {
 	common.Broker
-	ioUtil  utils.IoUtil
-	Storage storage.Storage
-	client  *http.Client
-	rand    common.Random
+	ioUtil           utils.IoUtil
+	Storage          storage.Storage
+	client           *http.Client
+	rand             common.Random
+	localhostSidecar bool
 }
 
 // NewBrokerWithParams creates Che VS Code extension broker instance
-func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage storage.Storage, rand common.Random, httpClient *http.Client) common.BrokerImpl {
+func NewBrokerWithParams(
+	broker common.Broker,
+	ioUtil utils.IoUtil,
+	storage storage.Storage,
+	rand common.Random,
+	httpClient *http.Client,
+	localhostSidecar bool) common.BrokerImpl {
 	return &brokerImpl{
-		Broker:  broker,
-		ioUtil:  ioUtil,
-		rand:    rand,
-		Storage: storage,
-		client:  httpClient,
+		Broker:           broker,
+		ioUtil:           ioUtil,
+		rand:             rand,
+		Storage:          storage,
+		client:           httpClient,
+		localhostSidecar: localhostSidecar,
 	}
 }
 
@@ -165,7 +173,7 @@ func (b *brokerImpl) injectRemotePlugin(plugin model.ChePlugin, archivesPaths []
 				return err
 			}
 		}
-		plugin = AddExtension(plugin, *pj)
+		plugin = AddExtension(plugin, *pj, b.localhostSidecar)
 	}
 
 	return b.Storage.AddPlugin(plugin)

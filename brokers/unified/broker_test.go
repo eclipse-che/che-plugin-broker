@@ -33,6 +33,7 @@ const TestChePluginType = "Che Plugin"
 const TestEditorPluginType = "Che Editor"
 const TestTheiaPluginType = "Theia plugin"
 const TestVscodePluginType = "VS Code extension"
+const defaultImage = "test-image:latest"
 
 type mocks struct {
 	cb           *cmock.Broker
@@ -374,46 +375,97 @@ func TestBroker_processPlugins(t *testing.T) {
 						Type:       "che plugin",
 						ID:         "id11",
 						APIVersion: "v2",
+						Spec: model.PluginMetaSpec{
+							Containers: []model.Container{
+								{
+									Image: defaultImage,
+								},
+							},
+						},
 					},
 					{
 						Type:       "Che Plugin",
 						ID:         "id12",
 						APIVersion: "v2",
+						Spec: model.PluginMetaSpec{
+							Containers: []model.Container{
+								{
+									Image: defaultImage,
+								},
+							},
+						},
 					},
 					{
 						Type:       "cHE plugIN",
 						ID:         "id13",
 						APIVersion: "v2",
+						Spec: model.PluginMetaSpec{
+							Containers: []model.Container{
+								{
+									Image: defaultImage,
+								},
+							},
+						},
 					},
 					{
 						Type:       "vs code extension",
 						ID:         "id21",
 						APIVersion: "v2",
+						Spec: model.PluginMetaSpec{
+							Extensions: []string{
+								"some extensions is here",
+							},
+						},
 					},
 					{
 						Type:       "VS CODE EXTENSION",
 						ID:         "id22",
 						APIVersion: "v2",
+						Spec: model.PluginMetaSpec{
+							Extensions: []string{
+								"some extensions is here",
+							},
+						},
 					},
 					{
 						Type:       "vs cODE EXTENSION",
 						ID:         "id23",
 						APIVersion: "v2",
+						Spec: model.PluginMetaSpec{
+							Extensions: []string{
+								"some extensions is here",
+							},
+						},
 					},
 					{
 						Type:       "theia plugin",
 						ID:         "id31",
 						APIVersion: "v2",
+						Spec: model.PluginMetaSpec{
+							Extensions: []string{
+								"some extensions is here",
+							},
+						},
 					},
 					{
 						Type:       "Theia Plugin",
 						ID:         "id32",
 						APIVersion: "v2",
+						Spec: model.PluginMetaSpec{
+							Extensions: []string{
+								"some extensions is here",
+							},
+						},
 					},
 					{
 						Type:       "THEIA PLUGIN",
 						ID:         "id33",
 						APIVersion: "v2",
+						Spec: model.PluginMetaSpec{
+							Extensions: []string{
+								"some extensions is here",
+							},
+						},
 					},
 				},
 			},
@@ -423,42 +475,87 @@ func TestBroker_processPlugins(t *testing.T) {
 						Type:       "vs code extension",
 						ID:         "id21",
 						APIVersion: "v2",
+						Spec: model.PluginMetaSpec{
+							Extensions: []string{
+								"some extensions is here",
+							},
+						},
 					},
 					{
 						Type:       "VS CODE EXTENSION",
 						ID:         "id22",
 						APIVersion: "v2",
+						Spec: model.PluginMetaSpec{
+							Extensions: []string{
+								"some extensions is here",
+							},
+						},
 					},
 					{
 						Type:       "vs cODE EXTENSION",
 						ID:         "id23",
 						APIVersion: "v2",
+						Spec: model.PluginMetaSpec{
+							Extensions: []string{
+								"some extensions is here",
+							},
+						},
 					},
 					{
 						Type:       "theia plugin",
 						ID:         "id31",
 						APIVersion: "v2",
+						Spec: model.PluginMetaSpec{
+							Extensions: []string{
+								"some extensions is here",
+							},
+						},
 					},
 					{
 						Type:       "Theia Plugin",
 						ID:         "id32",
 						APIVersion: "v2",
+						Spec: model.PluginMetaSpec{
+							Extensions: []string{
+								"some extensions is here",
+							},
+						},
 					},
 					{
 						Type:       "THEIA PLUGIN",
 						ID:         "id33",
 						APIVersion: "v2",
+						Spec: model.PluginMetaSpec{
+							Extensions: []string{
+								"some extensions is here",
+							},
+						},
 					},
 				},
 				commonPlugins: []model.ChePlugin{
 					{
 						ID: "id11",
+						Containers: []model.Container{
+							{
+								Image: defaultImage,
+							},
+						},
 					},
 					{
 						ID: "id12",
+						Containers: []model.Container{
+							{
+								Image: defaultImage,
+							},
+						},
 					},
 					{
 						ID: "id13",
+						Containers: []model.Container{
+							{
+								Image: defaultImage,
+							},
+						},
 					},
 				},
 			},
@@ -510,6 +607,13 @@ func TestBroker_processPlugins(t *testing.T) {
 						Publisher:  "test publisher",
 						Name:       "test name",
 						APIVersion: "v2",
+						Spec: model.PluginMetaSpec{
+							Containers: []model.Container{
+								{
+									Image: defaultImage,
+								},
+							},
+						},
 					},
 				},
 			},
@@ -518,6 +622,108 @@ func TestBroker_processPlugins(t *testing.T) {
 			},
 			want: want{
 				err: "test error",
+			},
+		},
+		{
+			name: "Returns error when extensions field is specified in common che plugin",
+			args: args{
+				metas: []model.PluginMeta{{
+					Type:       TestChePluginType,
+					ID:         "test id",
+					APIVersion: "v2",
+					Spec: model.PluginMetaSpec{
+						Extensions: []string{
+							"some extensions is here",
+						},
+					},
+				}},
+			},
+			want: want{
+				err: "Plugin 'test id' is invalid. Field 'spec.extensions' is not allowed in plugin of type 'Che Plugin'",
+			},
+		},
+		{
+			name: "Returns error when extensions field is specified in che editor",
+			args: args{
+				metas: []model.PluginMeta{{
+					Type:       TestEditorPluginType,
+					ID:         "test id",
+					APIVersion: "v2",
+					Spec: model.PluginMetaSpec{
+						Extensions: []string{
+							"some extensions is here",
+						},
+					},
+				}},
+			},
+			want: want{
+				err: "Plugin 'test id' is invalid. Field 'spec.extensions' is not allowed in plugin of type 'Che Editor'",
+			},
+		},
+		{
+			name: "Returns error when extensions list is empty in vs code extension",
+			args: args{
+				metas: []model.PluginMeta{{
+					Type:       TestVscodePluginType,
+					ID:         "test id",
+					APIVersion: "v2",
+					Spec: model.PluginMetaSpec{
+						Extensions: []string{
+						},
+					},
+				}},
+			},
+			want: want{
+				err: "Plugin 'test id' is invalid. Field 'spec.extensions' must not be empty",
+			},
+		},
+		{
+			name: "Returns error when extensions list is empty in theia plugin",
+			args: args{
+				metas: []model.PluginMeta{{
+					Type:       TestTheiaPluginType,
+					ID:         "test id",
+					APIVersion: "v2",
+					Spec: model.PluginMetaSpec{
+						Extensions: []string{
+						},
+					},
+				}},
+			},
+			want: want{
+				err: "Plugin 'test id' is invalid. Field 'spec.extensions' must not be empty",
+			},
+		},
+		{
+			name: "Returns error when containers field is empty in common che plugin",
+			args: args{
+				metas: []model.PluginMeta{{
+					Type:       TestChePluginType,
+					ID:         "test id",
+					APIVersion: "v2",
+					Spec: model.PluginMetaSpec{
+						Containers: []model.Container{},
+					},
+				}},
+			},
+			want: want{
+				err: "Plugin 'test id' is invalid. Field 'spec.containers' must not be empty",
+			},
+		},
+		{
+			name: "Returns error when containers field is empty in editor",
+			args: args{
+				metas: []model.PluginMeta{{
+					Type:       TestEditorPluginType,
+					ID:         "test id",
+					APIVersion: "v2",
+					Spec: model.PluginMetaSpec{
+						Containers: []model.Container{},
+					},
+				}},
+			},
+			want: want{
+				err: "Plugin 'test id' is invalid. Field 'spec.containers' must not be empty",
 			},
 		},
 	}
@@ -805,6 +1011,11 @@ func createVSCodeMeta(ID string) model.PluginMeta {
 		Type:       TestVscodePluginType,
 		ID:         ID,
 		APIVersion: "v2",
+		Spec: model.PluginMetaSpec{
+			Extensions: []string{
+				"some extensions is here",
+			},
+		},
 	}
 }
 
@@ -813,6 +1024,11 @@ func createTheiaMeta(ID string) model.PluginMeta {
 		Type:       TestTheiaPluginType,
 		ID:         ID,
 		APIVersion: "v2",
+		Spec: model.PluginMetaSpec{
+			Extensions: []string{
+				"some extensions is here",
+			},
+		},
 	}
 }
 
@@ -821,6 +1037,13 @@ func createChePluginMeta(ID string) model.PluginMeta {
 		Type:       TestChePluginType,
 		ID:         ID,
 		APIVersion: "v2",
+		Spec: model.PluginMetaSpec{
+			Containers: []model.Container{
+				{
+					Image: defaultImage,
+				},
+			},
+		},
 	}
 }
 
@@ -829,12 +1052,24 @@ func createCheEditorMeta(ID string) model.PluginMeta {
 		Type:       TestEditorPluginType,
 		ID:         ID,
 		APIVersion: "v2",
+		Spec: model.PluginMetaSpec{
+			Containers: []model.Container{
+				{
+					Image: defaultImage,
+				},
+			},
+		},
 	}
 }
 
 func createChePlugin(ID string) model.ChePlugin {
 	return model.ChePlugin{
 		ID: ID,
+		Containers: []model.Container{
+			{
+				Image: defaultImage,
+			},
+		},
 	}
 }
 

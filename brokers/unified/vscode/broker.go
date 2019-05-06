@@ -48,17 +48,6 @@ type brokerImpl struct {
 	rand    common.Random
 }
 
-// NewBroker creates Che VS Code extension broker instance
-func NewBroker() common.BrokerImpl {
-	return &brokerImpl{
-		Broker:  common.NewBroker(),
-		ioUtil:  utils.New(),
-		Storage: storage.New(),
-		client:  &http.Client{},
-		rand:    common.NewRand(),
-	}
-}
-
 // NewBrokerWithParams creates Che VS Code extension broker instance
 func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage storage.Storage, rand common.Random, httpClient *http.Client) common.BrokerImpl {
 	return &brokerImpl{

@@ -56,7 +56,6 @@ func AddExtension(plugin model.ChePlugin, pj PackageJSON) model.ChePlugin {
 	prettyID := re.ReplaceAllString(pj.Publisher+"_"+pj.Name, `_`)
 	sidecarTheiaEnvVarName := "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID
 	sidecarHostname := sidecarEndpoint.Name
-	// TODO test localhost case
 	if cfg.UseLocalhostInPluginUrls {
 		sidecarHostname = "localhost"
 	}

@@ -15,9 +15,12 @@ package vscode
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	tests "github.com/eclipse/che-plugin-broker/brokers/test"
 	"github.com/eclipse/che-plugin-broker/utils"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"testing"
 
 	"github.com/eclipse/che-plugin-broker/brokers/test"
@@ -31,15 +34,17 @@ import (
 )
 
 const (
-	extName         = "Test-name"
-	extPublisher    = "Test-publisher"
-	vsixURL         = "http://test.url"
-	vsixBrokenURL   = "http://broken.test.url"
-	pluginID        = "tid"
-	pluginVersion   = "tv"
-	image           = "test/test:tag"
-	pluginPublisher = "test publisher"
-	pluginName      = "test name"
+	extName          = "Test-name"
+	extPublisher     = "Test-publisher"
+	vsixURL          = "http://test.url"
+	vsixBrokenURL    = "http://broken.test.url"
+	pluginID         = "tid"
+	pluginVersion    = "tv"
+	image            = "test/test:tag"
+	pluginPublisher  = "test publisher"
+	pluginName       = "test name"
+	vscodePluginType = "VS Code extension"
+	theiaPluginType  = "Theia plugin"
 )
 
 type mocks struct {
@@ -82,14 +87,18 @@ func TestStart(t *testing.T) {
 	m.cb.AssertExpectations(t)
 }
 
-/*func TestProcessPluginBrokenUrl(t *testing.T) {
+func TestProcessBrokenPluginUrl(t *testing.T) {
 	m := initMocks()
 	meta := model.PluginMeta{
 		ID:      pluginID,
 		Version: pluginVersion,
-		URL:     vsixBrokenURL,
-		Attributes: map[string]string{
-			"containerImage": image,
+		Spec: model.PluginMetaSpec{
+			Containers: []model.Container{
+				{
+					Image: image,
+				},
+			},
+			Extensions: []string{vsixBrokenURL},
 		},
 	}
 
@@ -102,10 +111,8 @@ func TestStart(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.EqualError(t, err, "Failed to download plugin")
 
-	pluginsPointer, err := m.b.Storage.Plugins()
+	plugins, err := m.b.Storage.Plugins()
 	assert.Nil(t, err)
-	assert.NotNil(t, pluginsPointer)
-	plugins := *pluginsPointer
 	assert.Equal(t, 0, len(plugins))
 
 	m.cb.AssertExpectations(t)
@@ -124,21 +131,9 @@ func TestBroker_processPlugin(t *testing.T) {
 		unzipFunc UnzipFunc
 	}{
 		{
-			name: "Return error when neither extension nor URL nor extensions are present",
+			name: "Return error when extensions field is empty and there is no containers",
 			meta: model.PluginMeta{
-				ID:        pluginID,
-				Version:   pluginVersion,
-				Publisher: pluginPublisher,
-				Name:      pluginName,
-				Attributes: map[string]string{
-					"containerImage": image,
-				},
-			},
-			err: fmt.Sprintf(errorNoExtFieldsTemplate, "tid"),
-		},
-		{
-			name: "Return error when neither attributes nor URL nor extensions are present",
-			meta: model.PluginMeta{
+				Type:      vscodePluginType,
 				ID:        pluginID,
 				Version:   pluginVersion,
 				Publisher: pluginPublisher,
@@ -147,209 +142,193 @@ func TestBroker_processPlugin(t *testing.T) {
 			err: fmt.Sprintf(errorNoExtFieldsTemplate, "tid"),
 		},
 		{
-			name: "Return error when neither attributes nor URL are present and extensions are nil",
+			name: "Return error when extensions field is empty and there is a container",
 			meta: model.PluginMeta{
-				ID:         pluginID,
-				Version:    pluginVersion,
-				Publisher:  pluginPublisher,
-				Name:       pluginName,
-				Extensions: nil,
+				Type:      vscodePluginType,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				Spec: model.PluginMetaSpec{
+					Containers: []model.Container{
+						{
+							Image: image,
+						},
+					},
+				},
 			},
 			err: fmt.Sprintf(errorNoExtFieldsTemplate, "tid"),
-		},
-		{
-			name: "Return error when neither attributes nor URL are present and extensions are empty",
-			meta: model.PluginMeta{
-				ID:         pluginID,
-				Version:    pluginVersion,
-				Publisher:  pluginPublisher,
-				Name:       pluginName,
-				Extensions: []string{},
-			},
-			err: fmt.Sprintf(errorNoExtFieldsTemplate, "tid"),
-		},
-		{
-			name: "Return error when both extension and URL fields are present",
-			meta: model.PluginMeta{
-				ID:        pluginID,
-				Version:   pluginVersion,
-				Publisher: pluginPublisher,
-				Name:      pluginName,
-				URL:       vsixURL,
-				Attributes: map[string]string{
-					"extension":      "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
-					"containerImage": image,
-				},
-			},
-			err: fmt.Sprintf(errorMutuallyExclusiveExtFieldsTemplate, "tid"),
-		},
-		{
-			name: "Return error when both extensions and URL fields are present",
-			meta: model.PluginMeta{
-				ID:        pluginID,
-				Version:   pluginVersion,
-				Publisher: pluginPublisher,
-				Name:      pluginName,
-				URL:       vsixURL,
-				Extensions: []string{
-					"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
-				},
-			},
-			err: fmt.Sprintf(errorMutuallyExclusiveExtFieldsTemplate, "tid"),
-		},
-		{
-			name: "Return error when both extensions and extension fields are present",
-			meta: model.PluginMeta{
-				ID:        pluginID,
-				Version:   pluginVersion,
-				Publisher: pluginPublisher,
-				Name:      pluginName,
-				Extensions: []string{
-					"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
-				},
-				Attributes: map[string]string{
-					"extension": "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
-				},
-			},
-			err: fmt.Sprintf(errorMutuallyExclusiveExtFieldsTemplate, "tid"),
-		},
-		{
-			name: "Successful brokering of remote plugin with extension field",
-			meta: model.PluginMeta{
-				ID:        pluginID,
-				Version:   pluginVersion,
-				Publisher: pluginPublisher,
-				Name:      pluginName,
-				Attributes: map[string]string{
-					"extension":      "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
-					"containerImage": image,
-				},
-			},
-			want: expectedPluginsWithSingleRemotePlugin(),
-		},
-		{
-			name: "Successful brokering of remote plugin with URL field",
-			meta: model.PluginMeta{
-				ID:        pluginID,
-				Version:   pluginVersion,
-				Publisher: pluginPublisher,
-				Name:      pluginName,
-				URL:       vsixURL,
-				Attributes: map[string]string{
-					"containerImage": image,
-				},
-			},
-			want: expectedPluginsWithSingleRemotePlugin(),
-		},
-		{
-			name: "Successful brokering of local plugin with extension field",
-			meta: model.PluginMeta{
-				ID:        pluginID,
-				Version:   pluginVersion,
-				Publisher: pluginPublisher,
-				Name:      pluginName,
-				Attributes: map[string]string{
-					"extension": "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
-				},
-			},
-			want: expectedPluginsWithSingleLocalPlugin(),
-		},
-		{
-			name: "Successful brokering of local plugin with URL field and empty attributes",
-			meta: model.PluginMeta{
-				ID:        pluginID,
-				Version:   pluginVersion,
-				Publisher: pluginPublisher,
-				Name:      pluginName,
-				URL:       vsixURL,
-				Attributes: map[string]string{
-				},
-			},
-			want: expectedPluginsWithSingleLocalPlugin(),
-		},
-		{
-			name: "Successful brokering of local plugin with URL field",
-			meta: model.PluginMeta{
-				ID:        pluginID,
-				Version:   pluginVersion,
-				Publisher: pluginPublisher,
-				Name:      pluginName,
-				URL:       vsixURL,
-			},
-			want: expectedPluginsWithSingleLocalPlugin(),
 		},
 		{
 			name: "Successful brokering of local plugin with extensions field",
 			meta: model.PluginMeta{
+				Type:      vscodePluginType,
 				ID:        pluginID,
 				Version:   pluginVersion,
 				Publisher: pluginPublisher,
 				Name:      pluginName,
-				Extensions: []string{
-					"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+				Spec: model.PluginMetaSpec{
+					Extensions: []string{
+						"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+					},
 				},
 			},
-			want: expectedPluginsWithSingleLocalPlugin(),
+			want: expectedNoPlugin(),
 		},
 		{
-			name: "Successful brokering of local plugin with extensions field and empty attributes",
+			name: "Successful brokering of local plugin with extensions field and empty containers field",
 			meta: model.PluginMeta{
+				Type:      vscodePluginType,
 				ID:        pluginID,
 				Version:   pluginVersion,
 				Publisher: pluginPublisher,
 				Name:      pluginName,
-				Attributes: map[string]string{
-				},
-				Extensions: []string{
-					"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+				Spec: model.PluginMetaSpec{
+					Extensions: []string{
+						"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+					},
+					Containers: []model.Container{},
 				},
 			},
-			want: expectedPluginsWithSingleLocalPlugin(),
+			want: expectedNoPlugin(),
+		},
+		{
+			name: "Successful brokering of local plugin when extension points to .theia archive",
+			meta: model.PluginMeta{
+				Type:      vscodePluginType,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				Spec: model.PluginMetaSpec{
+					Extensions: []string{
+						"https://red-hot-chilli.peppers/plugin.theia",
+					},
+					Containers: []model.Container{},
+				},
+			},
+			unzipFunc: createUnzipTheiaArchiveFuncStub(generatePackageJSON("peppers.com", "cool-extension")),
+			want:      expectedNoPlugin(),
+		},
+		{
+			name: "Successful brokering of remote plugin when extension points to .theia archive",
+			meta: model.PluginMeta{
+				Type:      vscodePluginType,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				Spec: model.PluginMetaSpec{
+					Extensions: []string{
+						"https://red-hot-chilli.peppers/plugin.theia",
+					},
+					Containers: []model.Container{
+						{
+							Image: image,
+						},
+					},
+				},
+			},
+			unzipFunc: createUnzipTheiaArchiveFuncStub(generatePackageJSON("peppers.com", "cool-extension")),
+			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
+				generateTheiaEnvVar("peppers_com_cool_extension")),
 		},
 		{
 			name: "Successful brokering of local plugin with extensions field with several extensions",
 			meta: model.PluginMeta{
+				Type:      vscodePluginType,
 				ID:        pluginID,
 				Version:   pluginVersion,
 				Publisher: pluginPublisher,
 				Name:      pluginName,
-				Extensions: []string{
-					"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
-					"vscode:extension/redhat-com.vscode-jdt-ls",
-					"vscode:extension/redhat-com.vscode-maven",
+				Spec: model.PluginMetaSpec{
+					Extensions: []string{
+						"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+						"vscode:extension/redhat-com.vscode-jdt-ls",
+						"vscode:extension/redhat-com.vscode-maven",
+					},
 				},
 			},
-			want: expectedPluginsWithSingleLocalPlugin(),
+			want: expectedNoPlugin(),
+		},
+		{
+			name: "Successful brokering of local plugin with extensions field with several archives URLs",
+			meta: model.PluginMeta{
+				Type:      vscodePluginType,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				Spec: model.PluginMetaSpec{
+					Extensions: []string{
+						vsixURL,
+						"https://test.url.vsix",
+						"http://red-hot-chilli.peppers/cool-extension.vsix",
+					},
+				},
+			},
+			want: expectedNoPlugin(),
 		},
 		{
 			name: "Successful brokering of local plugin with extensions field with mixed extensions and archives URLs",
 			meta: model.PluginMeta{
+				Type:      vscodePluginType,
 				ID:        pluginID,
 				Version:   pluginVersion,
 				Publisher: pluginPublisher,
 				Name:      pluginName,
-				Extensions: []string{
-					"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
-					"vscode:extension/redhat-com.vscode-jdt-ls",
-					"vscode:extension/redhat-com.vscode-maven",
+				Spec: model.PluginMetaSpec{
+					Extensions: []string{
+						"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+						vsixURL,
+						"vscode:extension/redhat-com.vscode-maven",
+					},
 				},
 			},
-			want: expectedPluginsWithSingleLocalPlugin(),
+			want: expectedNoPlugin(),
 		},
 		{
 			name: "Successful brokering of remote plugin with extensions field with several extensions",
 			meta: model.PluginMeta{
+				Type:      vscodePluginType,
 				ID:        pluginID,
 				Version:   pluginVersion,
 				Publisher: pluginPublisher,
 				Name:      pluginName,
-				Extensions: []string{
-					"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
-					"vscode:extension/redhat-com.vscode-jdt-ls",
-					"vscode:extension/redhat-com.vscode-maven",
+				Spec: model.PluginMetaSpec{
+					Extensions: []string{
+						"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+					},
+					Containers: []model.Container{
+						{
+							Image: image,
+						},
+					},
 				},
-				Attributes: map[string]string{
-					"containerImage": image,
+			},
+			unzipFunc: createUnzipFuncStub(generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools")),
+			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
+				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools")),
+		},
+		{
+			name: "Successful brokering of remote plugin with extensions field with several extensions",
+			meta: model.PluginMeta{
+				Type:      vscodePluginType,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				Spec: model.PluginMetaSpec{
+					Extensions: []string{
+						"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+						"vscode:extension/redhat-com.vscode-jdt-ls",
+						"vscode:extension/redhat-com.vscode-maven",
+					},
+					Containers: []model.Container{
+						{
+							Image: image,
+						},
+					},
 				},
 			},
 			unzipFunc: createUnzipFuncStub(
@@ -364,17 +343,22 @@ func TestBroker_processPlugin(t *testing.T) {
 		{
 			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs",
 			meta: model.PluginMeta{
+				Type:      vscodePluginType,
 				ID:        pluginID,
 				Version:   pluginVersion,
 				Publisher: pluginPublisher,
 				Name:      pluginName,
-				Extensions: []string{
-					"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
-					vsixURL,
-					"vscode:extension/redhat-com.vscode-maven",
-				},
-				Attributes: map[string]string{
-					"containerImage": image,
+				Spec: model.PluginMetaSpec{
+					Containers: []model.Container{
+						{
+							Image: image,
+						},
+					},
+					Extensions: []string{
+						"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+						vsixURL,
+						"vscode:extension/redhat-com.vscode-maven",
+					},
 				},
 			},
 			unzipFunc: createUnzipFuncStub(
@@ -387,23 +371,34 @@ func TestBroker_processPlugin(t *testing.T) {
 				generateTheiaEnvVar("redhat_com_vscode_maven")),
 		},
 		{
-			name: "Successful brokering of remote plugin with extensions field",
+			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs when plugin type is Theia",
 			meta: model.PluginMeta{
+				Type:      theiaPluginType,
 				ID:        pluginID,
 				Version:   pluginVersion,
 				Publisher: pluginPublisher,
 				Name:      pluginName,
-				Extensions: []string{
-					"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
-				},
-				Attributes: map[string]string{
-					"containerImage": image,
+				Spec: model.PluginMetaSpec{
+					Containers: []model.Container{
+						{
+							Image: image,
+						},
+					},
+					Extensions: []string{
+						"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+						vsixURL,
+						"https://red-hot-chilli.peppers/plugin.theia",
+					},
 				},
 			},
 			unzipFunc: createUnzipFuncStub(
-				generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools")),
+				generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools"),
+				generatePackageJSON("redhat-com", "vscode-jdt-ls"),
+				generatePackageJSON("peppers.com", "cool-extension"), ),
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
-				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools")),
+				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools"),
+				generateTheiaEnvVar("redhat_com_vscode_jdt_ls"),
+				generateTheiaEnvVar("peppers_com_cool_extension")),
 		},
 	}
 	for _, tt := range cases {
@@ -425,11 +420,9 @@ func TestBroker_processPlugin(t *testing.T) {
 					return
 				}
 			} else {
-				pluginsPointer, err := m.b.Storage.Plugins()
+				plugins, err := m.b.Storage.Plugins()
 				assert.Nil(t, err)
-				assert.NotNil(t, pluginsPointer)
-				plugins := *pluginsPointer
-				assert.Equal(t, tt.want, plugins)
+				assert.ElementsMatch(t, tt.want, plugins)
 			}
 		})
 	}
@@ -454,18 +447,14 @@ func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(pluginTheiaEndpo
 		},
 		Containers: []model.Container{
 			{
-				Name:  "pluginsidecarrandomString123456",
 				Image: image,
 				Volumes: []model.Volume{
-					{
-						Name:      "projects",
-						MountPath: "/projects",
-					},
 					{
 						Name:      "plugins",
 						MountPath: "/plugins",
 					},
 				},
+				MountSources: true,
 				Ports: []model.ExposedPort{
 					{
 						ExposedPort: 4242,
@@ -492,69 +481,8 @@ func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(pluginTheiaEndpo
 	}
 }
 
-func expectedPluginsWithSingleRemotePlugin() []model.ChePlugin {
-	prettyID := "Test_publisher_Test_name"
-	expectedPlugins := []model.ChePlugin{
-		{
-			ID:        pluginID,
-			Version:   pluginVersion,
-			Publisher: pluginPublisher,
-			Name:      pluginName,
-			Endpoints: []model.Endpoint{
-				{
-					Name:       "randomString1234567890",
-					Public:     false,
-					TargetPort: 4242,
-				},
-			},
-			Containers: []model.Container{
-				{
-					Name:  "pluginsidecarrandomString123456",
-					Image: image,
-					Volumes: []model.Volume{
-						{
-							Name:      "projects",
-							MountPath: "/projects",
-						},
-						{
-							Name:      "plugins",
-							MountPath: "/plugins",
-						},
-					},
-					Ports: []model.ExposedPort{
-						{
-							ExposedPort: 4242,
-						},
-					},
-					Env: []model.EnvVar{
-						{
-							Name:  "THEIA_PLUGIN_ENDPOINT_PORT",
-							Value: "4242",
-						},
-					},
-				},
-			},
-			WorkspaceEnv: []model.EnvVar{
-				{
-					Name:  "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID,
-					Value: "ws://randomString1234567890:4242",
-				},
-			},
-		},
-	}
-	return expectedPlugins
-}
-
-func expectedPluginsWithSingleLocalPlugin() []model.ChePlugin {
-	expectedPlugins := []model.ChePlugin{
-		{
-			ID:        pluginID,
-			Version:   pluginVersion,
-			Publisher: pluginPublisher,
-			Name:      pluginName,
-		},
-	}
-	return expectedPlugins
+func expectedNoPlugin() []model.ChePlugin {
+	return []model.ChePlugin{}
 }
 
 func setUpSuccessfulCase(workDir string, meta model.PluginMeta, m *mocks, unzipFunc UnzipFunc) {
@@ -564,12 +492,12 @@ func setUpSuccessfulCase(workDir string, meta model.PluginMeta, m *mocks, unzipF
 	}
 	m.u.On("Unzip", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Run(_unzipFunc).Return(nil)
 	m.u.On("CopyResource", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
-	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.%s.randomString1234567890.vsix", meta.Publisher, meta.Name, meta.Version))
+	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.%s.randomString1234567890", meta.Publisher, meta.Name, meta.Version))
 	m.u.On("CopyFile", mock.AnythingOfType("string"), pluginPath).Return(nil)
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	m.cb.On("PrintInfo", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
-	m.u.On("Download", vsixURL, mock.AnythingOfType("string")).Return(nil)
+	m.u.On("Download", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
 	m.u.On("TempDir", "", "vscode-extension-broker").Return(workDir, nil)
 	m.randMock.On("IntFromRange", 4000, 10000).Return(4242)
 	m.randMock.On("String", 10).Return("randomString1234567890")
@@ -581,22 +509,46 @@ type UnzipFunc func(args mock.Arguments)
 func defaultUnzipFunc() UnzipFunc {
 	return func(args mock.Arguments) {
 		dest := args[1].(string)
-		packageJSON := model.PackageJSON{
+		packageJSON := PackageJSON{
 			Name:      extName,
 			Publisher: extPublisher,
 		}
-		packageJSONParent := filepath.Join(dest, "extension")
+		packageJSONParent := filepath.Join(dest, vsixPackageJSONFolderName)
 		tests.CreateDirs(packageJSONParent)
+		tests.CreateFileByPath(filepath.Join(dest, vsixManifestFileName))
 		packageJSONPath := filepath.Join(packageJSONParent, "package.json")
 		tests.CreateFileWithContent(packageJSONPath, tests.ToJSONQuiet(packageJSON))
 	}
 }
 
-func createUnzipFuncStub(pjs ...model.PackageJSON) UnzipFunc {
+// Makes UnzipFunc create unzip results on the file system.
+// When called first time creates package.json with content from first argument.
+// When called second time uses second argument if present. And so on.
+// When calls number is bigger than arguments number uses last argument for all the calls that do not have matching argument.
+func createUnzipFuncStub(pjs ...PackageJSON) UnzipFunc {
 	jsons := pjs
 	return func(args mock.Arguments) {
 		dest := args[1].(string)
-		packageJSONParent := filepath.Join(dest, "extension")
+		packageJSONParent := filepath.Join(dest, vsixPackageJSONFolderName)
+		tests.CreateDirs(packageJSONParent)
+		tests.CreateFileByPath(filepath.Join(dest, vsixManifestFileName))
+		packageJSONPath := filepath.Join(packageJSONParent, "package.json")
+		json := jsons[0]
+		if len(jsons) > 1 {
+			jsons = jsons[1:]
+		}
+		tests.CreateFileWithContent(packageJSONPath, tests.ToJSONQuiet(json))
+	}
+}
+
+// Makes UnzipFunc create unzip results on the file system.
+// When called first time creates package.json with content from first argument.
+// When called second time uses second argument if present. And so on.
+// When calls number is bigger than arguments number uses last argument for all the calls that do not have matching argument.
+func createUnzipTheiaArchiveFuncStub(pjs ...PackageJSON) UnzipFunc {
+	jsons := pjs
+	return func(args mock.Arguments) {
+		packageJSONParent := args[1].(string)
 		tests.CreateDirs(packageJSONParent)
 		packageJSONPath := filepath.Join(packageJSONParent, "package.json")
 		json := jsons[0]
@@ -605,7 +557,7 @@ func createUnzipFuncStub(pjs ...model.PackageJSON) UnzipFunc {
 		}
 		tests.CreateFileWithContent(packageJSONPath, tests.ToJSONQuiet(json))
 	}
-}*/
+}
 
 func setUpDownloadFailureCase(workDir string, m *mocks) {
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))

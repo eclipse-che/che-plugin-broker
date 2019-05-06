@@ -37,6 +37,8 @@ const marketplace = "https://marketplace.visualstudio.com/_apis/public/gallery/e
 const bodyFmt = `{"filters":[{"criteria":[{"filterType":7,"value":"%s"}],"pageNumber":1,"pageSize":1,"sortBy":0, "sortOrder":0 }],"assetTypes":["Microsoft.VisualStudio.Services.VSIXPackage"],"flags":131}`
 const assetType = "Microsoft.VisualStudio.Services.VSIXPackage"
 const errorNoExtFieldsTemplate = "Field 'extensions' is not found in the description of the plugin '%s'"
+const vsixManifestFileName = "extension.vsixmanifest"
+const vsixPackageJSONFolderName = "extension"
 
 type brokerImpl struct {
 	common.Broker
@@ -68,7 +70,6 @@ func NewBrokerWithParams(broker common.Broker, ioUtil utils.IoUtil, storage stor
 	}
 }
 
-// TODO remove
 // Start executes plugins metas processing and sends data to Che master
 func (b *brokerImpl) Start(metas []model.PluginMeta) {
 	b.PubStarted()
@@ -355,8 +356,8 @@ func findAssetURL(response []byte, meta model.PluginMeta) (string, error) {
 }
 
 func (b *brokerImpl) getPackageJSON(pluginFolder string) (*PackageJSON, error) {
-	vsixManifestPath := filepath.Join(pluginFolder, "extension.vsixmanifest")
-	vsixPackageJSONPath := filepath.Join(pluginFolder, "extension", "package.json")
+	vsixManifestPath := filepath.Join(pluginFolder, vsixManifestFileName)
+	vsixPackageJSONPath := filepath.Join(pluginFolder, vsixPackageJSONFolderName, "package.json")
 	theiaPackageJSONPath := filepath.Join(pluginFolder, "package.json")
 
 	// VS code extension archive must contain file `extension.vsixmanifest` in root of the archive

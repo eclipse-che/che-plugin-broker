@@ -106,6 +106,18 @@ func TestGettingPluginsFromStorage(t *testing.T) {
 	assert.ElementsMatch(t, s.plugins, chePlugins, "Plugins list is not expected")
 }
 
+func TestGettingPluginsFromStorageWhenNoPluginIsAdded(t *testing.T) {
+	var s = &storageImpl{}
+
+	actual, e := s.Plugins()
+
+	if e != nil {
+		t.Errorf("Error occurs during toolling receiving: %s", e)
+	}
+
+	assert.True(t, len(actual) == 0)
+}
+
 func TestNewCreatesEmptyStorage(t *testing.T) {
 	actual := New()
 	expected := &storageImpl{}

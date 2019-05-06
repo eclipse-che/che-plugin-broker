@@ -100,7 +100,7 @@ func TestAddExtension(t *testing.T) {
 			name: "Test adding extension with package.json data with a-zA-Z0-9_ symbols",
 			args: args{
 				plugin: generateDefaultTestChePluginWithPluginRunnerConfig(),
-				pj:     generatePackageJSON("pluginName8", "publisherName1_0_"),
+				pj:     generatePackageJSON("publisherName1_0_", "pluginName8"),
 			},
 			want: generateDefaultTestChePluginWithPluginRunnerConfigWithExtension("pluginName8", "publisherName1_0_"),
 		},
@@ -108,7 +108,7 @@ func TestAddExtension(t *testing.T) {
 			name: "Test adding extension with package.json data with # symbol",
 			args: args{
 				plugin: generateDefaultTestChePluginWithPluginRunnerConfig(),
-				pj:     generatePackageJSON("plugin#Name8", "publisherName1_0_"),
+				pj:     generatePackageJSON("publisherName1_0_", "plugin#Name8"),
 			},
 			want: generateDefaultTestChePluginWithPluginRunnerConfigWithExtension("plugin_Name8", "publisherName1_0_"),
 		},
@@ -116,7 +116,7 @@ func TestAddExtension(t *testing.T) {
 			name: "Test adding extension with package.json data with @ symbol",
 			args: args{
 				plugin: generateDefaultTestChePluginWithPluginRunnerConfig(),
-				pj:     generatePackageJSON("plu@ginName8", "publisherName1_0_"),
+				pj:     generatePackageJSON("publisherName1_0_", "plu@ginName8"),
 			},
 			want: generateDefaultTestChePluginWithPluginRunnerConfigWithExtension("plu_ginName8", "publisherName1_0_"),
 		},
@@ -124,7 +124,7 @@ func TestAddExtension(t *testing.T) {
 			name: "Test adding extension with package.json data with : symbol",
 			args: args{
 				plugin: generateDefaultTestChePluginWithPluginRunnerConfig(),
-				pj:     generatePackageJSON("pluginName8", "publisherName:1_0_"),
+				pj:     generatePackageJSON("publisherName:1_0_", "pluginName8"),
 			},
 			want: generateDefaultTestChePluginWithPluginRunnerConfigWithExtension("pluginName8", "publisherName_1_0_"),
 		},
@@ -132,7 +132,7 @@ func TestAddExtension(t *testing.T) {
 			name: "Test adding extension with package.json data with ? symbol",
 			args: args{
 				plugin: generateDefaultTestChePluginWithPluginRunnerConfig(),
-				pj:     generatePackageJSON("pluginName8", "publisherName?1_0_"),
+				pj:     generatePackageJSON("publisherName?1_0_", "pluginName8"),
 			},
 			want: generateDefaultTestChePluginWithPluginRunnerConfigWithExtension("pluginName8", "publisherName_1_0_"),
 		},
@@ -140,7 +140,7 @@ func TestAddExtension(t *testing.T) {
 			name: "Test adding extension with package.json data with - symbol",
 			args: args{
 				plugin: generateDefaultTestChePluginWithPluginRunnerConfig(),
-				pj:     generatePackageJSON("plugin-Name-8", "publisherName1_0_"),
+				pj:     generatePackageJSON("publisherName1_0_", "plugin-Name-8"),
 			},
 			want: generateDefaultTestChePluginWithPluginRunnerConfigWithExtension("plugin_Name_8", "publisherName1_0_"),
 		},
@@ -148,7 +148,7 @@ func TestAddExtension(t *testing.T) {
 			name: "Test adding extension with package.json data with ! symbol",
 			args: args{
 				plugin: generateDefaultTestChePluginWithPluginRunnerConfig(),
-				pj:     generatePackageJSON("plugin!Name8", "publisherName1_0_!"),
+				pj:     generatePackageJSON("publisherName1_0_!", "plugin!Name8"),
 			},
 			want: generateDefaultTestChePluginWithPluginRunnerConfigWithExtension("plugin_Name8", "publisherName1_0__"),
 		},
@@ -163,13 +163,13 @@ func TestAddExtension(t *testing.T) {
 
 func TestAddSeveralExtensions(t *testing.T) {
 	plugin := generateDefaultTestChePluginWithPluginRunnerConfig()
-	pj := generatePackageJSON("pluginName1", "publisherName1_0_")
+	pj := generatePackageJSON("publisherName1_0_", "pluginName1")
 	expected := generateDefaultTestChePluginWithPluginRunnerConfigWithExtension("pluginName1", "publisherName1_0_")
 
 	actual := AddExtension(plugin, pj)
 	assert.Equal(t, actual, expected)
 
-	pj2 := generatePackageJSON("pluginName2", "publisherName2_0_")
+	pj2 := generatePackageJSON("publisherName2_0_", "pluginName2")
 	expected2 := model.ChePlugin(expected)
 	expected2.WorkspaceEnv = append(expected2.WorkspaceEnv, model.EnvVar{
 		Name:  "THEIA_PLUGIN_REMOTE_ENDPOINT_" + "publisherName2_0_" + "_" + "pluginName2",
@@ -179,7 +179,7 @@ func TestAddSeveralExtensions(t *testing.T) {
 	assert.Equal(t, actual2, expected2)
 }
 
-func generatePackageJSON(name string, publisher string) PackageJSON {
+func generatePackageJSON(publisher string, name string) PackageJSON {
 	return PackageJSON{
 		Name:      name,
 		Publisher: publisher,

@@ -14,7 +14,6 @@ package unified
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -134,11 +133,11 @@ func validateMetas(metas []model.PluginMeta) error {
 	for _, meta := range metas {
 		switch meta.APIVersion {
 		case "":
-			return errors.New(fmt.Sprintf("Plugin '%s' is invalid. Field 'apiVersion' must be present", meta.ID))
+			return fmt.Errorf("Plugin '%s' is invalid. Field 'apiVersion' must be present", meta.ID)
 		case "v2":
 			// validate here something
 		default:
-			return errors.New(fmt.Sprintf("Plugin '%s' is invalid. Field 'apiVersion' contains invalid version '%s'", meta.ID, meta.APIVersion))
+			return fmt.Errorf("Plugin '%s' is invalid. Field 'apiVersion' contains invalid version '%s'", meta.ID, meta.APIVersion)
 		}
 	}
 	return nil

@@ -153,7 +153,7 @@ func TestBroker_processPlugins(t *testing.T) {
 			},
 		},
 		{
-			name: "Returns error when apiVersion is not specified in meta.yaml",
+			name: "Returns error when apiVersion is not specified in VS Code extension",
 			args: args{
 				metas: []model.PluginMeta{createDefaultVSCodeMetaWithApiVersion("", "id1111")},
 			},
@@ -162,7 +162,7 @@ func TestBroker_processPlugins(t *testing.T) {
 			},
 		},
 		{
-			name: "Returns error when apiVersion is not specified in meta.yaml",
+			name: "Returns error when unsupported apiVersion v1 in VS Code extension is used",
 			args: args{
 				metas: []model.PluginMeta{createDefaultVSCodeMetaWithApiVersion("v1", "id2111")},
 			},
@@ -171,7 +171,7 @@ func TestBroker_processPlugins(t *testing.T) {
 			},
 		},
 		{
-			name: "Returns error when apiVersion is not specified in meta.yaml",
+			name: "Returns error when non-existing apiVersion in VS code extension is used",
 			args: args{
 				metas: []model.PluginMeta{createDefaultVSCodeMetaWithApiVersion("v100", "id3111")},
 			},
@@ -180,7 +180,7 @@ func TestBroker_processPlugins(t *testing.T) {
 			},
 		},
 		{
-			name: "Returns error when apiVersion is not specified in meta.yaml",
+			name: "Returns error when apiVersion is not specified in Theia plugin",
 			args: args{
 				metas: []model.PluginMeta{createDefaultTheiaMetaWithApiVersion("", "id111")},
 			},
@@ -189,7 +189,7 @@ func TestBroker_processPlugins(t *testing.T) {
 			},
 		},
 		{
-			name: "Returns error when apiVersion is not specified in meta.yaml",
+			name: "Returns error when unsupported apiVersion v1 in Theia plugin is used",
 			args: args{
 				metas: []model.PluginMeta{createDefaultTheiaMetaWithApiVersion("v1", "id211")},
 			},
@@ -198,7 +198,7 @@ func TestBroker_processPlugins(t *testing.T) {
 			},
 		},
 		{
-			name: "Returns error when apiVersion is not specified in meta.yaml",
+			name: "Returns error when non-existing apiVersion in Theia plugin is used",
 			args: args{
 				metas: []model.PluginMeta{createDefaultTheiaMetaWithApiVersion("v100", "id311")},
 			},
@@ -207,7 +207,7 @@ func TestBroker_processPlugins(t *testing.T) {
 			},
 		},
 		{
-			name: "Returns error when apiVersion is not specified in meta.yaml",
+			name: "Returns error when apiVersion is not specified in Che plugin",
 			args: args{
 				metas: []model.PluginMeta{createDefaultChePluginMetaWithApiVersion("", "id11")},
 			},
@@ -216,7 +216,7 @@ func TestBroker_processPlugins(t *testing.T) {
 			},
 		},
 		{
-			name: "Returns error when apiVersion is not specified in meta.yaml",
+			name: "Returns error when unsupported apiVersion v1 in Che plugin is used",
 			args: args{
 				metas: []model.PluginMeta{createDefaultChePluginMetaWithApiVersion("v1", "id21")},
 			},
@@ -225,7 +225,7 @@ func TestBroker_processPlugins(t *testing.T) {
 			},
 		},
 		{
-			name: "Returns error when apiVersion is not specified in meta.yaml",
+			name: "Returns error when non-existing apiVersion in Che plugin is used",
 			args: args{
 				metas: []model.PluginMeta{createDefaultChePluginMetaWithApiVersion("v100", "id31")},
 			},
@@ -234,7 +234,7 @@ func TestBroker_processPlugins(t *testing.T) {
 			},
 		},
 		{
-			name: "Returns error when apiVersion is not specified in meta.yaml",
+			name: "Returns error when apiVersion is not specified in Che editor",
 			args: args{
 				metas: []model.PluginMeta{createDefaultCheEditorMetaWithApiVersion("", "id1")},
 			},
@@ -243,7 +243,7 @@ func TestBroker_processPlugins(t *testing.T) {
 			},
 		},
 		{
-			name: "Returns error when apiVersion is not specified in meta.yaml",
+			name: "Returns error when unsupported apiVersion v1 in Che editor is used",
 			args: args{
 				metas: []model.PluginMeta{createDefaultCheEditorMetaWithApiVersion("v1", "id2")},
 			},
@@ -252,7 +252,7 @@ func TestBroker_processPlugins(t *testing.T) {
 			},
 		},
 		{
-			name: "Returns error when apiVersion in meta.yaml is unsupported",
+			name: "Returns error when non-existing apiVersion in Che editor is used",
 			args: args{
 				metas: []model.PluginMeta{createDefaultCheEditorMetaWithApiVersion("v100", "id3")},
 			},

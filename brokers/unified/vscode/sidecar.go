@@ -47,7 +47,7 @@ func AddPluginRunnerRequirements(plugin model.ChePlugin, rand common.Random) mod
 // AddExtension adds to ChePlugin an environment variable needed for extension to be consumed by Theia.
 // Environment variable uses extension name and publisher specified in PackageJSON.
 // Extension publisher and plugin name taken by retrieving info from package.json and replacing all
-// chars matching [^a-z_0-9]+ with a dash character
+// chars matching [^a-z_0-9]+ with an underscore `_` character
 // ChePlugin with a single endpoint is supported only.
 func AddExtension(plugin model.ChePlugin, pj PackageJSON, useLocalHost bool) model.ChePlugin {
 	// TODO limitation to have just one endpoint

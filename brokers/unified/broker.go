@@ -117,6 +117,7 @@ func (b *Broker) ProcessPlugins(metas []model.PluginMeta) error {
 		return err
 	}
 
+	b.PrintInfo("Starting Che plugins and editor processing")
 	for _, meta := range cheMetas {
 		plugin := convertMetaToPlugin(meta)
 		err = b.Storage.AddPlugin(plugin)

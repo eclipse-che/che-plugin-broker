@@ -43,14 +43,5 @@ test-local:
 		./main \
 			--disable-push \
 			--runtime-id wsId:env:ownerId \
-			--registry-address https://che-plugin-registry.openshift.io \
+			--registry-address https://che-plugin-registry.openshift.io/v3 \
 			--metas ./config-plugin-ids.json
-
-.PHONY: test-local-legacy
-test-local-legacy:
-		cd ./brokers/unified/cmd; \
-		go build main.go; \
-		./main \
-			--disable-push \
-			--runtime-id wsId:env:ownerId \
-			--registry-address https://che-plugin-registry.openshift.io/plugins \

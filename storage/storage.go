@@ -19,64 +19,34 @@ import (
 )
 
 // New creates new instance of storage
-func New() *Storage {
-	return &Storage{
-		status: model.StatusIdle,
-	}
+func New() Storage {
+	return &storageImpl{}
+}
+
+type Storage interface {
+	Plugins() ([]model.ChePlugin, error)
+	AddPlugin(plugin model.ChePlugin) error
 }
 
 // Storage stores broker execution results
-type Storage struct {
+type storageImpl struct {
 	sync.RWMutex
-	status  model.BrokerStatus
 	plugins []model.ChePlugin
-}
-
-// Status returns current status of broker execution
-func (s *Storage) Status() model.BrokerStatus {
-	s.Lock()
-	defer s.Unlock()
-	return s.status
-}
-
-// SetStatus sets current status of broker execution
-func (s *Storage) SetStatus(status model.BrokerStatus) (ok bool, currentValue model.BrokerStatus) {
-	s.Lock()
-	defer s.Unlock()
-	switch {
-	case s.status == model.StatusIdle && status == model.StatusStarted:
-		fallthrough
-	case s.status == model.StatusStarted && status == model.StatusDone:
-		s.status = status
-		return true, status
-	default:
-		return false, s.status
-	}
 }
 
 // Plugins returns configuration of Che Plugins resolved during the broker execution.
 // At any particular point of time configuration might be incomplete if tooling resolution failed or not completed yet
-func (s *Storage) Plugins() (*[]model.ChePlugin, error) {
+func (s *storageImpl) Plugins() ([]model.ChePlugin, error) {
 	s.Lock()
 	defer s.Unlock()
-	return &s.plugins, nil
+	return s.plugins, nil
 }
 
 // AddPlugin adds configuration of model.ChePlugin to the results of broker execution
-// by combining model.ToolingConf and model.PluginMeta
-func (s *Storage) AddPlugin(meta *model.PluginMeta, tooling *model.ToolingConf) error {
+// by copying data from model.PluginMeta
+func (s *storageImpl) AddPlugin(plugin model.ChePlugin) error {
 	s.Lock()
 	defer s.Unlock()
-	plugin := &model.ChePlugin{
-		ID:           meta.ID,
-		Name:         meta.Name,
-		Publisher:    meta.Publisher,
-		Version:      meta.Version,
-		Containers:   tooling.Containers,
-		Editors:      tooling.Editors,
-		Endpoints:    tooling.Endpoints,
-		WorkspaceEnv: tooling.WorkspaceEnv,
-	}
-	s.plugins = append(s.plugins, *plugin)
+	s.plugins = append(s.plugins, plugin)
 	return nil
 }

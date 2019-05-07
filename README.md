@@ -19,41 +19,21 @@ Which can process plugins of types:
 
 But it ignores case of plugin type, so any other variants of the same type but with different case of letters is considered the same.
 
-How it processes plugin of different types:
+What it actually does:
 
-### Che Plugin or Che Editor
+### All plugin/editor types
 
-Downloads tar.gz archive and:
+- Downloads meta.yaml of a plugin or editor from Che plugin registry 
+- Evaluates Che workspace sidecars config from the above mentioned meta.yaml
 
-- Evaluates Che workspace sidecars config from che-plugin.yaml located in a plugin archive and data from config.json that is placed in workdir or different path if a corresponding broker argument is used. It contains data about Che plugin or editor from meta.yaml
-- Copies dependency file/folder specified in dependencies.yaml inside of a plugin archive
+### Theia plugin/VS Code extension
 
-### Theia plugin
-
-Downloads .theia archive and:
-
+- Downloads .theia and/or vsix archives and
+- If meta.spec contains `containers` field with a container definition extension/plugin is considered remote. Otherwise it is considered local
 - Unzip it to a temp folder
-- Check content of package.json file in it. If it contains {"engines.cheRuntimeContainer"} then this value is taken as container image for sidecar of a remote plugin. If it is missing or empty plugin is considered non-remote
-- Copies .theia file to /plugins/ for a non-remote plugin case
-- Copies unzipped .theia to /plugins/ for a remote plugin case
-- Evaluates Che workspace sidecar config for running Theia plugin as Che remote plugin in a sidecar:
-  - adds an endpoint with random port between 4000 and 10000 and name `port<port>`
-  - adds env var to workspace-wide env vars with name `THEIA_PLUGIN_REMOTE_ENDPOINT_<plugin_publisher_and_name from package.json>` and value
- `ws://port<port>:<port>`
-  - adds env var to sidecar env vars with name
- `THEIA_PLUGIN_ENDPOINT_PORT` and value `port`
-  - adds projects volume
-  - adds plugin volume
-- Sends sidecar config to Che workspace master
-
-### VS Code extension
-
-Downloads VS Code extension from marketplace and:
-
-- Unzip it to a temp folder
-- Check content of package.json file in it.
-- Copies unzipped extension to /plugins/
-- Evaluates Che workspace sidecar config for running VS Code extension as Che Theia remote plugin in a sidecar:
+- Check content of package.json file in it
+- Copies plugin or extension to /plugins/ in packed or unpacked state depending on its type and whether Che plugin is local or remote
+- For remote plugin case, evaluates Che workspace sidecar config for running VS Code or Theia extensions/plugins as Che Theia remote plugins in a sidecar:
   - adds an endpoint with random port between 4000 and 10000 and name `port<port>`
   - adds env var to workspace-wide env vars with name
  `THEIA_PLUGIN_REMOTE_ENDPOINT_<plugin_publisher_and_name from package.json>` and value

@@ -20,56 +20,19 @@ import (
 	"github.com/eclipse/che-plugin-broker/model"
 )
 
-var s = New()
-
-func TestSettingStatusOfStorage(t *testing.T) {
-	tables := []struct {
-		initialStatus model.BrokerStatus
-		newStatus     model.BrokerStatus
-		isChanged     bool
-	}{
-		{model.StatusIdle, model.StatusStarted, true},
-		{model.StatusIdle, model.StatusDone, false},
-		{model.StatusIdle, model.StatusFailed, false},
-		{model.StatusIdle, model.StatusIdle, false},
-		{model.StatusStarted, model.StatusDone, true},
-		{model.StatusStarted, model.StatusIdle, false},
-		{model.StatusStarted, model.StatusFailed, false},
-		{model.StatusStarted, model.StatusStarted, false},
-		{model.StatusDone, model.StatusIdle, false},
-		{model.StatusDone, model.StatusDone, false},
-		{model.StatusDone, model.StatusStarted, false},
-		{model.StatusDone, model.StatusDone, false},
-	}
-
-	for _, table := range tables {
-		//storage1 := &Storage{status:table.initialStatus}
-		s.status = table.initialStatus
-		ok, currentValue := s.SetStatus(table.newStatus)
-
-		if ok != table.isChanged {
-			t.Errorf("Status expected not to be changed from %s to %s but it was", table.initialStatus, table.newStatus)
-		}
-
-		if table.initialStatus != table.newStatus && !ok && currentValue != table.initialStatus {
-			t.Errorf("Current state is changed from %s to %s but it shouldn't be", table.initialStatus, currentValue)
-		}
-	}
-}
-
 func TestAddingPluginToStorage(t *testing.T) {
-	meta := model.PluginMeta{
-		ID:      "org.plugin.id",
-		Version: "1.0.0",
-		Name:    "test-plugin",
-	}
-	conf := model.ToolingConf{
-		Containers: []model.Container{{Name: "container"}},
-		Editors:    []model.Editor{{ID: "editor-id"}},
-		Endpoints:  []model.Endpoint{{Name: "endpoint"}},
+	var s = &storageImpl{}
+	plugin := model.ChePlugin{
+		ID:           "pub/plugin/vers",
+		Version:      "1.0.0",
+		Publisher:    "test publisher",
+		Name:         "test-plugin",
+		Containers:   []model.Container{{Name: "container"}},
+		Endpoints:    []model.Endpoint{{Name: "endpoint"}},
+		WorkspaceEnv: []model.EnvVar{{Name: "wsEnv1", Value: "wsEnvValue1"}},
 	}
 
-	if err := s.AddPlugin(&meta, &conf); err != nil {
+	if err := s.AddPlugin(plugin); err != nil {
 		t.Errorf("Adding plugin failed with error: %s", err)
 	}
 
@@ -78,24 +41,59 @@ func TestAddingPluginToStorage(t *testing.T) {
 		t.Errorf("Storage has %v elements after adding one plugin", actualNumber)
 	}
 
-	plugin := s.plugins[0]
+	actual := s.plugins[0]
 
-	assert.Equal(t, meta.ID, plugin.ID, "Plugin ID is not expected")
-	assert.Equal(t, meta.Version, plugin.Version, "Plugin Version is not expected")
+	assert.Equal(t, actual, plugin)
+}
 
-	assert.ElementsMatch(t, conf.Containers, plugin.Containers, "Plugin Containers are not expected")
-	assert.ElementsMatch(t, conf.Endpoints, plugin.Endpoints, "Plugin Endpoints are not expected")
-	assert.ElementsMatch(t, conf.Editors, plugin.Editors, "Plugin Editors are not expected")
+func TestAddingDuplicatePluginToStorage(t *testing.T) {
+	var s = &storageImpl{}
+	plugin := model.ChePlugin{
+		ID:           "pub/plugin/vers",
+		Version:      "1.0.0",
+		Publisher:    "test publisher",
+		Name:         "test-plugin",
+		Containers:   []model.Container{{Name: "container"}},
+		Endpoints:    []model.Endpoint{{Name: "endpoint"}},
+		WorkspaceEnv: []model.EnvVar{{Name: "wsEnv1", Value: "wsEnvValue1"}},
+	}
+
+	if err := s.AddPlugin(plugin); err != nil {
+		t.Errorf("Adding plugin failed with error: %s", err)
+	}
+	if err := s.AddPlugin(plugin); err != nil {
+		t.Errorf("Adding plugin failed with error: %s", err)
+	}
+
+	actualNumber := len(s.plugins)
+	if actualNumber != 2 {
+		t.Errorf("Storage has %v elements after adding one plugin", actualNumber)
+	}
+
+	assert.Equal(t, s.plugins[0], plugin)
+	assert.Equal(t, s.plugins[1], plugin)
 }
 
 func TestGettingPluginsFromStorage(t *testing.T) {
+	var s = &storageImpl{}
 	s.plugins = []model.ChePlugin{
 		{
-			ID:         "org.plugin.id",
-			Version:    "1.0.0",
-			Containers: []model.Container{{Name: "container"}},
-			Editors:    []model.Editor{{ID: "editor-id"}},
-			Endpoints:  []model.Endpoint{{Name: "endpoint"}},
+			ID:           "pub/plugin/1.0.0",
+			Version:      "1.0.0",
+			Name:         "plugin",
+			Publisher:    "pub",
+			Containers:   []model.Container{{Name: "container"}},
+			Endpoints:    []model.Endpoint{{Name: "endpoint"}},
+			WorkspaceEnv: []model.EnvVar{{Name: "wsEnv1", Value: "wsEnvValue1"}},
+		},
+		{
+			ID:           "pub2/plugin2/v1.1.0",
+			Version:      "v1.1.0",
+			Name:         "plugin2",
+			Publisher:    "pub2",
+			Containers:   []model.Container{{Name: "container2"}},
+			Endpoints:    []model.Endpoint{{Name: "endpoint2"}},
+			WorkspaceEnv: []model.EnvVar{{Name: "wsEnv2", Value: "wsEnvValue2"}},
 		},
 	}
 
@@ -105,5 +103,24 @@ func TestGettingPluginsFromStorage(t *testing.T) {
 		t.Errorf("Error occurs during toolling receiving: %s", e)
 	}
 
-	assert.ElementsMatch(t, s.plugins, *chePlugins, "Plugins list is not expected")
+	assert.ElementsMatch(t, s.plugins, chePlugins, "Plugins list is not expected")
+}
+
+func TestGettingPluginsFromStorageWhenNoPluginIsAdded(t *testing.T) {
+	var s = &storageImpl{}
+
+	actual, e := s.Plugins()
+
+	if e != nil {
+		t.Errorf("Error occurs during toolling receiving: %s", e)
+	}
+
+	assert.True(t, len(actual) == 0)
+}
+
+func TestNewCreatesEmptyStorage(t *testing.T) {
+	actual := New()
+	expected := &storageImpl{}
+
+	assert.Equal(t, actual, expected)
 }

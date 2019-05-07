@@ -1,15 +1,18 @@
 [
   {
-    "id": "ms-kubernetes-tools.vscode-kubernetes-tools",
-    "version": "0.1.17"
+    "id": "ms-kubernetes-tools/vscode-kubernetes-tools/0.1.17"
   },
   {
-    "id": "che-machine-exec-plugin",
-    "version": "0.0.1"
+    "id": "eclipse/che-machine-exec-plugin/0.0.1"
   },
   {
-    "id": "org.eclipse.che.vscode-redhat.java",
-    "version": "0.38.0",
-    "registry": "https://raw.githubusercontent.com/eclipse/che-plugin-registry/master/plugins"
+    "id": "redhat/java/0.43.0",
+    "registry": "https://raw.githubusercontent.com/eclipse/che-plugin-registry/master/v3/plugins"
+  },
+  {
+    "id": "eclipse/che-theia/next"
+  },
+  {
+    "id": "redhat-developer/che-omnisharp-plugin/0.0.1"
   }
 ]

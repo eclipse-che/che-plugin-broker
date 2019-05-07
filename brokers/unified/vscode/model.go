@@ -33,3 +33,9 @@ type file struct {
 	AssetType string
 	Source    string
 }
+
+// PackageJSON represents package.json file of JS based projects
+type PackageJSON struct {
+	Name      string `json:"name" yaml:"name"`
+	Publisher string `json:"publisher" yaml:"publisher"`
+}

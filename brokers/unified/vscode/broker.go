@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -150,25 +151,13 @@ func (b *brokerImpl) injectLocalPlugin(plugin model.ChePlugin, archivesPaths []s
 func (b *brokerImpl) injectRemotePlugin(plugin model.ChePlugin, archivesPaths []string, workDir string) error {
 	plugin = AddPluginRunnerRequirements(plugin, b.rand)
 	for _, archive := range archivesPaths {
-		// Unzip it
-		unpackedPath := filepath.Join(workDir, "extension", b.rand.String(10))
-		b.PrintDebug("Unzipping archive '%s' for plugin '%s' to '%s'", archive, plugin.ID, unpackedPath)
-		err := b.ioUtil.Unzip(archive, unpackedPath)
-		if err != nil {
-			return err
-		}
-
-		pj, err := b.getPackageJSON(unpackedPath)
-		if err != nil {
-			return err
-		}
-
+		_, archiveFilename := filepath.Split(archive)
 		if !cfg.OnlyApplyMetadataActions {
-			pluginName := b.generatePluginFolderName(plugin, *pj)
-
-			pluginFolderPath := filepath.Join("/plugins", pluginName)
-			b.PrintDebug("Copying VS Code extension '%s' from '%s' to '%s'", plugin.ID, unpackedPath, pluginFolderPath)
-			err = b.ioUtil.CopyResource(unpackedPath, pluginFolderPath)
+			pluginName := plugin.Containers[0].Name
+			os.MkdirAll(filepath.Join("/sidecar-plugins/", pluginName), 777)
+			pluginFolderPath := filepath.Join("/sidecar-plugins/", pluginName, archiveFilename)
+			b.PrintDebug("Copying VS Code extension '%s' from '%s' to '%s'", plugin.ID, archive, pluginFolderPath)
+			err := b.ioUtil.CopyResource(archive, pluginFolderPath)
 			if err != nil {
 				return err
 			}
@@ -198,7 +187,12 @@ func convertMetaToPlugin(meta model.PluginMeta) model.ChePlugin {
 func (b *brokerImpl) downloadArchives(URLs []string, meta model.PluginMeta, workDir string) ([]string, error) {
 	paths := make([]string, 0)
 	for _, URL := range URLs {
-		archivePath := filepath.Join(workDir, "pluginArchive"+b.rand.String(10))
+		url, error := url.Parse(URL)
+		if error != nil {
+			return nil, error
+		}
+		_, filename := filepath.Split(filepath.FromSlash(url.Path))
+		archivePath := filepath.Join(workDir, filename)
 		b.PrintDebug("Downloading VS Code extension archive '%s' for plugin '%s' to '%s'", URL, meta.ID, archivePath)
 		b.PrintInfo("Downloading VS Code extension for plugin '%s'", meta.ID)
 		err := b.downloadArchive(URL, archivePath)

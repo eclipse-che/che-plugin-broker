@@ -27,18 +27,20 @@ var re = regexp.MustCompile(`[^a-zA-Z_0-9]+`)
 // ChePlugin with one container is supported only.
 func AddPluginRunnerRequirements(plugin model.ChePlugin, rand common.Random) model.ChePlugin {
 	// TODO limitation is one and only sidecar
+	containerName := re.ReplaceAllString(plugin.Publisher+"_"+plugin.Name+"_"+plugin.Version, `_`)
 	container := plugin.Containers[0]
+	container.Name = containerName
 	container.Volumes = append(container.Volumes, model.Volume{
-		Name:      "plugins",
-		MountPath: "/plugins",
+		Name:      "sidecar-plugins",
+		MountPath: "/sidecar-plugins",
 	})
 	container.MountSources = true
-	endpoint := generateTheiaSidecarEndpoint(rand)
-	port := endpoint.TargetPort
-	container.Ports = append(container.Ports, model.ExposedPort{ExposedPort: port})
+//	endpoint := generateTheiaSidecarEndpoint(rand)
+//	port := endpoint.TargetPort
+//	container.Ports = append(container.Ports, model.ExposedPort{ExposedPort: port})
 	// TODO validate that there is no endpoints yet
-	plugin.Endpoints = append(plugin.Endpoints, endpoint)
-	container.Env = append(container.Env, model.EnvVar{Name: "THEIA_PLUGIN_ENDPOINT_PORT", Value: strconv.Itoa(port)})
+//	plugin.Endpoints = append(plugin.Endpoints, endpoint)
+//	container.Env = append(container.Env, model.EnvVar{Name: "THEIA_PLUGIN_ENDPOINT_PORT", Value: strconv.Itoa(port)})
 	plugin.Containers[0] = container
 
 	return plugin

@@ -54,7 +54,7 @@ type mocks struct {
 	randMock *cmock.Random
 }
 
-func initMocks() *mocks {
+func initMocks(useLocalhost bool) *mocks {
 	cb := &cmock.Broker{}
 	u := &fmock.IoUtil{}
 	randMock := &cmock.Random{}
@@ -68,12 +68,13 @@ func initMocks() *mocks {
 			Storage: storage.New(),
 			client:  test.NewTestHTTPClient(okMarketplaceResponse),
 			rand:    randMock,
+			localhostSidecar: useLocalhost,
 		},
 	}
 }
 
 func TestStart(t *testing.T) {
-	m := initMocks()
+	m := initMocks(false)
 
 	m.cb.On("PubStarted").Once()
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"))
@@ -88,7 +89,7 @@ func TestStart(t *testing.T) {
 }
 
 func TestProcessBrokenPluginUrl(t *testing.T) {
-	m := initMocks()
+	m := initMocks(false)
 	meta := model.PluginMeta{
 		ID:      pluginID,
 		Version: pluginVersion,
@@ -124,11 +125,12 @@ func TestProcessBrokenPluginUrl(t *testing.T) {
 
 func TestBroker_processPlugin(t *testing.T) {
 	cases := []struct {
-		name      string
-		meta      model.PluginMeta
-		err       string
-		want      []model.ChePlugin
-		unzipFunc UnzipFunc
+		name         string
+		meta         model.PluginMeta
+		err          string
+		want         []model.ChePlugin
+		unzipFunc    UnzipFunc
+		useLocalhost bool
 	}{
 		{
 			name: "Return error when extensions field is empty and there is no containers",
@@ -211,7 +213,7 @@ func TestBroker_processPlugin(t *testing.T) {
 			want:      expectedNoPlugin(),
 		},
 		{
-			name: "Successful brokering of remote plugin when extension points to .theia archive",
+			name: "Successful brokering of remote plugin when extension points to .theia archive, using a generated host name",
 			meta: model.PluginMeta{
 				Type:      vscodePluginType,
 				ID:        pluginID,
@@ -230,7 +232,34 @@ func TestBroker_processPlugin(t *testing.T) {
 				},
 			},
 			unzipFunc: createUnzipTheiaArchiveFuncStub(generatePackageJSON("peppers.com", "cool-extension")),
+			useLocalhost: false,
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
+				false,
+				generateTheiaEnvVar("peppers_com_cool_extension")),
+		},
+		{
+			name: "Successful brokering of remote plugin when extension points to .theia archive, using localhost as the host name",
+			meta: model.PluginMeta{
+				Type:      vscodePluginType,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				Spec: model.PluginMetaSpec{
+					Extensions: []string{
+						"https://red-hot-chilli.peppers/plugin.theia",
+					},
+					Containers: []model.Container{
+						{
+							Image: image,
+						},
+					},
+				},
+			},
+			unzipFunc: createUnzipTheiaArchiveFuncStub(generatePackageJSON("peppers.com", "cool-extension")),
+			useLocalhost: true,
+			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
+				true,
 				generateTheiaEnvVar("peppers_com_cool_extension")),
 		},
 		{
@@ -288,7 +317,7 @@ func TestBroker_processPlugin(t *testing.T) {
 			want: expectedNoPlugin(),
 		},
 		{
-			name: "Successful brokering of remote plugin with extensions field with several extensions",
+			name: "Successful brokering of remote plugin with extensions field with several extensions, using a generated host name",
 			meta: model.PluginMeta{
 				Type:      vscodePluginType,
 				ID:        pluginID,
@@ -306,12 +335,39 @@ func TestBroker_processPlugin(t *testing.T) {
 					},
 				},
 			},
+			useLocalhost: false,
 			unzipFunc: createUnzipFuncStub(generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools")),
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
+				false,
 				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools")),
 		},
 		{
-			name: "Successful brokering of remote plugin with extensions field with several extensions",
+			name: "Successful brokering of remote plugin with extensions field with several extensions, using localhost as the host name",
+			meta: model.PluginMeta{
+				Type:      vscodePluginType,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				Spec: model.PluginMetaSpec{
+					Extensions: []string{
+						"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+					},
+					Containers: []model.Container{
+						{
+							Image: image,
+						},
+					},
+				},
+			},
+			useLocalhost: true,
+			unzipFunc: createUnzipFuncStub(generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools")),
+			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
+				true,
+				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools")),
+		},
+		{
+			name: "Successful brokering of remote plugin with extensions field with several extensions, using a generated the host name",
 			meta: model.PluginMeta{
 				Type:      vscodePluginType,
 				ID:        pluginID,
@@ -331,17 +387,51 @@ func TestBroker_processPlugin(t *testing.T) {
 					},
 				},
 			},
+			useLocalhost: false,
 			unzipFunc: createUnzipFuncStub(
 				generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools"),
 				generatePackageJSON("redhat-com", "vscode-jdt-ls"),
 				generatePackageJSON("redhat-com", "vscode-maven")),
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
+				false,
 				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools"),
 				generateTheiaEnvVar("redhat_com_vscode_jdt_ls"),
 				generateTheiaEnvVar("redhat_com_vscode_maven")),
 		},
 		{
-			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs",
+			name: "Successful brokering of remote plugin with extensions field with several extensions, using localhost as the host name",
+			meta: model.PluginMeta{
+				Type:      vscodePluginType,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				Spec: model.PluginMetaSpec{
+					Extensions: []string{
+						"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+						"vscode:extension/redhat-com.vscode-jdt-ls",
+						"vscode:extension/redhat-com.vscode-maven",
+					},
+					Containers: []model.Container{
+						{
+							Image: image,
+						},
+					},
+				},
+			},
+			useLocalhost: true,
+			unzipFunc: createUnzipFuncStub(
+				generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools"),
+				generatePackageJSON("redhat-com", "vscode-jdt-ls"),
+				generatePackageJSON("redhat-com", "vscode-maven")),
+			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
+				true,
+				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools"),
+				generateTheiaEnvVar("redhat_com_vscode_jdt_ls"),
+				generateTheiaEnvVar("redhat_com_vscode_maven")),
+		},
+		{
+			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs, using a generated host name",
 			meta: model.PluginMeta{
 				Type:      vscodePluginType,
 				ID:        pluginID,
@@ -361,17 +451,51 @@ func TestBroker_processPlugin(t *testing.T) {
 					},
 				},
 			},
+			useLocalhost: false,
 			unzipFunc: createUnzipFuncStub(
 				generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools"),
 				generatePackageJSON("redhat-com", "vscode-jdt-ls"),
 				generatePackageJSON("redhat-com", "vscode-maven")),
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
+				false,
 				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools"),
 				generateTheiaEnvVar("redhat_com_vscode_jdt_ls"),
 				generateTheiaEnvVar("redhat_com_vscode_maven")),
 		},
 		{
-			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs when plugin type is Theia",
+			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs, using localhost as the host name",
+			meta: model.PluginMeta{
+				Type:      vscodePluginType,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				Spec: model.PluginMetaSpec{
+					Containers: []model.Container{
+						{
+							Image: image,
+						},
+					},
+					Extensions: []string{
+						"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+						vsixURL,
+						"vscode:extension/redhat-com.vscode-maven",
+					},
+				},
+			},
+			useLocalhost: true,
+			unzipFunc: createUnzipFuncStub(
+				generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools"),
+				generatePackageJSON("redhat-com", "vscode-jdt-ls"),
+				generatePackageJSON("redhat-com", "vscode-maven")),
+			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
+				true,
+				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools"),
+				generateTheiaEnvVar("redhat_com_vscode_jdt_ls"),
+				generateTheiaEnvVar("redhat_com_vscode_maven")),
+		},
+		{
+			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs when plugin type is Theia, using a generated host name",
 			meta: model.PluginMeta{
 				Type:      theiaPluginType,
 				ID:        pluginID,
@@ -391,11 +515,45 @@ func TestBroker_processPlugin(t *testing.T) {
 					},
 				},
 			},
+			useLocalhost: false,
 			unzipFunc: createUnzipFuncStub(
 				generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools"),
 				generatePackageJSON("redhat-com", "vscode-jdt-ls"),
 				generatePackageJSON("peppers.com", "cool-extension"), ),
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
+				false,
+				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools"),
+				generateTheiaEnvVar("redhat_com_vscode_jdt_ls"),
+				generateTheiaEnvVar("peppers_com_cool_extension")),
+		},
+		{
+			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs when plugin type is Theia, using localhost as the host name",
+			meta: model.PluginMeta{
+				Type:      theiaPluginType,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				Spec: model.PluginMetaSpec{
+					Containers: []model.Container{
+						{
+							Image: image,
+						},
+					},
+					Extensions: []string{
+						"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+						vsixURL,
+						"https://red-hot-chilli.peppers/plugin.theia",
+					},
+				},
+			},
+			useLocalhost: true,
+			unzipFunc: createUnzipFuncStub(
+				generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools"),
+				generatePackageJSON("redhat-com", "vscode-jdt-ls"),
+				generatePackageJSON("peppers.com", "cool-extension"), ),
+			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
+				true,
 				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools"),
 				generateTheiaEnvVar("redhat_com_vscode_jdt_ls"),
 				generateTheiaEnvVar("peppers_com_cool_extension")),
@@ -403,7 +561,7 @@ func TestBroker_processPlugin(t *testing.T) {
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			m := initMocks()
+			m := initMocks(tt.useLocalhost)
 			workDir := tests.CreateTestWorkDir()
 			defer tests.RemoveAll(workDir)
 			setUpSuccessfulCase(workDir, tt.meta, m, tt.unzipFunc)
@@ -432,19 +590,13 @@ func generateTheiaEnvVar(prettyID string) string {
 	return "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID
 }
 
-func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(pluginTheiaEndpointVars ...string) []model.ChePlugin {
+func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(usedLocalhost bool, pluginTheiaEndpointVars ...string) []model.ChePlugin {
 	expectedPlugin := model.ChePlugin{
 		ID:        pluginID,
 		Version:   pluginVersion,
 		Publisher: pluginPublisher,
 		Name:      pluginName,
-		Endpoints: []model.Endpoint{
-			{
-				Name:       "randomString1234567890",
-				Public:     false,
-				TargetPort: 4242,
-			},
-		},
+		Endpoints: []model.Endpoint{},
 		Containers: []model.Container{
 			{
 				Image: image,
@@ -469,10 +621,21 @@ func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(pluginTheiaEndpo
 			},
 		},
 	}
+	if ! usedLocalhost  {
+		expectedPlugin.Endpoints = append(expectedPlugin.Endpoints, model.Endpoint{
+			Name:       "randomString1234567890",
+			Public:     false,
+			TargetPort: 4242,
+		})
+	}
 	for _, envVarName := range pluginTheiaEndpointVars {
+		hostName := "randomString1234567890"
+		if (usedLocalhost) {
+			hostName = "localhost"
+		}
 		expectedPlugin.WorkspaceEnv = append(expectedPlugin.WorkspaceEnv, model.EnvVar{
 			Name:  envVarName,
-			Value: "ws://randomString1234567890:4242",
+			Value: "ws://" + hostName + ":4242",
 		})
 	}
 

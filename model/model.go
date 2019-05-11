@@ -93,7 +93,7 @@ type Container struct {
 	Name         string        `json:"name,omitempty" yaml:"name,omitempty"`
 	Image        string        `json:"image,omitempty" yaml:"image,omitempty"`
 	Env          []EnvVar      `json:"env" yaml:"env"`
-	Commands     []Command     `json:"commands" yaml:"commands"`
+	Commands     []Command     `json:"editorCommands" yaml:"editorCommands"`
 	Volumes      []Volume      `json:"volumes" yaml:"volumes"`
 	Ports        []ExposedPort `json:"ports" yaml:"ports"`
 	MemoryLimit  string        `json:"memoryLimit,omitempty" yaml:"memoryLimit,omitempty"`

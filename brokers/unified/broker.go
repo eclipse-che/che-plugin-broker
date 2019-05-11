@@ -181,22 +181,29 @@ func validateMetas(metas []model.PluginMeta) error {
 func (b *Broker) getPluginMetas(plugins []model.PluginFQN, defaultRegistry string) ([]model.PluginMeta, error) {
 	metas := make([]model.PluginMeta, 0, len(plugins))
 	for _, plugin := range plugins {
-		log.Printf("Fetching plugin meta.yaml for %s", plugin.ID)
-		registry, err := getRegistryURL(plugin, defaultRegistry)
-		if err != nil {
-			return nil, err
+		var pluginURL string
+		if plugin.Reference != "" {
+			pluginURL = plugin.Reference
+			log.Printf("Fetching plugin meta.yaml from reference %s", pluginURL)
+		} else {
+			log.Printf("Fetching plugin meta.yaml for %s", plugin.ID)
+			registry, err := getRegistryURL(plugin, defaultRegistry)
+			if err != nil {
+				return nil, err
+			}
+			pluginURL = fmt.Sprintf(RegistryURLFormat, registry, plugin.ID)
 		}
-		pluginURL := fmt.Sprintf(RegistryURLFormat, registry, plugin.ID)
+
 		pluginRaw, err := b.utils.Fetch(pluginURL)
 		if err != nil {
 			if httpErr, ok := err.(*utils.HTTPError); ok {
 				return nil, fmt.Errorf(
-					"failed to fetch plugin meta.yaml for plugin '%s' from registry '%s': %s. Response body: %s",
-					plugin.ID, registry, httpErr, httpErr.Body)
+					"failed to fetch plugin meta.yaml from URL '%s': %s. Response body: %s",
+					pluginURL, httpErr, httpErr.Body)
 			} else {
 				return nil, fmt.Errorf(
-					"failed to fetch plugin meta.yaml for plugin '%s' from registry '%s': %s",
-					plugin.ID, registry, err)
+					"failed to fetch plugin meta.yaml from URL '%s': %s",
+					pluginURL, err)
 			}
 		}
 

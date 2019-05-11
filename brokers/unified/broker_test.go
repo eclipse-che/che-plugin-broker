@@ -80,7 +80,7 @@ func TestBroker_StartPublishesErrorOnFetchError(t *testing.T) {
 
 	err := m.b.Start([]model.PluginFQN{pluginFQNWithoutRegistry}, "http://defaultRegistry.com")
 
-	expectedMessage := "Failed to download plugin meta: failed to fetch plugin meta.yaml for plugin 'test-no-registry/1.0' from registry 'http://defaultRegistry.com/plugins': Test error"
+	expectedMessage := "Failed to download plugin meta: failed to fetch plugin meta.yaml from URL 'http://defaultRegistry.com/plugins/test-no-registry/1.0/meta.yaml': Test error"
 	assert.EqualError(t, err, expectedMessage)
 	m.cb.AssertCalled(t, "PubFailed", expectedMessage)
 	m.cb.AssertCalled(t, "PubLog", expectedMessage)
@@ -1067,7 +1067,7 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				defaultRegistry: defaultRegistry,
 			},
 			want: want{
-				errRegexp: regexp.MustCompile("failed to fetch plugin meta.yaml for plugin .* from registry .*"),
+				errRegexp: regexp.MustCompile("failed to fetch plugin meta.yaml from URL .*"),
 				fetchURL:  "",
 			},
 			mocks: errorMock,

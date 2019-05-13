@@ -13,55 +13,47 @@
 package vscode
 
 import (
-	"regexp"
 	"strconv"
 
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/model"
 )
 
-var re = regexp.MustCompile(`[^a-zA-Z_0-9]+`)
-
 // AddPluginRequirements adds to ChePlugin configuration needed to run remote Theia plugins in the provided ChePlugin.
 // Method adds needed ports, endpoints, volumes, environment variables.
 // ChePlugin with one container is supported only.
-func AddPluginRunnerRequirements(plugin model.ChePlugin, rand common.Random) model.ChePlugin {
+func AddPluginRunnerRequirements(plugin model.ChePlugin, rand common.Random, useLocalhost bool) model.ChePlugin {
 	// TODO limitation is one and only sidecar
-	containerName := re.ReplaceAllString(plugin.Publisher+"_"+plugin.Name+"_"+plugin.Version, `_`)
 	container := plugin.Containers[0]
-	container.Name = containerName
 	container.Volumes = append(container.Volumes, model.Volume{
 		Name:      "sidecar-plugins",
 		MountPath: "/sidecar-plugins",
 	})
 	container.MountSources = true
-//	endpoint := generateTheiaSidecarEndpoint(rand)
-//	port := endpoint.TargetPort
-//	container.Ports = append(container.Ports, model.ExposedPort{ExposedPort: port})
+	if (! useLocalhost) {
+  	endpoint := generateTheiaSidecarEndpoint(rand)
+  	port := endpoint.TargetPort
+  	container.Ports = append(container.Ports, model.ExposedPort{ExposedPort: port})
 	// TODO validate that there is no endpoints yet
-//	plugin.Endpoints = append(plugin.Endpoints, endpoint)
-//	container.Env = append(container.Env, model.EnvVar{Name: "THEIA_PLUGIN_ENDPOINT_PORT", Value: strconv.Itoa(port)})
+  	plugin.Endpoints = append(plugin.Endpoints, endpoint)
+  	container.Env = append(container.Env, model.EnvVar{Name: "THEIA_PLUGIN_ENDPOINT_PORT", Value: strconv.Itoa(port)})
+}
 	plugin.Containers[0] = container
 
 	return plugin
 }
 
 // AddExtension adds to ChePlugin an environment variable needed for extension to be consumed by Theia.
-// Environment variable uses extension name and publisher specified in PackageJSON.
+// Environment variable uses plugin name and publisher and version.
 // Extension publisher and plugin name taken by retrieving info from package.json and replacing all
 // chars matching [^a-z_0-9]+ with an underscore `_` character
 // ChePlugin with a single endpoint is supported only.
-func AddExtension(plugin model.ChePlugin, pj PackageJSON, useLocalHost bool) model.ChePlugin {
+func AddExtension(plugin model.ChePlugin) model.ChePlugin {
 	// TODO limitation to have just one endpoint
 	sidecarEndpoint := plugin.Endpoints[0]
-	prettyID := re.ReplaceAllString(pj.Publisher+"_"+pj.Name, `_`)
+	prettyID := getPluginUniqueName(plugin)
 	sidecarTheiaEnvVarName := "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID
-	sidecarHostname := sidecarEndpoint.Name
-	if useLocalHost {
-		sidecarHostname = "localhost"
-	}
-	sidecarTheiaEnvVarValue := "ws://" + sidecarHostname + ":" + strconv.Itoa(sidecarEndpoint.TargetPort)
-
+	sidecarTheiaEnvVarValue := "ws://" + sidecarEndpoint.Name + ":" + strconv.Itoa(sidecarEndpoint.TargetPort)
 	plugin.WorkspaceEnv = append(plugin.WorkspaceEnv, model.EnvVar{Name: sidecarTheiaEnvVarName, Value: sidecarTheiaEnvVarValue})
 
 	return plugin

@@ -41,6 +41,8 @@ const errorNoExtFieldsTemplate = "Field 'extensions' is not found in the descrip
 const vsixManifestFileName = "extension.vsixmanifest"
 const vsixPackageJSONFolderName = "extension"
 
+var re = regexp.MustCompile(`[^a-zA-Z_0-9]+`)
+
 type brokerImpl struct {
 	common.Broker
 	ioUtil           utils.IoUtil
@@ -148,12 +150,16 @@ func (b *brokerImpl) injectLocalPlugin(plugin model.ChePlugin, archivesPaths []s
 	return nil
 }
 
+func getPluginUniqueName(plugin model.ChePlugin) string {
+	return re.ReplaceAllString(plugin.Publisher+"_"+plugin.Name+"_"+plugin.Version, `_`)
+}
+ 
 func (b *brokerImpl) injectRemotePlugin(plugin model.ChePlugin, archivesPaths []string, workDir string) error {
-	plugin = AddPluginRunnerRequirements(plugin, b.rand)
+	plugin = AddPluginRunnerRequirements(plugin, b.rand, b.localhostSidecar)
 	for _, archive := range archivesPaths {
 		_, archiveFilename := filepath.Split(archive)
 		if !cfg.OnlyApplyMetadataActions {
-			pluginName := plugin.Containers[0].Name
+			pluginName := getPluginUniqueName(plugin)
 			os.MkdirAll(filepath.Join("/sidecar-plugins/", pluginName), 777)
 			pluginFolderPath := filepath.Join("/sidecar-plugins/", pluginName, archiveFilename)
 			b.PrintDebug("Copying VS Code extension '%s' from '%s' to '%s'", plugin.ID, archive, pluginFolderPath)
@@ -162,11 +168,10 @@ func (b *brokerImpl) injectRemotePlugin(plugin model.ChePlugin, archivesPaths []
 				return err
 			}
 		}
-		plugin = AddExtension(plugin, *pj, b.localhostSidecar)
 	}
 	
-	if b.localhostSidecar {
-		plugin.Endpoints = plugin.Endpoints[1:]
+	if (!b.localhostSidecar) {
+		plugin = AddExtension(plugin)
 	}
 
 	return b.Storage.AddPlugin(plugin)

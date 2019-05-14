@@ -175,6 +175,10 @@ func (b *brokerImpl) injectRemotePlugin(plugin model.ChePlugin, archivesPaths []
 		}
 		plugin = AddExtension(plugin, *pj, b.localhostSidecar)
 	}
+	
+	if b.localhostSidecar {
+		plugin.Endpoints = plugin.Endpoints[1:]
+	}
 
 	return b.Storage.AddPlugin(plugin)
 }

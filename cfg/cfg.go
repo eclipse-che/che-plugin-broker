@@ -53,7 +53,7 @@ var (
 	// UseLocalhostInPluginUrls configures the broker to use the `localhost` name
 	// instead of the Kubernetes service name to build Theia or VSCode plugin
 	// endpoint URL
-	// True by default since until now all remote VSCode or Theia plugin containers
+	// True by default since until now all remote VS Code or Theia plugin containers
 	// are started on the same POD as the Theia IDE container 
 	UseLocalhostInPluginUrls = true
 

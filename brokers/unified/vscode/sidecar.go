@@ -30,14 +30,22 @@ func AddPluginRunnerRequirements(plugin model.ChePlugin, rand common.Random, use
 		MountPath: "/sidecar-plugins",
 	})
 	container.MountSources = true
-	if (! useLocalhost) {
-  	endpoint := generateTheiaSidecarEndpoint(rand)
-  	port := endpoint.TargetPort
-  	container.Ports = append(container.Ports, model.ExposedPort{ExposedPort: port})
-	// TODO validate that there is no endpoints yet
-  	plugin.Endpoints = append(plugin.Endpoints, endpoint)
-  	container.Env = append(container.Env, model.EnvVar{Name: "THEIA_PLUGIN_ENDPOINT_PORT", Value: strconv.Itoa(port)})
-}
+	if !useLocalhost {
+		endpoint := generateTheiaSidecarEndpoint(rand)
+		port := endpoint.TargetPort
+		container.Ports = append(container.Ports, model.ExposedPort{ExposedPort: port})
+		// TODO validate that there is no endpoints yet
+		plugin.Endpoints = append(plugin.Endpoints, endpoint)
+		container.Env = append(container.Env, model.EnvVar{
+			Name:  "THEIA_PLUGIN_ENDPOINT_PORT",
+			Value: strconv.Itoa(port),
+		})
+	}
+	container.Env = append(container.Env, model.EnvVar{
+		Name:  "THEIA_PLUGINS",
+		Value: "local-dir:///sidecar-plugins/" + getPluginUniqueName(plugin),
+	})
+
 	plugin.Containers[0] = container
 
 	return plugin

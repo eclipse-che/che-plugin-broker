@@ -122,7 +122,7 @@ func init() {
 		"use-localhost-in-plugin-urls",
 		true,
 		"This configures the broker to use the `localhost` name instead of the Kubernetes service name to build Theia or VSCode plugin endpoint URL."+
-			"`true` by default since until now all remote VSCode or Theia plugin containers are started on the same POD as the Theia IDE container",
+			"`true` by default since until now all remote VS Code or Theia plugin containers are started on the same POD as the Theia IDE container",
 	)
 	flag.StringVar(
 		&RegistryAddress,

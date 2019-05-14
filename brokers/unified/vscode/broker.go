@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -153,24 +152,31 @@ func (b *brokerImpl) injectLocalPlugin(plugin model.ChePlugin, archivesPaths []s
 func getPluginUniqueName(plugin model.ChePlugin) string {
 	return re.ReplaceAllString(plugin.Publisher+"_"+plugin.Name+"_"+plugin.Version, `_`)
 }
- 
+
 func (b *brokerImpl) injectRemotePlugin(plugin model.ChePlugin, archivesPaths []string, workDir string) error {
 	plugin = AddPluginRunnerRequirements(plugin, b.rand, b.localhostSidecar)
 	for _, archive := range archivesPaths {
-		_, archiveFilename := filepath.Split(archive)
 		if !cfg.OnlyApplyMetadataActions {
 			pluginName := getPluginUniqueName(plugin)
-			os.MkdirAll(filepath.Join("/sidecar-plugins/", pluginName), 777)
-			pluginFolderPath := filepath.Join("/sidecar-plugins/", pluginName, archiveFilename)
+			err := os.MkdirAll(filepath.Join("/sidecar-plugins"), 0755)
+			if err != nil {
+				return err
+			}
+			pluginFolderPath := filepath.Join("/sidecar-plugins", pluginName)
+			err = os.MkdirAll(pluginFolderPath, 0755)
+			if err != nil {
+				return err
+			}
+
 			b.PrintDebug("Copying VS Code extension '%s' from '%s' to '%s'", plugin.ID, archive, pluginFolderPath)
-			err := b.ioUtil.CopyResource(archive, pluginFolderPath)
+			err = b.ioUtil.CopyResource(archive, pluginFolderPath + "/")
 			if err != nil {
 				return err
 			}
 		}
 	}
-	
-	if (!b.localhostSidecar) {
+
+	if !b.localhostSidecar {
 		plugin = AddExtension(plugin)
 	}
 
@@ -192,12 +198,7 @@ func convertMetaToPlugin(meta model.PluginMeta) model.ChePlugin {
 func (b *brokerImpl) downloadArchives(URLs []string, meta model.PluginMeta, workDir string) ([]string, error) {
 	paths := make([]string, 0)
 	for _, URL := range URLs {
-		url, error := url.Parse(URL)
-		if error != nil {
-			return nil, error
-		}
-		_, filename := filepath.Split(filepath.FromSlash(url.Path))
-		archivePath := filepath.Join(workDir, filename)
+		archivePath := b.ioUtil.ResolveDestPathFromURL(URL, workDir)
 		b.PrintDebug("Downloading VS Code extension archive '%s' for plugin '%s' to '%s'", URL, meta.ID, archivePath)
 		b.PrintInfo("Downloading VS Code extension for plugin '%s'", meta.ID)
 		err := b.downloadArchive(URL, archivePath)
@@ -249,12 +250,6 @@ func extensionOrURL(extensionOrURL string) (extension string, URL string) {
 	} else {
 		return "", extensionOrURL
 	}
-}
-
-func (b *brokerImpl) generatePluginFolderName(plugin model.ChePlugin, pj PackageJSON) string {
-	var re = regexp.MustCompile(`[^a-zA-Z_0-9]+`)
-	prettyID := re.ReplaceAllString(pj.Publisher+"_"+pj.Name, "")
-	return fmt.Sprintf("%s.%s.%s.%s", plugin.Publisher, plugin.Name, plugin.Version, prettyID)
 }
 
 func (b *brokerImpl) generatePluginArchiveName(plugin model.ChePlugin) string {
@@ -353,27 +348,4 @@ func findAssetURL(response []byte, meta model.PluginMeta) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("VS Code extension archive information is not found in marketplace response for plugin %s", meta.ID)
-}
-
-func (b *brokerImpl) getPackageJSON(pluginFolder string) (*PackageJSON, error) {
-	vsixManifestPath := filepath.Join(pluginFolder, vsixManifestFileName)
-	vsixPackageJSONPath := filepath.Join(pluginFolder, vsixPackageJSONFolderName, "package.json")
-	theiaPackageJSONPath := filepath.Join(pluginFolder, "package.json")
-
-	// VS code extension archive must contain file `extension.vsixmanifest` in root of the archive
-	// Otherwise we consider it Theia plugin
-	var packageJSONPath string
-	if _, err := os.Stat(vsixManifestPath); err == nil {
-		packageJSONPath = vsixPackageJSONPath
-	} else {
-		packageJSONPath = theiaPackageJSONPath
-	}
-
-	f, err := ioutil.ReadFile(packageJSONPath)
-	if err != nil {
-		return nil, err
-	}
-	pj := &PackageJSON{}
-	err = json.Unmarshal(f, pj)
-	return pj, err
 }

@@ -36,8 +36,6 @@ import (
 )
 
 const (
-	extName          = "Test-name"
-	extPublisher     = "Test-publisher"
 	vsixURL          = "http://test.url"
 	vsixBrokenURL    = "http://broken.test.url"
 	pluginID         = "tid"
@@ -551,8 +549,8 @@ func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(usedLocalhost bo
 				Image: image,
 				Volumes: []model.Volume{
 					{
-						Name:      "sidecar-plugins",
-						MountPath: "/sidecar-plugins",
+						Name:      "plugins",
+						MountPath: "/plugins",
 					},
 				},
 				MountSources: true,
@@ -585,7 +583,7 @@ func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(usedLocalhost bo
 	}
 	expectedPlugin.Containers[0].Env = append(expectedPlugin.Containers[0].Env, model.EnvVar{
 		Name:  "THEIA_PLUGINS",
-		Value: "local-dir:///sidecar-plugins/" + getPluginUniqueName(expectedPlugin),
+		Value: "local-dir:///plugins/sidecars/" + getPluginUniqueName(expectedPlugin),
 	})
 	return []model.ChePlugin{
 		expectedPlugin,

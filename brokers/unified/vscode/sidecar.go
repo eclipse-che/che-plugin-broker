@@ -26,8 +26,8 @@ func AddPluginRunnerRequirements(plugin model.ChePlugin, rand common.Random, use
 	// TODO limitation is one and only sidecar
 	container := plugin.Containers[0]
 	container.Volumes = append(container.Volumes, model.Volume{
-		Name:      "sidecar-plugins",
-		MountPath: "/sidecar-plugins",
+		Name:      "plugins",
+		MountPath: "/plugins",
 	})
 	container.MountSources = true
 	if !useLocalhost {
@@ -43,7 +43,7 @@ func AddPluginRunnerRequirements(plugin model.ChePlugin, rand common.Random, use
 	}
 	container.Env = append(container.Env, model.EnvVar{
 		Name:  "THEIA_PLUGINS",
-		Value: "local-dir:///sidecar-plugins/" + getPluginUniqueName(plugin),
+		Value: "local-dir:///plugins/sidecars/" + getPluginUniqueName(plugin),
 	})
 
 	plugin.Containers[0] = container

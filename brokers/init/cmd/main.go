@@ -36,7 +36,6 @@ func main() {
 		broker.PushEvents(statusTun, model.BrokerLogEventType)
 	}
 
-	var filesToRemove []string
 	broker.PrintInfo("Starting Init Plugin Broker")
 	// Clear any existing plugins from /plugins/
 	broker.PrintInfo("Cleaning /plugins dir")
@@ -47,18 +46,8 @@ func main() {
 		broker.PrintInfo("WARN: failed to clear /plugins directory. Error: %s", err)
 		return
 	}
-	filesToRemove = append(filesToRemove, files...)
-	broker.PrintInfo("Cleaning /sidecar-plugins dir")
-	files, err = filepath.Glob(filepath.Join("/sidecar-plugins", "*"))
-	if err != nil {
-		// Send log about clearing failure but proceed.
-		// We might want to change this behavior later
-		broker.PrintInfo("WARN: failed to clear /sidecar-plugins directory. Error: %s", err)
-		return
-	}
-	filesToRemove = append(filesToRemove, files...)
 
-	for _, file := range filesToRemove {
+	for _, file := range files {
 		err = os.RemoveAll(file)
 		if err != nil {
 			broker.PrintInfo("WARN: failed to remove '%s'. Error: %s", file, err)

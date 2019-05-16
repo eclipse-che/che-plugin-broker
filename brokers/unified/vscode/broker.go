@@ -36,8 +36,6 @@ const marketplace = "https://marketplace.visualstudio.com/_apis/public/gallery/e
 const bodyFmt = `{"filters":[{"criteria":[{"filterType":7,"value":"%s"}],"pageNumber":1,"pageSize":1,"sortBy":0, "sortOrder":0 }],"assetTypes":["Microsoft.VisualStudio.Services.VSIXPackage"],"flags":131}`
 const assetType = "Microsoft.VisualStudio.Services.VSIXPackage"
 const errorNoExtFieldsTemplate = "Field 'extensions' is not found in the description of the plugin '%s'"
-const vsixManifestFileName = "extension.vsixmanifest"
-const vsixPackageJSONFolderName = "extension"
 
 var re = regexp.MustCompile(`[^a-zA-Z_0-9]+`)
 
@@ -157,7 +155,7 @@ func (b *brokerImpl) injectRemotePlugin(plugin model.ChePlugin, archivesPaths []
 	for _, archive := range archivesPaths {
 		if !cfg.OnlyApplyMetadataActions {
 			pluginName := getPluginUniqueName(plugin)
-			pluginFolderPath := filepath.Join("/sidecar-plugins", pluginName)
+			pluginFolderPath := filepath.Join("/plugins/sidecars", pluginName)
 			err := b.ioUtil.MkDir(pluginFolderPath)
 			if err != nil {
 				return err

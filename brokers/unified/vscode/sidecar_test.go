@@ -55,8 +55,8 @@ func TestAddPluginRunnerRequirements(t *testing.T) {
 						Image: "test/test:latest",
 						Volumes: []model.Volume{
 							{
-								Name:      "sidecar-plugins",
-								MountPath: "/sidecar-plugins",
+								Name:      "plugins",
+								MountPath: "/plugins",
 							},
 						},
 						MountSources: true,
@@ -71,7 +71,7 @@ func TestAddPluginRunnerRequirements(t *testing.T) {
 								Value: strconv.Itoa(4040),
 							},
 							{ Name: "THEIA_PLUGINS",
-								Value: "local-dir:///sidecar-plugins/test_publisher_test_name_tv",
+								Value: "local-dir:///plugins/sidecars/test_publisher_test_name_tv",
 							},
 						},
 					},
@@ -102,14 +102,14 @@ func TestAddPluginRunnerRequirements(t *testing.T) {
 						Image: "test/test:latest",
 						Volumes: []model.Volume{
 							{
-								Name:      "sidecar-plugins",
-								MountPath: "/sidecar-plugins",
+								Name:      "plugins",
+								MountPath: "/plugins",
 							},
 						},
 						MountSources: true,
 						Env: []model.EnvVar{
 							{ Name: "THEIA_PLUGINS",
-								Value: "local-dir:///sidecar-plugins/test_publisher_test_name_tv",
+								Value: "local-dir:///plugins/sidecars/test_publisher_test_name_tv",
 							},
 						},
 					},

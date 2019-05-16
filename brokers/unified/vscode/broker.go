@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -158,12 +157,8 @@ func (b *brokerImpl) injectRemotePlugin(plugin model.ChePlugin, archivesPaths []
 	for _, archive := range archivesPaths {
 		if !cfg.OnlyApplyMetadataActions {
 			pluginName := getPluginUniqueName(plugin)
-			err := os.MkdirAll(filepath.Join("/sidecar-plugins"), 0755)
-			if err != nil {
-				return err
-			}
 			pluginFolderPath := filepath.Join("/sidecar-plugins", pluginName)
-			err = os.MkdirAll(pluginFolderPath, 0755)
+			err := b.ioUtil.MkDir(pluginFolderPath)
 			if err != nil {
 				return err
 			}

@@ -35,6 +35,7 @@ type IoUtil interface {
 	ResolveDestPath(filePath string, destDir string) string
 	ResolveDestPathFromURL(url string, destDir string) string
 	TempDir(string, string) (string, error)
+	MkDir(string) error
 	Unzip(arch string, dest string) error
 	Untar(tarPath string, dest string) error
 	CreateFile(file string, tr io.Reader) error
@@ -101,6 +102,10 @@ func (util *impl) Fetch(URL string) ([]byte, error) {
 
 func (util *impl) TempDir(baseDir string, prefix string) (dirPath string, err error) {
 	return ioutil.TempDir(baseDir, prefix)
+}
+
+func (util *impl) MkDir(dir string) error {
+	return os.MkdirAll(dir, 0755)
 }
 
 func (util *impl) CopyResource(src string, dest string) error {

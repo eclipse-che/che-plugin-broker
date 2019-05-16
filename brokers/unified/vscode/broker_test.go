@@ -92,6 +92,7 @@ func TestStart(t *testing.T) {
 
 func TestProcessBrokenPluginUrl(t *testing.T) {
 	m := initMocks(false)
+
 	meta := model.PluginMeta{
 		ID:      pluginID,
 		Version: pluginVersion,
@@ -108,6 +109,7 @@ func TestProcessBrokenPluginUrl(t *testing.T) {
 	workDir := tests.CreateTestWorkDir()
 
 	setUpDownloadFailureCase(workDir, m)
+	m.u.On("ResolveDestPathFromURL", vsixBrokenURL, workDir).Return("/tmp/test005528325")
 	defer tests.RemoveAll(workDir)
 	err := m.b.ProcessPlugin(meta)
 
@@ -519,6 +521,8 @@ func TestBroker_processPlugin(t *testing.T) {
 			if tt.want == nil && tt.err == "" {
 				t.Fatal("Neither want nor error are defined")
 			}
+			m.u.On("ResolveDestPathFromURL", mock.AnythingOfType("string"), workDir).Return("/tmp/test005528325")
+			m.u.On("MkDir", mock.AnythingOfType("string")).Return(nil)
 			err := m.b.ProcessPlugin(tt.meta)
 			if err != nil {
 				if tt.err != "" {
@@ -579,6 +583,10 @@ func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(usedLocalhost bo
 			Value: "ws://randomString1234567890:4242",
 		})
 	}
+	expectedPlugin.Containers[0].Env = append(expectedPlugin.Containers[0].Env, model.EnvVar{
+		Name:  "THEIA_PLUGINS",
+		Value: "local-dir:///sidecar-plugins/" + getPluginUniqueName(expectedPlugin),
+	})
 	return []model.ChePlugin{
 		expectedPlugin,
 	}

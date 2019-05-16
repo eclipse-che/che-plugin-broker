@@ -89,6 +89,20 @@ func (_m *IoUtil) Fetch(url string) ([]byte, error) {
 	return r0, r1
 }
 
+// MkDir provides a mock function with given fields: _a0
+func (_m *IoUtil) MkDir(_a0 string) error {
+	ret := _m.Called(_a0)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(_a0)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // ResolveDestPath provides a mock function with given fields: filePath, destDir
 func (_m *IoUtil) ResolveDestPath(filePath string, destDir string) string {
 	ret := _m.Called(filePath, destDir)

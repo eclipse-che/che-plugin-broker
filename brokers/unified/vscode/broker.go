@@ -135,8 +135,7 @@ func (b *brokerImpl) ProcessPlugin(meta model.PluginMeta) error {
 func (b *brokerImpl) injectLocalPlugin(plugin model.ChePlugin, archivesPaths []string) error {
 	b.PrintDebug("Copying VS Code plugin '%s'", plugin.ID)
 	for _, path := range archivesPaths {
-		pluginName := b.generatePluginArchiveName(plugin)
-		pluginPath := filepath.Join("/plugins", pluginName)
+		pluginPath := filepath.Join("/plugins", b.generatePluginArchiveName(plugin, path))
 		b.PrintDebug("Copying VS Code extension archive from '%s' to '%s' for plugin '%s'", path, pluginPath, plugin.ID)
 		err := b.ioUtil.CopyFile(path, pluginPath)
 		if err != nil {
@@ -160,9 +159,10 @@ func (b *brokerImpl) injectRemotePlugin(plugin model.ChePlugin, archivesPaths []
 			if err != nil {
 				return err
 			}
-
-			b.PrintDebug("Copying VS Code extension '%s' from '%s' to '%s'", plugin.ID, archive, pluginFolderPath)
-			err = b.ioUtil.CopyResource(archive, pluginFolderPath + "/")
+			
+			pluginArchivePath := filepath.Join(pluginFolderPath, b.generatePluginArchiveName(plugin, archive))
+			b.PrintDebug("Copying VS Code extension '%s' from '%s' to '%s'", plugin.ID, archive, pluginArchivePath)
+			err = b.ioUtil.CopyFile(archive, pluginArchivePath)
 			if err != nil {
 				return err
 			}
@@ -245,8 +245,9 @@ func extensionOrURL(extensionOrURL string) (extension string, URL string) {
 	}
 }
 
-func (b *brokerImpl) generatePluginArchiveName(plugin model.ChePlugin) string {
-	return fmt.Sprintf("%s.%s.%s.%s", plugin.Publisher, plugin.Name, plugin.Version, b.rand.String(10))
+func (b *brokerImpl) generatePluginArchiveName(plugin model.ChePlugin, archivePath string) string {
+	archiveName := filepath.Base(archivePath)
+	return fmt.Sprintf("%s.%s.%s.%s.%s", plugin.Publisher, plugin.Name, plugin.Version, b.rand.String(10), archiveName)
 }
 
 func (b *brokerImpl) getExtensionArchiveURL(extension string, meta model.PluginMeta) (string, error) {

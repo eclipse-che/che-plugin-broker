@@ -596,7 +596,14 @@ func expectedNoPlugin() []model.ChePlugin {
 
 func setUpSuccessfulCase(workDir string, meta model.PluginMeta, m *mocks) {
 	m.u.On("CopyResource", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
-	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.%s.randomString1234567890", meta.Publisher, meta.Name, meta.Version))
+	pluginPath := "/plugins"
+	if len(meta.Spec.Containers) > 0 {
+		pluginPath = filepath.Join(pluginPath, "sidecars",
+			re.ReplaceAllString(meta.Publisher+"_"+meta.Name+"_"+meta.Version, `_`))
+	}
+	pluginPath = filepath.Join(
+		pluginPath,
+		fmt.Sprintf("%s.%s.%s.randomString1234567890.test005528325", meta.Publisher, meta.Name, meta.Version))
 	m.u.On("CopyFile", mock.AnythingOfType("string"), pluginPath).Return(nil)
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))

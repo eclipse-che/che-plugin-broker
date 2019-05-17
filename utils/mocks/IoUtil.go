@@ -52,18 +52,25 @@ func (_m *IoUtil) CreateFile(file string, tr io.Reader) error {
 	return r0
 }
 
-// Download provides a mock function with given fields: URL, destPath
-func (_m *IoUtil) Download(URL string, destPath string) error {
-	ret := _m.Called(URL, destPath)
+// Download provides a mock function with given fields: URL, destPath, useContentDisposition
+func (_m *IoUtil) Download(URL string, destPath string, useContentDisposition bool) (string, error) {
+	ret := _m.Called(URL, destPath, useContentDisposition)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(URL, destPath)
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string, string, bool) string); ok {
+		r0 = rf(URL, destPath, useContentDisposition)
 	} else {
-		r0 = ret.Error(0)
+		r0 = ret.Get(0).(string)
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, bool) error); ok {
+		r1 = rf(URL, destPath, useContentDisposition)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // Fetch provides a mock function with given fields: url

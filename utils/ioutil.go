@@ -13,6 +13,8 @@
 package utils
 
 import (
+	"path"
+	"mime"
 	"archive/tar"
 	"archive/zip"
 	"bufio"
@@ -29,7 +31,7 @@ import (
 )
 
 type IoUtil interface {
-	Download(URL string, destPath string) error
+	Download(URL string, destPath string, useContentDisposition bool) (string, error)
 	CopyResource(src string, dest string) error
 	CopyFile(src string, dest string) error
 	ResolveDestPath(filePath string, destDir string) string
@@ -56,29 +58,52 @@ func New() IoUtil {
 // Download downloads file by provided URL and places its content to provided destPath.
 // Returns error in a case of any problems.
 // Returns HTTPError if downloading is caused by non 2xx response from a service accessed by URL
-func (util *impl) Download(URL string, destPath string) error {
-	out, err := os.Create(destPath)
-	if err != nil {
-		return err
-	}
-	defer Close(out)
-
+func (util *impl) Download(URL string, destPath string, useContentDisposition bool) (string, error) {
 	resp, err := util.httpClient.Get(URL)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer Close(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		return NewHTTPError(resp, fmt.Sprintf("Downloading %s failed. Status code %v", URL, resp.StatusCode))
+		return "", NewHTTPError(resp, fmt.Sprintf("Downloading %s failed. Status code %v", URL, resp.StatusCode))
 	}
 
+	if useContentDisposition {
+		filePath, filename := filepath.Split(destPath)
+
+		if dispo := resp.Header.Get("Content-Disposition"); dispo != "" {
+			contentDispoFilename := ""
+			if _, params, err := mime.ParseMediaType(dispo); err == nil {
+				contentDispoFilename = params["filename"]
+			}
+			if strings.HasSuffix(contentDispoFilename, "/") || strings.Contains(contentDispoFilename, "\x00") {
+				contentDispoFilename = ""
+			}
+			contentDispoFilename = path.Base(path.Clean("/" + contentDispoFilename))
+			if contentDispoFilename == "." || contentDispoFilename == "/" {
+				contentDispoFilename = ""
+			}
+			if contentDispoFilename != "" {
+				filename = contentDispoFilename
+			}
+		}
+	
+		destPath = filepath.Join(filePath, filename)
+	}
+
+	out, err := os.Create(destPath)
+	if err != nil {
+		return "", err
+	}
+	defer Close(out)
+	
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return out.Sync()
+	return destPath, out.Sync()
 }
 
 // Fetch downloads data from URL and returns the bytes in the response.

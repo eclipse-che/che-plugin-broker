@@ -194,7 +194,7 @@ func (b *brokerImpl) downloadArchives(URLs []string, meta model.PluginMeta, work
 		archivePath := b.ioUtil.ResolveDestPathFromURL(URL, workDir)
 		b.PrintDebug("Downloading VS Code extension archive '%s' for plugin '%s' to '%s'", URL, meta.ID, archivePath)
 		b.PrintInfo("Downloading VS Code extension for plugin '%s'", meta.ID)
-		err := b.downloadArchive(URL, archivePath)
+		archivePath, err := b.downloadArchive(URL, archivePath)
 		paths = append(paths, archivePath)
 		if err != nil {
 			return nil, err
@@ -263,20 +263,20 @@ func (b *brokerImpl) getExtensionArchiveURL(extension string, meta model.PluginM
 	return URL, nil
 }
 
-func (b *brokerImpl) downloadArchive(URL string, dest string) error {
-	err := b.ioUtil.Download(URL, dest)
+func (b *brokerImpl) downloadArchive(URL string, dest string) (string, error) {
+	downloadedPath, err := b.ioUtil.Download(URL, dest, true)
 	retries := 5
 	for i := 1; i <= retries && isRateLimitError(err); i++ {
 		b.PrintInfo("VS Code marketplace access rate limit reached. Download of VS Code extension is blocked from current IP address. Retry #%v from 5 in 1 minute", i)
 		time.Sleep(1 * time.Minute)
-		err = b.ioUtil.Download(URL, dest)
+		downloadedPath, err = b.ioUtil.Download(URL, dest, true)
 	}
 
 	if isRateLimitError(err) {
 		err = errors.New("VS Code marketplace access rate limit reached. Download of VS Code extension is blocked from current IP address. 5 retries failed in 5 minutes. Giving up")
 	}
 
-	return err
+	return downloadedPath, err
 }
 
 func isRateLimitError(err error) bool {

@@ -49,7 +49,7 @@ type brokerImpl struct {
 	localhostSidecar bool
 }
 
-// NewBrokerWithParams creates Che VS Code extension broker instance
+// NewBrokerWithParams creates Che VS Code/Theia extension broker instance
 func NewBrokerWithParams(
 	broker common.Broker,
 	ioUtil utils.IoUtil,
@@ -70,11 +70,11 @@ func NewBrokerWithParams(
 // Start executes plugins metas processing and sends data to Che master
 func (b *brokerImpl) Start(metas []model.PluginMeta) {
 	b.PubStarted()
-	b.PrintInfo("Started VS Code Plugin Broker")
+	b.PrintInfo("Started Theia & VS Code Plugin Broker")
 
 	b.PrintPlan(metas)
 
-	b.PrintInfo("Starting VS Code extensions processing")
+	b.PrintInfo("Starting extensions processing")
 	for _, meta := range metas {
 		err := b.ProcessPlugin(meta)
 		if err != nil {
@@ -134,11 +134,12 @@ func (b *brokerImpl) ProcessPlugin(meta model.PluginMeta) error {
 }
 
 func (b *brokerImpl) injectLocalPlugin(plugin model.ChePlugin, archivesPaths []string) error {
-	b.PrintDebug("Copying VS Code plugin '%s'", plugin.ID)
+	b.PrintDebug("Copying plugin '%s'", plugin.ID)
 	for _, path := range archivesPaths {
-		pluginName := b.generatePluginArchiveName(plugin)
+		fileExt := filepath.Ext(path)
+		pluginName := b.generatePluginArchiveName(plugin, fileExt)
 		pluginPath := filepath.Join("/plugins", pluginName)
-		b.PrintDebug("Copying VS Code extension archive from '%s' to '%s' for plugin '%s'", path, pluginPath, plugin.ID)
+		b.PrintDebug("Copying extension archive from '%s' to '%s' for plugin '%s'", path, pluginPath, plugin.ID)
 		err := b.ioUtil.CopyFile(path, pluginPath)
 		if err != nil {
 			return err
@@ -167,7 +168,7 @@ func (b *brokerImpl) injectRemotePlugin(plugin model.ChePlugin, archivesPaths []
 			pluginName := b.generatePluginFolderName(plugin, *pj)
 
 			pluginFolderPath := filepath.Join("/plugins", pluginName)
-			b.PrintDebug("Copying VS Code extension '%s' from '%s' to '%s'", plugin.ID, unpackedPath, pluginFolderPath)
+			b.PrintDebug("Copying extension '%s' from '%s' to '%s'", plugin.ID, unpackedPath, pluginFolderPath)
 			err = b.ioUtil.CopyResource(unpackedPath, pluginFolderPath)
 			if err != nil {
 				return err
@@ -175,7 +176,7 @@ func (b *brokerImpl) injectRemotePlugin(plugin model.ChePlugin, archivesPaths []
 		}
 		plugin = AddExtension(plugin, *pj, b.localhostSidecar)
 	}
-	
+
 	if b.localhostSidecar {
 		plugin.Endpoints = plugin.Endpoints[1:]
 	}
@@ -198,10 +199,10 @@ func convertMetaToPlugin(meta model.PluginMeta) model.ChePlugin {
 func (b *brokerImpl) downloadArchives(URLs []string, meta model.PluginMeta, workDir string) ([]string, error) {
 	paths := make([]string, 0)
 	for _, URL := range URLs {
-		archivePath := filepath.Join(workDir, "pluginArchive"+b.rand.String(10))
-		b.PrintDebug("Downloading VS Code extension archive '%s' for plugin '%s' to '%s'", URL, meta.ID, archivePath)
-		b.PrintInfo("Downloading VS Code extension for plugin '%s'", meta.ID)
-		err := b.downloadArchive(URL, archivePath)
+		b.PrintDebug("Downloading extension archive '%s' for plugin '%s' to directory '%s'", URL, meta.ID, workDir)
+		b.PrintInfo("Downloading extension for plugin '%s'", meta.ID)
+		archivePath, err := b.downloadArchive(URL, workDir, "pluginArchive"+b.rand.String(10))
+		b.PrintDebug("Downloaded extension archive '%s' for plugin '%s' to path '%s'", URL, meta.ID, archivePath)
 		paths = append(paths, archivePath)
 		if err != nil {
 			return nil, err
@@ -258,8 +259,12 @@ func (b *brokerImpl) generatePluginFolderName(plugin model.ChePlugin, pj Package
 	return fmt.Sprintf("%s.%s.%s.%s", plugin.Publisher, plugin.Name, plugin.Version, prettyID)
 }
 
-func (b *brokerImpl) generatePluginArchiveName(plugin model.ChePlugin) string {
-	return fmt.Sprintf("%s.%s.%s.%s", plugin.Publisher, plugin.Name, plugin.Version, b.rand.String(10))
+func (b *brokerImpl) generatePluginArchiveName(plugin model.ChePlugin, fileExt string) string {
+	archiveName := fmt.Sprintf("%s.%s.%s.%s", plugin.Publisher, plugin.Name, plugin.Version, b.rand.String(10))
+	if fileExt != "" {
+		archiveName = fmt.Sprintf("%s%s", archiveName, fileExt)
+	}
+	return archiveName
 }
 
 func (b *brokerImpl) getExtensionArchiveURL(extension string, meta model.PluginMeta) (string, error) {
@@ -275,20 +280,20 @@ func (b *brokerImpl) getExtensionArchiveURL(extension string, meta model.PluginM
 	return URL, nil
 }
 
-func (b *brokerImpl) downloadArchive(URL string, dest string) error {
-	err := b.ioUtil.Download(URL, dest)
+func (b *brokerImpl) downloadArchive(URL, destPath, defaultFilename string) (string, error) {
+	downloadedPath, err := b.ioUtil.DownloadPreserveFilename(URL, destPath, defaultFilename)
 	retries := 5
 	for i := 1; i <= retries && isRateLimitError(err); i++ {
 		b.PrintInfo("VS Code marketplace access rate limit reached. Download of VS Code extension is blocked from current IP address. Retry #%v from 5 in 1 minute", i)
 		time.Sleep(1 * time.Minute)
-		err = b.ioUtil.Download(URL, dest)
+		downloadedPath, err = b.ioUtil.DownloadPreserveFilename(URL, destPath, defaultFilename)
 	}
 
 	if isRateLimitError(err) {
 		err = errors.New("VS Code marketplace access rate limit reached. Download of VS Code extension is blocked from current IP address. 5 retries failed in 5 minutes. Giving up")
 	}
 
-	return err
+	return downloadedPath, err
 }
 
 func isRateLimitError(err error) bool {
@@ -312,22 +317,22 @@ func (b *brokerImpl) fetchExtensionInfo(extension string, meta model.PluginMeta)
 	body := []byte(fmt.Sprintf(bodyFmt, extName))
 	req, err := http.NewRequest("POST", marketplace, bytes.NewBuffer(body))
 	if err != nil {
-		return nil, fmt.Errorf("VS Code extension id '%s' fetching failed for plugin %s. Error: %s", extension, meta.ID, err)
+		return nil, fmt.Errorf("Extension id '%s' fetching failed for plugin %s. Error: %s", extension, meta.ID, err)
 	}
 	req.Header.Set("Accept", "application/json;api-version=3.0-preview.1")
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := b.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("VS Code extension downloading failed %s. Error: %s", meta.ID, err)
+		return nil, fmt.Errorf("Extension downloading failed %s. Error: %s", meta.ID, err)
 	}
 	defer utils.Close(resp.Body)
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("VS Code extension downloading failed %s. Error: %s", meta.ID, err)
+		return nil, fmt.Errorf("Extension downloading failed %s. Error: %s", meta.ID, err)
 	}
 	if resp.StatusCode != 200 {
-		errMsg := "VS Code extension downloading failed %s. Status: %v. Body: " + string(body)
+		errMsg := "Extension downloading failed %s. Status: %v. Body: " + string(body)
 		return nil, fmt.Errorf(errMsg, meta.ID, resp.StatusCode)
 	}
 

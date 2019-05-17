@@ -66,6 +66,27 @@ func (_m *IoUtil) Download(URL string, destPath string) error {
 	return r0
 }
 
+// DownloadPreserveFilename provides a mock function with given fields: URL, destPath, defaultFilename
+func (_m *IoUtil) DownloadPreserveFilename(URL string, destPath string, defaultFilename string) (string, error) {
+	ret := _m.Called(URL, destPath, defaultFilename)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string, string, string) string); ok {
+		r0 = rf(URL, destPath, defaultFilename)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
+		r1 = rf(URL, destPath, defaultFilename)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Fetch provides a mock function with given fields: url
 func (_m *IoUtil) Fetch(url string) ([]byte, error) {
 	ret := _m.Called(url)

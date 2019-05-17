@@ -16,12 +16,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	tests "github.com/eclipse/che-plugin-broker/brokers/test"
-	"github.com/eclipse/che-plugin-broker/utils"
 	"io/ioutil"
 	"net/http"
+	"path"
 	"path/filepath"
 	"testing"
+
+	tests "github.com/eclipse/che-plugin-broker/brokers/test"
+	"github.com/eclipse/che-plugin-broker/utils"
 
 	"github.com/eclipse/che-plugin-broker/brokers/test"
 	"github.com/eclipse/che-plugin-broker/common"
@@ -63,11 +65,11 @@ func initMocks(useLocalhost bool) *mocks {
 		u:        u,
 		randMock: randMock,
 		b: &brokerImpl{
-			Broker:  cb,
-			ioUtil:  u,
-			Storage: storage.New(),
-			client:  test.NewTestHTTPClient(okMarketplaceResponse),
-			rand:    randMock,
+			Broker:           cb,
+			ioUtil:           u,
+			Storage:          storage.New(),
+			client:           test.NewTestHTTPClient(okMarketplaceResponse),
+			rand:             randMock,
 			localhostSidecar: useLocalhost,
 		},
 	}
@@ -231,7 +233,7 @@ func TestBroker_processPlugin(t *testing.T) {
 					},
 				},
 			},
-			unzipFunc: createUnzipTheiaArchiveFuncStub(generatePackageJSON("peppers.com", "cool-extension")),
+			unzipFunc:    createUnzipTheiaArchiveFuncStub(generatePackageJSON("peppers.com", "cool-extension")),
 			useLocalhost: false,
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
 				false,
@@ -256,7 +258,7 @@ func TestBroker_processPlugin(t *testing.T) {
 					},
 				},
 			},
-			unzipFunc: createUnzipTheiaArchiveFuncStub(generatePackageJSON("peppers.com", "cool-extension")),
+			unzipFunc:    createUnzipTheiaArchiveFuncStub(generatePackageJSON("peppers.com", "cool-extension")),
 			useLocalhost: true,
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
 				true,
@@ -336,7 +338,7 @@ func TestBroker_processPlugin(t *testing.T) {
 				},
 			},
 			useLocalhost: false,
-			unzipFunc: createUnzipFuncStub(generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools")),
+			unzipFunc:    createUnzipFuncStub(generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools")),
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
 				false,
 				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools")),
@@ -361,7 +363,7 @@ func TestBroker_processPlugin(t *testing.T) {
 				},
 			},
 			useLocalhost: true,
-			unzipFunc: createUnzipFuncStub(generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools")),
+			unzipFunc:    createUnzipFuncStub(generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools")),
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
 				true,
 				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools")),
@@ -519,7 +521,7 @@ func TestBroker_processPlugin(t *testing.T) {
 			unzipFunc: createUnzipFuncStub(
 				generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools"),
 				generatePackageJSON("redhat-com", "vscode-jdt-ls"),
-				generatePackageJSON("peppers.com", "cool-extension"), ),
+				generatePackageJSON("peppers.com", "cool-extension")),
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
 				false,
 				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools"),
@@ -551,7 +553,7 @@ func TestBroker_processPlugin(t *testing.T) {
 			unzipFunc: createUnzipFuncStub(
 				generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools"),
 				generatePackageJSON("redhat-com", "vscode-jdt-ls"),
-				generatePackageJSON("peppers.com", "cool-extension"), ),
+				generatePackageJSON("peppers.com", "cool-extension")),
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
 				true,
 				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools"),
@@ -621,7 +623,7 @@ func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(usedLocalhost bo
 			},
 		},
 	}
-	if ! usedLocalhost  {
+	if !usedLocalhost {
 		expectedPlugin.Endpoints = append(expectedPlugin.Endpoints, model.Endpoint{
 			Name:       "randomString1234567890",
 			Public:     false,
@@ -630,7 +632,7 @@ func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(usedLocalhost bo
 	}
 	for _, envVarName := range pluginTheiaEndpointVars {
 		hostName := "randomString1234567890"
-		if (usedLocalhost) {
+		if usedLocalhost {
 			hostName = "localhost"
 		}
 		expectedPlugin.WorkspaceEnv = append(expectedPlugin.WorkspaceEnv, model.EnvVar{
@@ -660,7 +662,7 @@ func setUpSuccessfulCase(workDir string, meta model.PluginMeta, m *mocks, unzipF
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	m.cb.On("PrintInfo", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
-	m.u.On("Download", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
+	m.u.On("DownloadPreserveFilename", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(mockDownloadedFilePath, nil)
 	m.u.On("TempDir", "", "vscode-extension-broker").Return(workDir, nil)
 	m.randMock.On("IntFromRange", 4000, 10000).Return(4242)
 	m.randMock.On("String", 10).Return("randomString1234567890")
@@ -726,7 +728,7 @@ func setUpDownloadFailureCase(workDir string, m *mocks) {
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	m.cb.On("PrintInfo", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
-	m.u.On("Download", vsixBrokenURL, mock.AnythingOfType("string")).Return(errors.New("Failed to download plugin")).Once()
+	m.u.On("DownloadPreserveFilename", vsixBrokenURL, mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return("", errors.New("Failed to download plugin")).Once()
 	m.u.On("TempDir", "", "vscode-extension-broker").Return(workDir, nil).Once()
 	m.randMock.On("IntFromRange", 4000, 10000).Return(4242).Once()
 	m.randMock.On("String", 10).Return("randomString1234567890")
@@ -782,7 +784,7 @@ func TestFetchExtensionInfo(t *testing.T) {
 		},
 		{
 			ext: "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
-			err: "VS Code extension downloading failed tid. Status: 400. Body: ",
+			err: "Extension downloading failed tid. Status: 400. Body: ",
 			roundTF: func(req *http.Request) *http.Response {
 				return &http.Response{
 					StatusCode: 400,
@@ -792,7 +794,7 @@ func TestFetchExtensionInfo(t *testing.T) {
 		},
 		{
 			ext: "vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
-			err: "VS Code extension downloading failed tid. Status: 400. Body: " + "test error",
+			err: "Extension downloading failed tid. Status: 400. Body: " + "test error",
 			roundTF: func(req *http.Request) *http.Response {
 				return &http.Response{
 					StatusCode: 400,
@@ -1050,4 +1052,8 @@ func okMarketplaceResponse(req *http.Request) *http.Response {
 		StatusCode: 200,
 		Body:       ioutil.NopCloser(bytes.NewBufferString(JSON)),
 	}
+}
+
+func mockDownloadedFilePath(url, destPath, name string) string {
+	return path.Join(destPath, name)
 }

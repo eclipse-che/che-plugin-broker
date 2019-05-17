@@ -21,15 +21,18 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 )
 
 type IoUtil interface {
 	Download(URL string, destPath string) error
+	DownloadPreserveFilename(URL, destPath, defaultFilename string) (string, error)
 	CopyResource(src string, dest string) error
 	CopyFile(src string, dest string) error
 	ResolveDestPath(filePath string, destDir string) string
@@ -78,6 +81,46 @@ func (util *impl) Download(URL string, destPath string) error {
 	}
 
 	return out.Sync()
+}
+
+// DownloadPreserveFilename downloads a file from provided URL using filename specified in
+// Content-Disposition header. If filename cannot be determined, uses provided
+// filename. Content is downloaded to destPath in both cases.
+// Returns path to downloaded file.
+// Returns error in a case of any problems.
+// Returns HTTPError if downloading is caused by non 2xx response from a service accessed by URL
+func (util *impl) DownloadPreserveFilename(URL, destPath, defaultFilename string) (string, error) {
+	resp, err := util.httpClient.Get(URL)
+	if err != nil {
+		return "", fmt.Errorf("failed to get data from %s: %s", URL, err)
+	}
+	defer Close(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return "", NewHTTPError(resp, fmt.Sprintf("downloading %s failed. Status code %v", URL, resp.StatusCode))
+	}
+
+	filename := defaultFilename
+
+	contentDisposition := resp.Header.Get("Content-Disposition")
+	_, params, err := mime.ParseMediaType(contentDisposition)
+	if err == nil && params["filename"] != "" {
+		filename = params["filename"]
+	}
+
+	outputPath := path.Join(destPath, filename)
+	out, err := os.Create(outputPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to create destination file %s: %s", outputPath, err)
+	}
+	defer Close(out)
+
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to download file: %s", err)
+	}
+
+	return outputPath, out.Sync()
 }
 
 // Fetch downloads data from URL and returns the bytes in the response.

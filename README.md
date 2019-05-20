@@ -30,18 +30,21 @@ What it actually does:
 
 - Downloads .theia and/or vsix archives and
 - If meta.spec contains `containers` field with a container definition extension/plugin is considered remote. Otherwise it is considered local
-- Unzip it to a temp folder
-- Check content of package.json file in it
-- Copies plugin or extension to /plugins/ in packed or unpacked state depending on its type and whether Che plugin is local or remote
-- For remote plugin case, evaluates Che workspace sidecar config for running VS Code or Theia extensions/plugins as Che Theia remote plugins in a sidecar:
-  - adds an endpoint with random port between 4000 and 10000 and name `port<port>`
-  - adds env var to workspace-wide env vars with name
- `THEIA_PLUGIN_REMOTE_ENDPOINT_<plugin_publisher_and_name from package.json>` and value
- `ws://port<port>:<port>`
-  - adds env var to sidecar env vars with name
- `THEIA_PLUGIN_ENDPOINT_PORT` and value `port`
-  - with projects volume
-  - with plugin volume
+- For the local plugin case, copies plugin or extension archives to `/plugins`
+- For the remote plugin case:
+  - Copies plugin or extension archives to `/plugins/sidecars/<unique plugin name>/`
+  - Evaluates Che workspace sidecar config for running VS Code or Theia extensions/plugins as Che Theia remote plugins in a sidecar:
+    - with projects volume
+    - with plugins volume
+    - adds env var to sidecar env vars with name
+   `THEIA_PLUGINS` and value `local-dir:///plugins/sidecars/<unique plugin name>`
+    - only if some plugins might live in a distinct host as the Theia instance (when [`UseLocalHostInPluginsUrls`](https://github.com/eclipse/che-plugin-broker/blob/23a7e2dba19527a19b5cf8fdfaac90c020d3e9ae/cfg/cfg.go#L58) is `False`):
+      - adds an endpoint with random port between 4000 and 10000 and a random name
+      - adds env var to sidecar env vars with name
+     `THEIA_PLUGIN_ENDPOINT_PORT` and value `<endpoint port>`
+      - adds env var to workspace-wide env vars with name
+     `THEIA_PLUGIN_REMOTE_ENDPOINT_<unique_plugin_name>` and value
+     `ws://<endpoint name>:<endpoint port>`
 - Sends sidecar config to Che workspace master
 
 ## Development

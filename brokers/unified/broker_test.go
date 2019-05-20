@@ -57,8 +57,7 @@ func createMocks() *mocks {
 	cb.On("PubStarted")
 	cb.On("PrintPlan", mock.AnythingOfType("[]model.PluginMeta"))
 	cb.On("CloseConsumers")
-	cb.On("PubDone", mock.AnythingOfType("string"))
-
+	cb.On("PubDone", mock.AnythingOfType("string"))	
 	return &mocks{
 		cb:       cb,
 		u:        u,

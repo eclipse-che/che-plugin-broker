@@ -69,28 +69,37 @@ func (util *impl) Download(URL string, destPath string, useContentDisposition bo
 		return "", NewHTTPError(resp, fmt.Sprintf("Downloading %s failed. Status code %v", URL, resp.StatusCode))
 	}
 
-	if useContentDisposition {
-		filePath, filename := filepath.Split(destPath)
+	filePath, filename := filepath.Split(destPath)
 
-		if dispo := resp.Header.Get("Content-Disposition"); dispo != "" {
-			contentDispoFilename := ""
-			if _, params, err := mime.ParseMediaType(dispo); err == nil {
-				contentDispoFilename = params["filename"]
+	if useContentDisposition {
+		fromHeader := func () (found bool, filename string) {
+			dispo := resp.Header.Get("Content-Disposition")
+			if dispo == "" {
+				return 
 			}
+
+			_, params, err := mime.ParseMediaType(dispo);
+			if err != nil {
+				return
+			}
+				
+			contentDispoFilename := params["filename"]
 			if strings.HasSuffix(contentDispoFilename, "/") || strings.Contains(contentDispoFilename, "\x00") {
-				contentDispoFilename = ""
+				return 
 			}
 			contentDispoFilename = path.Base(path.Clean("/" + contentDispoFilename))
 			if contentDispoFilename == "." || contentDispoFilename == "/" {
-				contentDispoFilename = ""
+				return
 			}
-			if contentDispoFilename != "" {
-				filename = contentDispoFilename
-			}
+			return true, contentDispoFilename
 		}
 	
-		destPath = filepath.Join(filePath, filename)
+		if found, contentDispoFilename := fromHeader(); found {
+			filename = contentDispoFilename
+		}
 	}
+	
+	destPath = filepath.Join(filePath, filename)
 
 	out, err := os.Create(destPath)
 	if err != nil {

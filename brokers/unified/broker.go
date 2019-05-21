@@ -48,20 +48,25 @@ type Broker struct {
 }
 
 // NewBroker creates Che broker instance
-func NewBroker(localhostSidecar bool) *Broker {
-	commonBroker := common.NewBroker()
-	ioUtils := utils.New()
-	storageObj := storage.New()
-	httpClient := &http.Client{}
-	rand := common.NewRand()
-
-	vscodeBroker := vscode.NewBrokerWithParams(commonBroker, ioUtils, storageObj, rand, httpClient, localhostSidecar)
-	return &Broker{
-		Broker:       commonBroker,
-		Storage:      storageObj,
-		utils:        ioUtils,
-		vscodeBroker: vscodeBroker,
+func NewBrokerWithParams(
+	commonBroker common.Broker,
+	ioUtil utils.IoUtil,
+	storage storage.Storage,
+	rand common.Random,
+	httpClient *http.Client,
+	localhostSidecar bool) *Broker {
+		vscodeBroker := vscode.NewBrokerWithParams(commonBroker, ioUtil, storage, rand, httpClient, localhostSidecar)
+		return &Broker{
+			Broker:       commonBroker,
+			Storage:      storage,
+			utils:        ioUtil,
+			vscodeBroker: vscodeBroker,
+		}
 	}
+
+// NewBroker creates Che broker instance
+func NewBroker(localhostSidecar bool) *Broker {
+	return NewBrokerWithParams(common.NewBroker(), utils.New(), storage.New(), common.NewRand(), &http.Client{}, localhostSidecar)
 }
 
 // DownloadMetasAndStart downloads metas from plugin registry for specified
@@ -119,7 +124,7 @@ func (b *Broker) ProcessPlugins(metas []model.PluginMeta) error {
 
 	b.PrintInfo("Starting Che plugins and editor processing")
 	for _, meta := range cheMetas {
-		plugin := convertMetaToPlugin(meta)
+		plugin := ConvertMetaToPlugin(meta)
 		err = b.Storage.AddPlugin(plugin)
 		if err != nil {
 			return err
@@ -137,42 +142,84 @@ func (b *Broker) ProcessPlugins(metas []model.PluginMeta) error {
 	return nil
 }
 
-func validateMetas(metas []model.PluginMeta) error {
-	for _, meta := range metas {
-		switch meta.APIVersion {
-		case "":
-			return fmt.Errorf("Plugin '%s' is invalid. Field 'apiVersion' must be present", meta.ID)
-		case "v2":
-			// validate here something
-		default:
-			return fmt.Errorf("Plugin '%s' is invalid. Field 'apiVersion' contains invalid version '%s'", meta.ID, meta.APIVersion)
-		}
+func ValidateMeta(meta model.PluginMeta) error {
+	switch meta.APIVersion {
+	case "":
+		return fmt.Errorf("Plugin '%s' is invalid. Field 'apiVersion' must be present", meta.ID)
+	case "v2":
+		// validate here something
+	default:
+		return fmt.Errorf("Plugin '%s' is invalid. Field 'apiVersion' contains invalid version '%s'", meta.ID, meta.APIVersion)
+	}
 
-		switch strings.ToLower(meta.Type) {
-		case ChePluginType:
-			fallthrough
-		case EditorPluginType:
-			if len(meta.Spec.Extensions) != 0 {
-				return fmt.Errorf("Plugin '%s' is invalid. Field 'spec.extensions' is not allowed in plugin of type '%s'", meta.ID, meta.Type)
-			}
-			if len(meta.Spec.Containers) == 0 {
-				return fmt.Errorf("Plugin '%s' is invalid. Field 'spec.containers' must not be empty", meta.ID)
-			}
-		case TheiaPluginType:
-			fallthrough
-		case VscodePluginType:
-			if len(meta.Spec.Extensions) == 0 {
-				return fmt.Errorf("Plugin '%s' is invalid. Field 'spec.extensions' must not be empty", meta.ID)
-			}
-			if len(meta.Spec.Containers) > 1 {
-				return fmt.Errorf("Plugin '%s' is invalid. Containers list 'spec.containers' must not contain more than 1 container, but '%d' found", meta.ID, len(meta.Spec.Containers))
-			}
-			if len(meta.Spec.Endpoints) != 0 {
-				return fmt.Errorf("Plugin '%s' is invalid. Setting endpoints at 'spec.endpoints' is not allowed in plugins of type '%s'", meta.ID, meta.Type)
-			}
+	switch strings.ToLower(meta.Type) {
+	case ChePluginType:
+		fallthrough
+	case EditorPluginType:
+		if len(meta.Spec.Extensions) != 0 {
+			return fmt.Errorf("Plugin '%s' is invalid. Field 'spec.extensions' is not allowed in plugin of type '%s'", meta.ID, meta.Type)
+		}
+		if len(meta.Spec.Containers) == 0 {
+			return fmt.Errorf("Plugin '%s' is invalid. Field 'spec.containers' must not be empty", meta.ID)
+		}
+	case TheiaPluginType:
+		fallthrough
+	case VscodePluginType:
+		if len(meta.Spec.Extensions) == 0 {
+			return fmt.Errorf("Plugin '%s' is invalid. Field 'spec.extensions' must not be empty", meta.ID)
+		}
+		if len(meta.Spec.Containers) > 1 {
+			return fmt.Errorf("Plugin '%s' is invalid. Containers list 'spec.containers' must not contain more than 1 container, but '%d' found", meta.ID, len(meta.Spec.Containers))
+		}
+		if len(meta.Spec.Endpoints) != 0 {
+			return fmt.Errorf("Plugin '%s' is invalid. Setting endpoints at 'spec.endpoints' is not allowed in plugins of type '%s'", meta.ID, meta.Type)
 		}
 	}
 	return nil
+}
+
+func validateMetas(metas []model.PluginMeta) error {
+	for _, meta := range metas {
+		if err := ValidateMeta(meta); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// GetPluginMeta downloads the metadata for a plugin. If specified,
+// defaultRegistry is used as the registry when plugin does not specify its registry.
+// If defaultRegistry is empty, and plugin does not specify a registry, an error is returned.
+func (b *Broker) GetPluginMeta(plugin model.PluginFQN, defaultRegistry string) (*model.PluginMeta, error) {
+	log.Printf("Fetching plugin meta.yaml for %s", plugin.ID)
+	registry, err := getRegistryURL(plugin, defaultRegistry)
+	if err != nil {
+		return nil, err
+	}
+	pluginURL := fmt.Sprintf(RegistryURLFormat, registry, plugin.ID)
+	pluginRaw, err := b.utils.Fetch(pluginURL)
+	if err != nil {
+		if httpErr, ok := err.(*utils.HTTPError); ok {
+			return nil, fmt.Errorf(
+				"failed to fetch plugin meta.yaml for plugin '%s' from registry '%s': %s. Response body: %s",
+				plugin.ID, registry, httpErr, httpErr.Body)
+		} else {
+			return nil, fmt.Errorf(
+				"failed to fetch plugin meta.yaml for plugin '%s' from registry '%s': %s",
+				plugin.ID, registry, err)
+		}
+	}
+
+	var pluginMeta model.PluginMeta
+	if err := yaml.Unmarshal(pluginRaw, &pluginMeta); err != nil {
+		return nil, fmt.Errorf(
+			"failed to unmarshal downloaded meta.yaml for plugin '%s': %s", plugin.ID, err)
+	}
+	// Ensure ID field is set since it is used all over the place in broker
+	if pluginMeta.ID == "" {
+		pluginMeta.ID = plugin.ID
+	}
+	return &pluginMeta, nil
 }
 
 // getPluginMetas downloads the metadata for each plugin in plugins. If specified,
@@ -181,35 +228,11 @@ func validateMetas(metas []model.PluginMeta) error {
 func (b *Broker) getPluginMetas(plugins []model.PluginFQN, defaultRegistry string) ([]model.PluginMeta, error) {
 	metas := make([]model.PluginMeta, 0, len(plugins))
 	for _, plugin := range plugins {
-		log.Printf("Fetching plugin meta.yaml for %s", plugin.ID)
-		registry, err := getRegistryURL(plugin, defaultRegistry)
+		pluginMeta, err := b.GetPluginMeta(plugin, defaultRegistry)
 		if err != nil {
 			return nil, err
 		}
-		pluginURL := fmt.Sprintf(RegistryURLFormat, registry, plugin.ID)
-		pluginRaw, err := b.utils.Fetch(pluginURL)
-		if err != nil {
-			if httpErr, ok := err.(*utils.HTTPError); ok {
-				return nil, fmt.Errorf(
-					"failed to fetch plugin meta.yaml for plugin '%s' from registry '%s': %s. Response body: %s",
-					plugin.ID, registry, httpErr, httpErr.Body)
-			} else {
-				return nil, fmt.Errorf(
-					"failed to fetch plugin meta.yaml for plugin '%s' from registry '%s': %s",
-					plugin.ID, registry, err)
-			}
-		}
-
-		var pluginMeta model.PluginMeta
-		if err := yaml.Unmarshal(pluginRaw, &pluginMeta); err != nil {
-			return nil, fmt.Errorf(
-				"failed to unmarshal downloaded meta.yaml for plugin '%s': %s", plugin.ID, err)
-		}
-		// Ensure ID field is set since it is used all over the place in broker
-		if pluginMeta.ID == "" {
-			pluginMeta.ID = plugin.ID
-		}
-		metas = append(metas, pluginMeta)
+		metas = append(metas, *pluginMeta)
 	}
 	return metas, nil
 }
@@ -263,7 +286,7 @@ func getRegistryURL(plugin model.PluginFQN, defaultRegistry string) (string, err
 	return registry, nil
 }
 
-func convertMetaToPlugin(meta model.PluginMeta) model.ChePlugin {
+func ConvertMetaToPlugin(meta model.PluginMeta) model.ChePlugin {
 	return model.ChePlugin{
 		ID:           meta.ID,
 		Name:         meta.Name,

@@ -47,7 +47,7 @@ type Broker struct {
 	vscodeBroker common.BrokerImpl
 }
 
-// NewBroker creates Che broker instance
+// NewBrokerWithParams creates Che broker instance with parameters
 func NewBrokerWithParams(
 	commonBroker common.Broker,
 	ioUtil utils.IoUtil,
@@ -55,14 +55,14 @@ func NewBrokerWithParams(
 	rand common.Random,
 	httpClient *http.Client,
 	localhostSidecar bool) *Broker {
-		vscodeBroker := vscode.NewBrokerWithParams(commonBroker, ioUtil, storage, rand, httpClient, localhostSidecar)
-		return &Broker{
-			Broker:       commonBroker,
-			Storage:      storage,
-			utils:        ioUtil,
-			vscodeBroker: vscodeBroker,
-		}
+	vscodeBroker := vscode.NewBrokerWithParams(commonBroker, ioUtil, storage, rand, httpClient, localhostSidecar)
+	return &Broker{
+		Broker:       commonBroker,
+		Storage:      storage,
+		utils:        ioUtil,
+		vscodeBroker: vscodeBroker,
 	}
+}
 
 // NewBroker creates Che broker instance
 func NewBroker(localhostSidecar bool) *Broker {

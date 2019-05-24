@@ -260,7 +260,7 @@ func sortMetas(metas []model.PluginMeta) (che []model.PluginMeta, vscode []model
 func getRegistryURL(plugin model.PluginFQN, defaultRegistry string) (string, error) {
 	var registry string
 	if plugin.Registry != "" {
-		registry = strings.TrimSuffix(plugin.Registry, "/")
+		registry = strings.TrimSuffix(plugin.Registry, "/") + "/plugins"
 	} else {
 		if defaultRegistry == "" {
 			return "", fmt.Errorf("plugin '%s' does not specify registry and no default is provided", plugin.ID)

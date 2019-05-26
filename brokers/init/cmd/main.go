@@ -13,16 +13,52 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
+	"sync"
 
 	"github.com/eclipse/che-plugin-broker/cfg"
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/model"
 )
 
+func recursive(parentWg *sync.WaitGroup, broker common.Broker, dir string, depth int) {
+	defer func() {
+		if parentWg != nil {
+			err := os.RemoveAll(dir)
+			if err != nil {
+				broker.PrintInfo("WARN: failed to remove '%s'. Error: %s", dir, err)
+			}
+			parentWg.Done()
+		}
+	}()
+
+	depth--
+	if depth < 0 {
+		return
+	}
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		broker.PrintInfo("WARN: failed to read dir '%s'. Error: %s", dir, err)
+		return
+	}
+
+	wg := sync.WaitGroup{}
+	for _, file := range files {
+		if file.IsDir() {
+			path := filepath.Join(dir, file.Name())
+			wg.Add(1)
+			go recursive(&wg, broker, path, depth)
+		}
+	}
+	wg.Wait()
+}
+
 func main() {
+        runtime.GOMAXPROCS(runtime.NumCPU())
 	log.SetOutput(os.Stdout)
 
 	cfg.Parse()
@@ -39,18 +75,5 @@ func main() {
 	broker.PrintInfo("Starting Init Plugin Broker")
 	// Clear any existing plugins from /plugins/
 	broker.PrintInfo("Cleaning /plugins dir")
-	files, err := filepath.Glob(filepath.Join("/plugins", "*"))
-	if err != nil {
-		// Send log about clearing failure but proceed.
-		// We might want to change this behavior later
-		broker.PrintInfo("WARN: failed to clear /plugins directory. Error: %s", err)
-		return
-	}
-
-	for _, file := range files {
-		err = os.RemoveAll(file)
-		if err != nil {
-			broker.PrintInfo("WARN: failed to remove '%s'. Error: %s", file, err)
-		}
-	}
+	recursive(nil, broker, "/plugins", 1)
 }

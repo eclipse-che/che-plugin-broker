@@ -13,15 +13,17 @@
 package vscode
 
 import (
+	"strings"
 	"bytes"
 	"errors"
 	"fmt"
-	tests "github.com/eclipse/che-plugin-broker/brokers/test"
-	"github.com/eclipse/che-plugin-broker/utils"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"testing"
+
+	tests "github.com/eclipse/che-plugin-broker/brokers/test"
+	"github.com/eclipse/che-plugin-broker/utils"
 
 	"github.com/eclipse/che-plugin-broker/brokers/test"
 	"github.com/eclipse/che-plugin-broker/common"
@@ -34,8 +36,6 @@ import (
 )
 
 const (
-	extName          = "Test-name"
-	extPublisher     = "Test-publisher"
 	vsixURL          = "http://test.url"
 	vsixBrokenURL    = "http://broken.test.url"
 	pluginID         = "tid"
@@ -54,7 +54,7 @@ type mocks struct {
 	randMock *cmock.Random
 }
 
-func initMocks() *mocks {
+func initMocks(useLocalhost bool) *mocks {
 	cb := &cmock.Broker{}
 	u := &fmock.IoUtil{}
 	randMock := &cmock.Random{}
@@ -63,17 +63,18 @@ func initMocks() *mocks {
 		u:        u,
 		randMock: randMock,
 		b: &brokerImpl{
-			Broker:  cb,
-			ioUtil:  u,
-			Storage: storage.New(),
-			client:  test.NewTestHTTPClient(okMarketplaceResponse),
-			rand:    randMock,
+			Broker:           cb,
+			ioUtil:           u,
+			Storage:          storage.New(),
+			client:           test.NewTestHTTPClient(okMarketplaceResponse),
+			rand:             randMock,
+			localhostSidecar: useLocalhost,
 		},
 	}
 }
 
 func TestStart(t *testing.T) {
-	m := initMocks()
+	m := initMocks(false)
 
 	m.cb.On("PubStarted").Once()
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"))
@@ -88,7 +89,8 @@ func TestStart(t *testing.T) {
 }
 
 func TestProcessBrokenPluginUrl(t *testing.T) {
-	m := initMocks()
+	m := initMocks(false)
+
 	meta := model.PluginMeta{
 		ID:      pluginID,
 		Version: pluginVersion,
@@ -105,6 +107,7 @@ func TestProcessBrokenPluginUrl(t *testing.T) {
 	workDir := tests.CreateTestWorkDir()
 
 	setUpDownloadFailureCase(workDir, m)
+	m.u.On("ResolveDestPathFromURL", vsixBrokenURL, workDir).Return("/tmp/test005528325")
 	defer tests.RemoveAll(workDir)
 	err := m.b.ProcessPlugin(meta)
 
@@ -124,11 +127,11 @@ func TestProcessBrokenPluginUrl(t *testing.T) {
 
 func TestBroker_processPlugin(t *testing.T) {
 	cases := []struct {
-		name      string
-		meta      model.PluginMeta
-		err       string
-		want      []model.ChePlugin
-		unzipFunc UnzipFunc
+		name         string
+		meta         model.PluginMeta
+		err          string
+		want         []model.ChePlugin
+		useLocalhost bool
 	}{
 		{
 			name: "Return error when extensions field is empty and there is no containers",
@@ -207,11 +210,10 @@ func TestBroker_processPlugin(t *testing.T) {
 					Containers: []model.Container{},
 				},
 			},
-			unzipFunc: createUnzipTheiaArchiveFuncStub(generatePackageJSON("peppers.com", "cool-extension")),
-			want:      expectedNoPlugin(),
+			want: expectedNoPlugin(),
 		},
 		{
-			name: "Successful brokering of remote plugin when extension points to .theia archive",
+			name: "Successful brokering of remote plugin when extension points to .theia archive, using a generated host name",
 			meta: model.PluginMeta{
 				Type:      vscodePluginType,
 				ID:        pluginID,
@@ -229,9 +231,32 @@ func TestBroker_processPlugin(t *testing.T) {
 					},
 				},
 			},
-			unzipFunc: createUnzipTheiaArchiveFuncStub(generatePackageJSON("peppers.com", "cool-extension")),
+			useLocalhost: false,
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
-				generateTheiaEnvVar("peppers_com_cool_extension")),
+				false),
+		},
+		{
+			name: "Successful brokering of remote plugin when extension points to .theia archive, using localhost as the host name",
+			meta: model.PluginMeta{
+				Type:      vscodePluginType,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				Spec: model.PluginMetaSpec{
+					Extensions: []string{
+						"https://red-hot-chilli.peppers/plugin.theia",
+					},
+					Containers: []model.Container{
+						{
+							Image: image,
+						},
+					},
+				},
+			},
+			useLocalhost: true,
+			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
+				true),
 		},
 		{
 			name: "Successful brokering of local plugin with extensions field with several extensions",
@@ -288,7 +313,7 @@ func TestBroker_processPlugin(t *testing.T) {
 			want: expectedNoPlugin(),
 		},
 		{
-			name: "Successful brokering of remote plugin with extensions field with several extensions",
+			name: "Successful brokering of remote plugin with extensions field with several extensions, using a generated host name",
 			meta: model.PluginMeta{
 				Type:      vscodePluginType,
 				ID:        pluginID,
@@ -306,12 +331,35 @@ func TestBroker_processPlugin(t *testing.T) {
 					},
 				},
 			},
-			unzipFunc: createUnzipFuncStub(generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools")),
+			useLocalhost: false,
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
-				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools")),
+				false),
 		},
 		{
-			name: "Successful brokering of remote plugin with extensions field with several extensions",
+			name: "Successful brokering of remote plugin with extensions field with several extensions, using localhost as the host name",
+			meta: model.PluginMeta{
+				Type:      vscodePluginType,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				Spec: model.PluginMetaSpec{
+					Extensions: []string{
+						"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+					},
+					Containers: []model.Container{
+						{
+							Image: image,
+						},
+					},
+				},
+			},
+			useLocalhost: true,
+			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
+				true),
+		},
+		{
+			name: "Successful brokering of remote plugin with extensions field with several extensions, using a generated the host name",
 			meta: model.PluginMeta{
 				Type:      vscodePluginType,
 				ID:        pluginID,
@@ -331,17 +379,37 @@ func TestBroker_processPlugin(t *testing.T) {
 					},
 				},
 			},
-			unzipFunc: createUnzipFuncStub(
-				generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools"),
-				generatePackageJSON("redhat-com", "vscode-jdt-ls"),
-				generatePackageJSON("redhat-com", "vscode-maven")),
+			useLocalhost: false,
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
-				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools"),
-				generateTheiaEnvVar("redhat_com_vscode_jdt_ls"),
-				generateTheiaEnvVar("redhat_com_vscode_maven")),
+				false),
 		},
 		{
-			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs",
+			name: "Successful brokering of remote plugin with extensions field with several extensions, using localhost as the host name",
+			meta: model.PluginMeta{
+				Type:      vscodePluginType,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				Spec: model.PluginMetaSpec{
+					Extensions: []string{
+						"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+						"vscode:extension/redhat-com.vscode-jdt-ls",
+						"vscode:extension/redhat-com.vscode-maven",
+					},
+					Containers: []model.Container{
+						{
+							Image: image,
+						},
+					},
+				},
+			},
+			useLocalhost: true,
+			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
+				true),
+		},
+		{
+			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs, using a generated host name",
 			meta: model.PluginMeta{
 				Type:      vscodePluginType,
 				ID:        pluginID,
@@ -361,17 +429,37 @@ func TestBroker_processPlugin(t *testing.T) {
 					},
 				},
 			},
-			unzipFunc: createUnzipFuncStub(
-				generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools"),
-				generatePackageJSON("redhat-com", "vscode-jdt-ls"),
-				generatePackageJSON("redhat-com", "vscode-maven")),
+			useLocalhost: false,
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
-				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools"),
-				generateTheiaEnvVar("redhat_com_vscode_jdt_ls"),
-				generateTheiaEnvVar("redhat_com_vscode_maven")),
+				false),
 		},
 		{
-			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs when plugin type is Theia",
+			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs, using localhost as the host name",
+			meta: model.PluginMeta{
+				Type:      vscodePluginType,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				Spec: model.PluginMetaSpec{
+					Containers: []model.Container{
+						{
+							Image: image,
+						},
+					},
+					Extensions: []string{
+						"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+						vsixURL,
+						"vscode:extension/redhat-com.vscode-maven",
+					},
+				},
+			},
+			useLocalhost: true,
+			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
+				true),
+		},
+		{
+			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs when plugin type is Theia, using a generated host name",
 			meta: model.PluginMeta{
 				Type:      theiaPluginType,
 				ID:        pluginID,
@@ -391,26 +479,48 @@ func TestBroker_processPlugin(t *testing.T) {
 					},
 				},
 			},
-			unzipFunc: createUnzipFuncStub(
-				generatePackageJSON("ms-kubernetes-tools", "vscode-kubernetes-tools"),
-				generatePackageJSON("redhat-com", "vscode-jdt-ls"),
-				generatePackageJSON("peppers.com", "cool-extension"), ),
+			useLocalhost: false,
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
-				generateTheiaEnvVar("ms_kubernetes_tools_vscode_kubernetes_tools"),
-				generateTheiaEnvVar("redhat_com_vscode_jdt_ls"),
-				generateTheiaEnvVar("peppers_com_cool_extension")),
+				false),
+		},
+		{
+			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs when plugin type is Theia, using localhost as the host name",
+			meta: model.PluginMeta{
+				Type:      theiaPluginType,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				Spec: model.PluginMetaSpec{
+					Containers: []model.Container{
+						{
+							Image: image,
+						},
+					},
+					Extensions: []string{
+						"vscode:extension/ms-kubernetes-tools.vscode-kubernetes-tools",
+						vsixURL,
+						"https://red-hot-chilli.peppers/plugin.theia",
+					},
+				},
+			},
+			useLocalhost: true,
+			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
+				true),
 		},
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			m := initMocks()
+			m := initMocks(tt.useLocalhost)
 			workDir := tests.CreateTestWorkDir()
 			defer tests.RemoveAll(workDir)
-			setUpSuccessfulCase(workDir, tt.meta, m, tt.unzipFunc)
+			setUpSuccessfulCase(workDir, tt.meta, m)
 
 			if tt.want == nil && tt.err == "" {
 				t.Fatal("Neither want nor error are defined")
 			}
+			m.u.On("ResolveDestPathFromURL", mock.AnythingOfType("string"), workDir).Return("/tmp/test005528325")
+			m.u.On("MkDir", mock.AnythingOfType("string")).Return(nil)
 			err := m.b.ProcessPlugin(tt.meta)
 			if err != nil {
 				if tt.err != "" {
@@ -428,23 +538,12 @@ func TestBroker_processPlugin(t *testing.T) {
 	}
 }
 
-func generateTheiaEnvVar(prettyID string) string {
-	return "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID
-}
-
-func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(pluginTheiaEndpointVars ...string) []model.ChePlugin {
+func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(usedLocalhost bool) []model.ChePlugin {
 	expectedPlugin := model.ChePlugin{
 		ID:        pluginID,
 		Version:   pluginVersion,
 		Publisher: pluginPublisher,
 		Name:      pluginName,
-		Endpoints: []model.Endpoint{
-			{
-				Name:       "randomString1234567890",
-				Public:     false,
-				TargetPort: 4242,
-			},
-		},
 		Containers: []model.Container{
 			{
 				Image: image,
@@ -455,27 +554,37 @@ func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(pluginTheiaEndpo
 					},
 				},
 				MountSources: true,
-				Ports: []model.ExposedPort{
-					{
-						ExposedPort: 4242,
-					},
-				},
-				Env: []model.EnvVar{
-					{
-						Name:  "THEIA_PLUGIN_ENDPOINT_PORT",
-						Value: "4242",
-					},
-				},
 			},
 		},
 	}
-	for _, envVarName := range pluginTheiaEndpointVars {
+	if !usedLocalhost {
+		expectedPlugin.Containers[0].Ports = []model.ExposedPort{
+			{
+				ExposedPort: 4242,
+			},
+		}
+		expectedPlugin.Containers[0].Env = []model.EnvVar{
+			{
+				Name:  "THEIA_PLUGIN_ENDPOINT_PORT",
+				Value: "4242",
+			},
+		}
+		expectedPlugin.Endpoints = []model.Endpoint {
+			model.Endpoint{
+				Name:       "randomString1234567890",
+				Public:     false,
+				TargetPort: 4242,
+			},
+		}
 		expectedPlugin.WorkspaceEnv = append(expectedPlugin.WorkspaceEnv, model.EnvVar{
-			Name:  envVarName,
+			Name:  "THEIA_PLUGIN_REMOTE_ENDPOINT_" + strings.ReplaceAll(pluginPublisher + "_" + pluginName + "_" + pluginVersion, " ", "_"),
 			Value: "ws://randomString1234567890:4242",
 		})
 	}
-
+	expectedPlugin.Containers[0].Env = append(expectedPlugin.Containers[0].Env, model.EnvVar{
+		Name:  "THEIA_PLUGINS",
+		Value: "local-dir:///plugins/sidecars/" + getPluginUniqueName(expectedPlugin),
+	})
 	return []model.ChePlugin{
 		expectedPlugin,
 	}
@@ -485,85 +594,32 @@ func expectedNoPlugin() []model.ChePlugin {
 	return []model.ChePlugin{}
 }
 
-func setUpSuccessfulCase(workDir string, meta model.PluginMeta, m *mocks, unzipFunc UnzipFunc) {
-	_unzipFunc := defaultUnzipFunc()
-	if unzipFunc != nil {
-		_unzipFunc = unzipFunc
-	}
-	m.u.On("Unzip", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Run(_unzipFunc).Return(nil)
+func setUpSuccessfulCase(workDir string, meta model.PluginMeta, m *mocks) {
 	m.u.On("CopyResource", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
-	pluginPath := filepath.Join("/plugins", fmt.Sprintf("%s.%s.%s.randomString1234567890", meta.Publisher, meta.Name, meta.Version))
+	pluginPath := "/plugins"
+	if len(meta.Spec.Containers) > 0 {
+		pluginPath = filepath.Join(pluginPath, "sidecars",
+			re.ReplaceAllString(meta.Publisher+"_"+meta.Name+"_"+meta.Version, `_`))
+	}
+	pluginPath = filepath.Join(
+		pluginPath,
+		fmt.Sprintf("%s.%s.%s.randomString1234567890.test005528325", meta.Publisher, meta.Name, meta.Version))
 	m.u.On("CopyFile", mock.AnythingOfType("string"), pluginPath).Return(nil)
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	m.cb.On("PrintInfo", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
-	m.u.On("Download", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
+	m.u.On("Download", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("bool")).Return("test005528325", nil)
 	m.u.On("TempDir", "", "vscode-extension-broker").Return(workDir, nil)
 	m.randMock.On("IntFromRange", 4000, 10000).Return(4242)
 	m.randMock.On("String", 10).Return("randomString1234567890")
 	m.randMock.On("String", 6).Return("randomString123456")
 }
 
-type UnzipFunc func(args mock.Arguments)
-
-func defaultUnzipFunc() UnzipFunc {
-	return func(args mock.Arguments) {
-		dest := args[1].(string)
-		packageJSON := PackageJSON{
-			Name:      extName,
-			Publisher: extPublisher,
-		}
-		packageJSONParent := filepath.Join(dest, vsixPackageJSONFolderName)
-		tests.CreateDirs(packageJSONParent)
-		tests.CreateFileByPath(filepath.Join(dest, vsixManifestFileName))
-		packageJSONPath := filepath.Join(packageJSONParent, "package.json")
-		tests.CreateFileWithContent(packageJSONPath, tests.ToJSONQuiet(packageJSON))
-	}
-}
-
-// Makes UnzipFunc create unzip results on the file system.
-// When called first time creates package.json with content from first argument.
-// When called second time uses second argument if present. And so on.
-// When calls number is bigger than arguments number uses last argument for all the calls that do not have matching argument.
-func createUnzipFuncStub(pjs ...PackageJSON) UnzipFunc {
-	jsons := pjs
-	return func(args mock.Arguments) {
-		dest := args[1].(string)
-		packageJSONParent := filepath.Join(dest, vsixPackageJSONFolderName)
-		tests.CreateDirs(packageJSONParent)
-		tests.CreateFileByPath(filepath.Join(dest, vsixManifestFileName))
-		packageJSONPath := filepath.Join(packageJSONParent, "package.json")
-		json := jsons[0]
-		if len(jsons) > 1 {
-			jsons = jsons[1:]
-		}
-		tests.CreateFileWithContent(packageJSONPath, tests.ToJSONQuiet(json))
-	}
-}
-
-// Makes UnzipFunc create unzip results on the file system.
-// When called first time creates package.json with content from first argument.
-// When called second time uses second argument if present. And so on.
-// When calls number is bigger than arguments number uses last argument for all the calls that do not have matching argument.
-func createUnzipTheiaArchiveFuncStub(pjs ...PackageJSON) UnzipFunc {
-	jsons := pjs
-	return func(args mock.Arguments) {
-		packageJSONParent := args[1].(string)
-		tests.CreateDirs(packageJSONParent)
-		packageJSONPath := filepath.Join(packageJSONParent, "package.json")
-		json := jsons[0]
-		if len(jsons) > 1 {
-			jsons = jsons[1:]
-		}
-		tests.CreateFileWithContent(packageJSONPath, tests.ToJSONQuiet(json))
-	}
-}
-
 func setUpDownloadFailureCase(workDir string, m *mocks) {
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	m.cb.On("PrintInfo", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
-	m.u.On("Download", vsixBrokenURL, mock.AnythingOfType("string")).Return(errors.New("Failed to download plugin")).Once()
+	m.u.On("Download", vsixBrokenURL, mock.AnythingOfType("string"), mock.AnythingOfType("bool")).Return("", errors.New("Failed to download plugin")).Once()
 	m.u.On("TempDir", "", "vscode-extension-broker").Return(workDir, nil).Once()
 	m.randMock.On("IntFromRange", 4000, 10000).Return(4242).Once()
 	m.randMock.On("String", 10).Return("randomString1234567890")

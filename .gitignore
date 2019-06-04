@@ -30,3 +30,4 @@ _testmain.go
 *.test
 *.prof
 .idea/
+.vscode/

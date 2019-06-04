@@ -53,7 +53,9 @@ var (
 	// UseLocalhostInPluginUrls configures the broker to use the `localhost` name
 	// instead of the Kubernetes service name to build Theia or VSCode plugin
 	// endpoint URL
-	UseLocalhostInPluginUrls bool
+	// True by default since until now all remote VS Code or Theia plugin containers
+	// are started on the same POD as the Theia IDE container 
+	UseLocalhostInPluginUrls = true
 
 	// OnlyApplyMetadataActions configures the broker to only apply metadata-related
 	// steps, without copying any file into the `plugins` directory
@@ -114,6 +116,13 @@ func init() {
 		false,
 		"Output events that are usually sent Che master instead of regular logs to imitate what a user can see."+
 			"`false` by default. Needed for testing and debugging purposes",
+	)
+	flag.BoolVar(
+		&UseLocalhostInPluginUrls,
+		"use-localhost-in-plugin-urls",
+		true,
+		"This configures the broker to use the `localhost` name instead of the Kubernetes service name to build Theia or VSCode plugin endpoint URL."+
+			"`true` by default since until now all remote VS Code or Theia plugin containers are started on the same POD as the Theia IDE container",
 	)
 	flag.StringVar(
 		&RegistryAddress,

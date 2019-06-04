@@ -39,7 +39,7 @@ func (m MockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 // GenerateResponse generates a mocked *http.Response and returns a function that
 // allows checking if this response's body has been closed.
-func GenerateResponse(body string, statusCode int) (*http.Response, func() bool) {
+func GenerateResponse(body string, statusCode int, header http.Header) (*http.Response, func() bool) {
 	responseBody := &MockResponseBodyImpl{
 		reader:   io.Reader(bytes.NewBufferString(body)),
 		isClosed: new(bool),
@@ -47,6 +47,7 @@ func GenerateResponse(body string, statusCode int) (*http.Response, func() bool)
 	response := &http.Response{
 		Body:       responseBody,
 		StatusCode: statusCode,
+		Header: header,
 	}
 	return response, responseBody.IsClosed
 }

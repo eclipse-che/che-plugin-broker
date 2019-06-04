@@ -1082,7 +1082,7 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				errRegexp: nil,
 				fetchURL: fmt.Sprintf(
 					RegistryURLFormat,
-					strings.TrimSuffix(pluginFQNWithRegistryTrailingSlash.Registry , "/")+"/plugins",
+					strings.TrimSuffix(pluginFQNWithRegistryTrailingSlash.Registry, "/")+"/plugins",
 					pluginFQNWithRegistryTrailingSlash.ID),
 			},
 			mocks: successMock,

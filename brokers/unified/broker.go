@@ -194,14 +194,13 @@ func (b *Broker) GetPluginMeta(plugin model.PluginFQN, defaultRegistry string) (
 	var pluginURL string
 	if plugin.Reference != "" {
 		pluginURL = plugin.Reference
-		log.Printf("Fetching plugin meta.yaml from reference %s", pluginURL)
 	} else {
-		log.Printf("Fetching plugin meta.yaml for %s", plugin.ID)
 		registry, err := getRegistryURL(plugin, defaultRegistry)
 		if err != nil {
 			return nil, err
 		}
 		pluginURL = fmt.Sprintf(RegistryURLFormat, registry, plugin.ID)
+		log.Printf("Fetching plugin meta.yaml from %s", pluginURL)
 	}
 	pluginRaw, err := b.utils.Fetch(pluginURL)
 	if err != nil {

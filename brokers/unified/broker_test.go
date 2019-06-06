@@ -1169,6 +1169,21 @@ func TestBroker_getPluginMetas(t *testing.T) {
 			},
 			mocks: successMock,
 		},
+		{
+			name: "Supports custom reference address",
+			args: args{
+				fqns: []model.PluginFQN{
+				{
+					Reference: "http://myregistry.com/plugins/myplugin/meta.yaml",
+				}},
+				defaultRegistry: "",
+			},
+			want: want{
+				errRegexp: nil,
+				fetchURL: "http://myregistry.com/plugins/myplugin/meta.yaml",
+			},
+			mocks: successMock,
+		},
 	}
 
 	for _, tt := range tests {

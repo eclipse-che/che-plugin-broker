@@ -191,22 +191,27 @@ func validateMetas(metas []model.PluginMeta) error {
 // defaultRegistry is used as the registry when plugin does not specify its registry.
 // If defaultRegistry is empty, and plugin does not specify a registry, an error is returned.
 func (b *Broker) GetPluginMeta(plugin model.PluginFQN, defaultRegistry string) (*model.PluginMeta, error) {
-	log.Printf("Fetching plugin meta.yaml for %s", plugin.ID)
-	registry, err := getRegistryURL(plugin, defaultRegistry)
-	if err != nil {
-		return nil, err
+	var pluginURL string
+	if plugin.Reference != "" {
+		pluginURL = plugin.Reference
+	} else {
+		registry, err := getRegistryURL(plugin, defaultRegistry)
+		if err != nil {
+			return nil, err
+		}
+		pluginURL = fmt.Sprintf(RegistryURLFormat, registry, plugin.ID)
+		log.Printf("Fetching plugin meta.yaml from %s", pluginURL)
 	}
-	pluginURL := fmt.Sprintf(RegistryURLFormat, registry, plugin.ID)
 	pluginRaw, err := b.utils.Fetch(pluginURL)
 	if err != nil {
 		if httpErr, ok := err.(*utils.HTTPError); ok {
 			return nil, fmt.Errorf(
-				"failed to fetch plugin meta.yaml for plugin '%s' from registry '%s': %s. Response body: %s",
-				plugin.ID, registry, httpErr, httpErr.Body)
+				"failed to fetch plugin meta.yaml from URL '%s': %s. Response body: %s",
+				pluginURL, httpErr, httpErr.Body)
 		} else {
 			return nil, fmt.Errorf(
-				"failed to fetch plugin meta.yaml for plugin '%s' from registry '%s': %s",
-				plugin.ID, registry, err)
+				"failed to fetch plugin meta.yaml from URL '%s': %s",
+				pluginURL, err)
 		}
 	}
 
@@ -276,7 +281,7 @@ func sortMetas(metas []model.PluginMeta) (che []model.PluginMeta, vscode []model
 func getRegistryURL(plugin model.PluginFQN, defaultRegistry string) (string, error) {
 	var registry string
 	if plugin.Registry != "" {
-		registry = strings.TrimSuffix(plugin.Registry, "/")
+		registry = strings.TrimSuffix(plugin.Registry, "/") + "/plugins"
 	} else {
 		if defaultRegistry == "" {
 			return "", fmt.Errorf("plugin '%s' does not specify registry and no default is provided", plugin.ID)

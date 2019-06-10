@@ -79,7 +79,7 @@ func TestBroker_StartPublishesErrorOnFetchError(t *testing.T) {
 
 	err := m.b.Start([]model.PluginFQN{pluginFQNWithoutRegistry}, "http://defaultRegistry.com")
 
-	expectedMessage := "Failed to download plugin meta: failed to fetch plugin meta.yaml for plugin 'test-no-registry/1.0' from registry 'http://defaultRegistry.com/plugins': Test error"
+	expectedMessage := "Failed to download plugin meta: failed to fetch plugin meta.yaml from URL 'http://defaultRegistry.com/plugins/test-no-registry/1.0/meta.yaml': Test error"
 	assert.EqualError(t, err, expectedMessage)
 	m.cb.AssertCalled(t, "PubFailed", expectedMessage)
 	m.cb.AssertCalled(t, "PubLog", expectedMessage)
@@ -1039,7 +1039,7 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				errRegexp: nil,
 				fetchURL: fmt.Sprintf(
 					RegistryURLFormat,
-					pluginFQNWithRegistry.Registry,
+					pluginFQNWithRegistry.Registry+"/plugins",
 					pluginFQNWithRegistry.ID),
 			},
 			mocks: successMock,
@@ -1054,7 +1054,7 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				errRegexp: nil,
 				fetchURL: fmt.Sprintf(
 					RegistryURLFormat,
-					pluginFQNWithRegistry.Registry,
+					pluginFQNWithRegistry.Registry+"/plugins",
 					pluginFQNWithRegistry.ID),
 			},
 			mocks: successMock,
@@ -1066,7 +1066,7 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				defaultRegistry: defaultRegistry,
 			},
 			want: want{
-				errRegexp: regexp.MustCompile("failed to fetch plugin meta.yaml for plugin .* from registry .*"),
+				errRegexp: regexp.MustCompile("failed to fetch plugin meta.yaml from URL .*"),
 				fetchURL:  "",
 			},
 			mocks: errorMock,
@@ -1081,7 +1081,7 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				errRegexp: nil,
 				fetchURL: fmt.Sprintf(
 					RegistryURLFormat,
-					strings.TrimSuffix(pluginFQNWithRegistryTrailingSlash.Registry, "/"),
+					strings.TrimSuffix(pluginFQNWithRegistryTrailingSlash.Registry, "/")+"/plugins",
 					pluginFQNWithRegistryTrailingSlash.ID),
 			},
 			mocks: successMock,
@@ -1145,7 +1145,7 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				errRegexp: nil,
 				fetchURL: fmt.Sprintf(
 					RegistryURLFormat,
-					"http://test-registry.com/v3",
+					"http://test-registry.com/v3/plugins",
 					"test-with-registry/2.0"),
 			},
 			mocks: successMock,
@@ -1164,8 +1164,23 @@ func TestBroker_getPluginMetas(t *testing.T) {
 				errRegexp: nil,
 				fetchURL: fmt.Sprintf(
 					RegistryURLFormat,
-					"http://test-registry.com/v4",
+					"http://test-registry.com/v4/plugins",
 					"test-with-registry/2.0"),
+			},
+			mocks: successMock,
+		},
+		{
+			name: "Supports custom reference address",
+			args: args{
+				fqns: []model.PluginFQN{
+				{
+					Reference: "http://myregistry.com/plugins/myplugin/meta.yaml",
+				}},
+				defaultRegistry: "",
+			},
+			want: want{
+				errRegexp: nil,
+				fetchURL: "http://myregistry.com/plugins/myplugin/meta.yaml",
 			},
 			mocks: successMock,
 		},

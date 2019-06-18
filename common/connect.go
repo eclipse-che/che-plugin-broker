@@ -18,6 +18,9 @@ import (
 	"github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-go-jsonrpc/event"
 	"github.com/eclipse/che-go-jsonrpc/jsonrpcws"
+	"crypto/x509"
+	"io/ioutil"
+	"crypto/tls"
 )
 
 type tunnelBroadcaster struct {
@@ -29,6 +32,30 @@ func (tb *tunnelBroadcaster) Close() { tb.tunnel.Close() }
 func (tb *tunnelBroadcaster) Accept(e event.E) {
 	if err := tb.tunnel.Notify(e.Type(), e); err != nil {
 		log.Fatalf("Trying to send event of type '%s' to closed tunnel '%s'", e.Type(), tb.tunnel.ID())
+	}
+}
+
+func ConfigureCertPool(customCertificateFilePath string) {
+	// Get the SystemCertPool, continue with an empty pool on error
+	rootCAs, _ := x509.SystemCertPool()
+	if rootCAs == nil {
+		rootCAs = x509.NewCertPool()
+	}
+
+	// Read in the cert file
+	certs, err := ioutil.ReadFile(customCertificateFilePath)
+	if err != nil {
+		log.Fatalf("Failed to read custom certificate %q. Error: %v", customCertificateFilePath, err)
+	}
+
+	// Append our cert to the system pool
+	if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
+		log.Fatalf("Failed to append %q to RootCAs: %v", customCertificateFilePath, err)
+	}
+
+	// Trust the augmented cert pool in our client
+	jsonrpcws.DefaultDialer.TLSClientConfig = &tls.Config{
+		RootCAs: rootCAs,
 	}
 }
 

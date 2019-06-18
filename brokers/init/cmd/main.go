@@ -31,6 +31,10 @@ func main() {
 	broker := common.NewBroker()
 	defer broker.CloseConsumers()
 
+	if cfg.SelfSignedCertificateFilePath != "" {
+		common.ConfigureCertPool(cfg.SelfSignedCertificateFilePath)
+	}
+
 	if !cfg.DisablePushingToEndpoint {
 		statusTun := common.ConnectOrFail(cfg.PushStatusesEndpoint, cfg.Token)
 		broker.PushEvents(statusTun, model.BrokerLogEventType)

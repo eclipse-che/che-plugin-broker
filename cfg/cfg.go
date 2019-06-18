@@ -64,6 +64,9 @@ var (
 	// RegistryAddress address of the plugin registry, if plugin IDs are specified in config instead of metas.
 	// Used as a default registry if a plugin fully-qualified name does not specify a registry.
 	RegistryAddress string
+
+	// SelfSignedCertificateFilePath path to certificate file that should be used while connection establishing
+	SelfSignedCertificateFilePath string
 )
 
 func init() {
@@ -130,6 +133,12 @@ func init() {
 		"",
 		"Default address of registry from which to retrieve meta.yaml's when plugin FQNs do not specify a registry",
 	)
+	flag.StringVar(
+		&SelfSignedCertificateFilePath,
+		"cacert",
+		"",
+		"Path to Certificate that should be used while connection establishing",
+	)
 }
 
 // Parse parses configuration.
@@ -176,6 +185,9 @@ func Print() {
 	log.Printf("    Workspace: %s", RuntimeID.Workspace)
 	log.Printf("    Environment: %s", RuntimeID.Environment)
 	log.Printf("    OwnerId: %s", RuntimeID.OwnerId)
+	if (SelfSignedCertificateFilePath != "") {
+		log.Printf("  Self signed certificate %s", SelfSignedCertificateFilePath)
+	}
 }
 
 // ParsePluginFQNs reads content of file at path cfg.Filepath and parses its

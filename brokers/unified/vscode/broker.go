@@ -159,7 +159,7 @@ func (b *brokerImpl) injectRemotePlugin(plugin model.ChePlugin, archivesPaths []
 			if err != nil {
 				return err
 			}
-			
+
 			pluginArchivePath := filepath.Join(pluginFolderPath, b.generatePluginArchiveName(plugin, archive))
 			b.PrintDebug("Copying VS Code extension '%s' from '%s' to '%s'", plugin.ID, archive, pluginArchivePath)
 			err = b.ioUtil.CopyFile(archive, pluginArchivePath)
@@ -190,10 +190,11 @@ func convertMetaToPlugin(meta model.PluginMeta) model.ChePlugin {
 
 func (b *brokerImpl) downloadArchives(URLs []string, meta model.PluginMeta, workDir string) ([]string, error) {
 	paths := make([]string, 0)
-	for _, URL := range URLs {
+	archivesNumber := len(URLs)
+	for i, URL := range URLs {
 		archivePath := b.ioUtil.ResolveDestPathFromURL(URL, workDir)
 		b.PrintDebug("Downloading VS Code extension archive '%s' for plugin '%s' to '%s'", URL, meta.ID, archivePath)
-		b.PrintInfo("Downloading VS Code extension for plugin '%s'", meta.ID)
+		b.PrintInfo("Downloading VS Code extension '%d' of '%d' for plugin '%s'", i, archivesNumber, meta.ID)
 		archivePath, err := b.downloadArchive(URL, archivePath)
 		paths = append(paths, archivePath)
 		if err != nil {

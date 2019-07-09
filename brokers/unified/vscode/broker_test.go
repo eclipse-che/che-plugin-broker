@@ -13,13 +13,13 @@
 package vscode
 
 import (
-	"strings"
 	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	tests "github.com/eclipse/che-plugin-broker/brokers/test"
@@ -569,7 +569,7 @@ func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(usedLocalhost bo
 				Value: "4242",
 			},
 		}
-		expectedPlugin.Endpoints = []model.Endpoint {
+		expectedPlugin.Endpoints = []model.Endpoint{
 			model.Endpoint{
 				Name:       "randomString1234567890",
 				Public:     false,
@@ -577,7 +577,7 @@ func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(usedLocalhost bo
 			},
 		}
 		expectedPlugin.WorkspaceEnv = append(expectedPlugin.WorkspaceEnv, model.EnvVar{
-			Name:  "THEIA_PLUGIN_REMOTE_ENDPOINT_" + strings.ReplaceAll(pluginPublisher + "_" + pluginName + "_" + pluginVersion, " ", "_"),
+			Name:  "THEIA_PLUGIN_REMOTE_ENDPOINT_" + strings.ReplaceAll(pluginPublisher+"_"+pluginName+"_"+pluginVersion, " ", "_"),
 			Value: "ws://randomString1234567890:4242",
 		})
 	}
@@ -607,7 +607,7 @@ func setUpSuccessfulCase(workDir string, meta model.PluginMeta, m *mocks) {
 	m.u.On("CopyFile", mock.AnythingOfType("string"), pluginPath).Return(nil)
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
-	m.cb.On("PrintInfo", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
+	m.cb.On("PrintInfo", mock.AnythingOfType("string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("string"))
 	m.u.On("Download", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("bool")).Return("test005528325", nil)
 	m.u.On("TempDir", "", "vscode-extension-broker").Return(workDir, nil)
 	m.randMock.On("IntFromRange", 4000, 10000).Return(4242)
@@ -618,7 +618,7 @@ func setUpSuccessfulCase(workDir string, meta model.PluginMeta, m *mocks) {
 func setUpDownloadFailureCase(workDir string, m *mocks) {
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 	m.cb.On("PrintDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
-	m.cb.On("PrintInfo", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
+	m.cb.On("PrintInfo", mock.AnythingOfType("string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("string"))
 	m.u.On("Download", vsixBrokenURL, mock.AnythingOfType("string"), mock.AnythingOfType("bool")).Return("", errors.New("Failed to download plugin")).Once()
 	m.u.On("TempDir", "", "vscode-extension-broker").Return(workDir, nil).Once()
 	m.randMock.On("IntFromRange", 4000, 10000).Return(4242).Once()

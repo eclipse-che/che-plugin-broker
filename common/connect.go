@@ -13,6 +13,7 @@
 package common
 
 import (
+	"net/http"
 	"log"
 
 	"github.com/eclipse/che-go-jsonrpc"
@@ -55,6 +56,10 @@ func ConfigureCertPool(customCertificateFilePath string) {
 
 	// Trust the augmented cert pool in our client
 	jsonrpcws.DefaultDialer.TLSClientConfig = &tls.Config{
+		RootCAs: rootCAs,
+	}
+
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
 		RootCAs: rootCAs,
 	}
 }

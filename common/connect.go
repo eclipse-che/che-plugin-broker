@@ -13,15 +13,15 @@
 package common
 
 import (
-	"net/http"
 	"log"
+	"net/http"
 
+	"crypto/tls"
+	"crypto/x509"
 	"github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-go-jsonrpc/event"
 	"github.com/eclipse/che-go-jsonrpc/jsonrpcws"
-	"crypto/x509"
 	"io/ioutil"
-	"crypto/tls"
 )
 
 type tunnelBroadcaster struct {

@@ -47,7 +47,7 @@ func GenerateResponse(body string, statusCode int, header http.Header) (*http.Re
 	response := &http.Response{
 		Body:       responseBody,
 		StatusCode: statusCode,
-		Header: header,
+		Header:     header,
 	}
 	return response, responseBody.IsClosed
 }

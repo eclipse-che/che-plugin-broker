@@ -33,7 +33,7 @@ type Random interface {
 }
 
 type RandomImpl struct {
-	rand    *rand.Rand
+	rand *rand.Rand
 }
 
 func NewRand() Random {
@@ -47,7 +47,7 @@ func (r *RandomImpl) Int(n int) int {
 }
 
 func (r *RandomImpl) IntFromRange(from int, to int) int {
-	return from + r.rand.Intn(to - from)
+	return from + r.rand.Intn(to-from)
 }
 
 func (r *RandomImpl) String(length int) string {

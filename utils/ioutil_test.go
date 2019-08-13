@@ -13,11 +13,11 @@
 package utils
 
 import (
-	"path/filepath"
-	"os"
-	"io/ioutil"
 	"errors"
+	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 	"regexp"
 	"testing"
 
@@ -139,12 +139,12 @@ func assertErrorMatches(t *testing.T, expected *regexp.Regexp, actual error) {
 
 func TestIoUtil_Download(t *testing.T) {
 	type args struct {
-		URL string
+		URL                   string
 		useContentDisposition bool
 	}
 	type want struct {
-		downloadedPath  string
-		errRegexp *regexp.Regexp
+		downloadedPath string
+		errRegexp      *regexp.Regexp
 	}
 	type clientMocks struct {
 		response *http.Response
@@ -185,10 +185,10 @@ func TestIoUtil_Download(t *testing.T) {
 				URL: "test.url",
 			},
 			want: want{
-				downloadedPath:  "",
-				errRegexp: regexp.MustCompile("Get test.url: TestError"),
+				downloadedPath: "",
+				errRegexp:      regexp.MustCompile("Get test.url: TestError"),
 			},
-			mocks: generateMocks("testBody", http.StatusForbidden, http.Header {}, errors.New("TestError"), false),
+			mocks: generateMocks("testBody", http.StatusForbidden, http.Header{}, errors.New("TestError"), false),
 		},
 		{
 			name: "Returns error when http request not status OK",
@@ -196,8 +196,8 @@ func TestIoUtil_Download(t *testing.T) {
 				URL: "test.url",
 			},
 			want: want{
-				downloadedPath:  "",
-				errRegexp: regexp.MustCompile("Downloading .* failed. Status code .*"),
+				downloadedPath: "",
+				errRegexp:      regexp.MustCompile("Downloading .* failed. Status code .*"),
 			},
 			mocks: generateMocks("testBody", http.StatusForbidden, http.Header{}, nil, false),
 		},
@@ -207,8 +207,8 @@ func TestIoUtil_Download(t *testing.T) {
 				URL: "test.url",
 			},
 			want: want{
-				downloadedPath:  "",
-				errRegexp: regexp.MustCompile("timeout"),
+				downloadedPath: "",
+				errRegexp:      regexp.MustCompile("timeout"),
 			},
 			mocks: generateMocks("testBody", http.StatusOK, http.Header{}, nil, true),
 		},
@@ -218,119 +218,119 @@ func TestIoUtil_Download(t *testing.T) {
 				URL: "test.url",
 			},
 			want: want{
-				downloadedPath:  filepath.Join(workingDir,"test.url"),
-				errRegexp: nil,
+				downloadedPath: filepath.Join(workingDir, "test.url"),
+				errRegexp:      nil,
 			},
 			mocks: generateMocks(expectedResponseBody, http.StatusOK, http.Header{}, nil, false),
 		},
 		{
 			name: "Download file using Content-Disposition",
 			args: args{
-				URL: "test.url",
+				URL:                   "test.url",
 				useContentDisposition: true,
 			},
 			want: want{
-				downloadedPath:  filepath.Join(workingDir,"content-disposition-filename"),
-				errRegexp: nil,
+				downloadedPath: filepath.Join(workingDir, "content-disposition-filename"),
+				errRegexp:      nil,
 			},
 			mocks: generateMocks(expectedResponseBody, http.StatusOK, http.Header{
-				"Content-Disposition": { "attachment; filename=\"content-disposition-filename\"" },
+				"Content-Disposition": {"attachment; filename=\"content-disposition-filename\""},
 			}, nil, false),
 		},
 		{
 			name: "Download file using Content-Disposition and clean filename",
 			args: args{
-				URL: "test.url",
+				URL:                   "test.url",
 				useContentDisposition: true,
 			},
 			want: want{
-				downloadedPath:  filepath.Join(workingDir,"content-disposition-filename"),
-				errRegexp: nil,
+				downloadedPath: filepath.Join(workingDir, "content-disposition-filename"),
+				errRegexp:      nil,
 			},
 			mocks: generateMocks(expectedResponseBody, http.StatusOK, http.Header{
-				"Content-Disposition": { "attachment; filename=\"anyDir//../anyOtherDir/content-disposition-filename\"" },
+				"Content-Disposition": {"attachment; filename=\"anyDir//../anyOtherDir/content-disposition-filename\""},
 			}, nil, false),
 		},
 		{
 			name: "Download file using Content-Disposition, but without the header",
 			args: args{
-				URL: "test.url",
+				URL:                   "test.url",
 				useContentDisposition: true,
 			},
 			want: want{
-				downloadedPath:  filepath.Join(workingDir,"test.url"),
-				errRegexp: nil,
+				downloadedPath: filepath.Join(workingDir, "test.url"),
+				errRegexp:      nil,
 			},
-			mocks: generateMocks(expectedResponseBody, http.StatusOK,  http.Header{}, nil, false),
+			mocks: generateMocks(expectedResponseBody, http.StatusOK, http.Header{}, nil, false),
 		},
 		{
 			name: "Download file using Content-Disposition, but with weird header value",
 			args: args{
-				URL: "test.url",
+				URL:                   "test.url",
 				useContentDisposition: true,
 			},
 			want: want{
-				downloadedPath:  filepath.Join(workingDir,"test.url"),
-				errRegexp: nil,
+				downloadedPath: filepath.Join(workingDir, "test.url"),
+				errRegexp:      nil,
 			},
 			mocks: generateMocks(expectedResponseBody, http.StatusOK, http.Header{
-				"Content-Disposition": { "very strange value ++ ; /" },
+				"Content-Disposition": {"very strange value ++ ; /"},
 			}, nil, false),
 		},
 		{
 			name: "Download file using Content-Disposition, but with when filename ends with /",
 			args: args{
-				URL: "test.url",
+				URL:                   "test.url",
 				useContentDisposition: true,
 			},
 			want: want{
-				downloadedPath:  filepath.Join(workingDir,"test.url"),
-				errRegexp: nil,
+				downloadedPath: filepath.Join(workingDir, "test.url"),
+				errRegexp:      nil,
 			},
 			mocks: generateMocks(expectedResponseBody, http.StatusOK, http.Header{
-				"Content-Disposition": { "attachment; filename=\"content-disposition-filename/\"" },
+				"Content-Disposition": {"attachment; filename=\"content-disposition-filename/\""},
 			}, nil, false),
 		},
 		{
 			name: "Download file using Content-Disposition, but with when filename ends with 0 char",
 			args: args{
-				URL: "test.url",
+				URL:                   "test.url",
 				useContentDisposition: true,
 			},
 			want: want{
-				downloadedPath:  filepath.Join(workingDir,"test.url"),
-				errRegexp: nil,
+				downloadedPath: filepath.Join(workingDir, "test.url"),
+				errRegexp:      nil,
 			},
 			mocks: generateMocks(expectedResponseBody, http.StatusOK, http.Header{
-				"Content-Disposition": { "attachment; filename=\"content-disposition-filename\x00\"" },
+				"Content-Disposition": {"attachment; filename=\"content-disposition-filename\x00\""},
 			}, nil, false),
 		},
 		{
 			name: "Download file using Content-Disposition, but with when filename is '/'",
 			args: args{
-				URL: "test.url",
+				URL:                   "test.url",
 				useContentDisposition: true,
 			},
 			want: want{
-				downloadedPath:  filepath.Join(workingDir,"test.url"),
-				errRegexp: nil,
+				downloadedPath: filepath.Join(workingDir, "test.url"),
+				errRegexp:      nil,
 			},
 			mocks: generateMocks(expectedResponseBody, http.StatusOK, http.Header{
-				"Content-Disposition": { "attachment; filename=\"/\"" },
+				"Content-Disposition": {"attachment; filename=\"/\""},
 			}, nil, false),
 		},
 		{
 			name: "Download file using Content-Disposition, but with when filename is '.'",
 			args: args{
-				URL: "test.url",
+				URL:                   "test.url",
 				useContentDisposition: true,
 			},
 			want: want{
-				downloadedPath:  filepath.Join(workingDir,"test.url"),
-				errRegexp: nil,
+				downloadedPath: filepath.Join(workingDir, "test.url"),
+				errRegexp:      nil,
 			},
 			mocks: generateMocks(expectedResponseBody, http.StatusOK, http.Header{
-				"Content-Disposition": { "attachment; filename=\".\"" },
+				"Content-Disposition": {"attachment; filename=\".\""},
 			}, nil, false),
 		},
 	}

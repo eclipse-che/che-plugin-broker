@@ -57,9 +57,9 @@ type PluginMetaSpec struct {
 }
 
 type PluginFQN struct {
-	Registry   string `json:"registry,omitempty" yaml:"registry,omitempty"`
-	ID         string `json:"id" yaml:"id"`
-	Reference  string `json:"reference" yaml:"reference"`
+	Registry  string `json:"registry,omitempty" yaml:"registry,omitempty"`
+	ID        string `json:"id" yaml:"id"`
+	Reference string `json:"reference" yaml:"reference"`
 }
 
 type Endpoint struct {

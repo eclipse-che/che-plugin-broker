@@ -31,3 +31,5 @@ _testmain.go
 *.prof
 .idea/
 .vscode/
+
+config.json

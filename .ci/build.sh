@@ -21,3 +21,9 @@ docker build -t eclipse/che-init-plugin-broker:latest -f ${ROOT_DIR}/build/init/
 docker tag eclipse/che-init-plugin-broker:latest eclipse/che-init-plugin-broker:${TAG}
 docker push eclipse/che-init-plugin-broker:latest
 docker push eclipse/che-init-plugin-broker:${TAG}
+
+# Development image
+docker build -t eclipse/che-plugin-broker-dev:latest -f ${ROOT_DIR}/build/dev/Dockerfile ${ROOT_DIR}
+docker tag eclipse/che-plugin-broker-dev:latest eclipse/che-plugin-broker-dev:${TAG}
+docker push eclipse/che-plugin-broker-dev:latest
+docker push eclipse/che-plugin-broker-dev:${TAG}

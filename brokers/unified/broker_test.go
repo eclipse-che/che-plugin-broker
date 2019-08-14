@@ -57,7 +57,7 @@ func createMocks() *mocks {
 	cb.On("PubStarted")
 	cb.On("PrintPlan", mock.AnythingOfType("[]model.PluginMeta"))
 	cb.On("CloseConsumers")
-	cb.On("PubDone", mock.AnythingOfType("string"))	
+	cb.On("PubDone", mock.AnythingOfType("string"))
 	return &mocks{
 		cb:       cb,
 		u:        u,
@@ -719,8 +719,7 @@ func TestBroker_processPlugins(t *testing.T) {
 					ID:         "test id",
 					APIVersion: "v2",
 					Spec: model.PluginMetaSpec{
-						Extensions: []string{
-						},
+						Extensions: []string{},
 					},
 				}},
 			},
@@ -736,8 +735,7 @@ func TestBroker_processPlugins(t *testing.T) {
 					ID:         "test id",
 					APIVersion: "v2",
 					Spec: model.PluginMetaSpec{
-						Extensions: []string{
-						},
+						Extensions: []string{},
 					},
 				}},
 			},
@@ -1173,14 +1171,14 @@ func TestBroker_getPluginMetas(t *testing.T) {
 			name: "Supports custom reference address",
 			args: args{
 				fqns: []model.PluginFQN{
-				{
-					Reference: "http://myregistry.com/plugins/myplugin/meta.yaml",
-				}},
+					{
+						Reference: "http://myregistry.com/plugins/myplugin/meta.yaml",
+					}},
 				defaultRegistry: "",
 			},
 			want: want{
 				errRegexp: nil,
-				fetchURL: "http://myregistry.com/plugins/myplugin/meta.yaml",
+				fetchURL:  "http://myregistry.com/plugins/myplugin/meta.yaml",
 			},
 			mocks: successMock,
 		},

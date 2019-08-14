@@ -13,8 +13,6 @@
 package utils
 
 import (
-	"path"
-	"mime"
 	"archive/tar"
 	"archive/zip"
 	"bufio"
@@ -23,9 +21,11 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -72,20 +72,20 @@ func (util *impl) Download(URL string, destPath string, useContentDisposition bo
 	filePath, filename := filepath.Split(destPath)
 
 	if useContentDisposition {
-		fromHeader := func () (found bool, filename string) {
+		fromHeader := func() (found bool, filename string) {
 			dispo := resp.Header.Get("Content-Disposition")
 			if dispo == "" {
-				return 
+				return
 			}
 
-			_, params, err := mime.ParseMediaType(dispo);
+			_, params, err := mime.ParseMediaType(dispo)
 			if err != nil {
 				return
 			}
-				
+
 			contentDispoFilename := params["filename"]
 			if strings.HasSuffix(contentDispoFilename, "/") || strings.Contains(contentDispoFilename, "\x00") {
-				return 
+				return
 			}
 			contentDispoFilename = path.Base(path.Clean("/" + contentDispoFilename))
 			if contentDispoFilename == "." || contentDispoFilename == "/" {
@@ -93,12 +93,12 @@ func (util *impl) Download(URL string, destPath string, useContentDisposition bo
 			}
 			return true, contentDispoFilename
 		}
-	
+
 		if found, contentDispoFilename := fromHeader(); found {
 			filename = contentDispoFilename
 		}
 	}
-	
+
 	destPath = filepath.Join(filePath, filename)
 
 	out, err := os.Create(destPath)
@@ -106,7 +106,7 @@ func (util *impl) Download(URL string, destPath string, useContentDisposition bo
 		return "", err
 	}
 	defer Close(out)
-	
+
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
 		return "", err

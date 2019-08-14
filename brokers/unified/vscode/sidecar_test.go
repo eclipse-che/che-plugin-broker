@@ -13,10 +13,10 @@
 package vscode
 
 import (
-	"strings"
 	"github.com/eclipse/che-plugin-broker/common"
 	cmock "github.com/eclipse/che-plugin-broker/common/mocks"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/eclipse/che-plugin-broker/model"
@@ -30,8 +30,8 @@ const (
 
 func TestAddPluginRunnerRequirements(t *testing.T) {
 	type args struct {
-		plugin 			 model.ChePlugin
-		rand   			 common.Random
+		plugin       model.ChePlugin
+		rand         common.Random
 		useLocalhost bool
 	}
 	tests := []struct {
@@ -47,8 +47,8 @@ func TestAddPluginRunnerRequirements(t *testing.T) {
 			},
 			want: model.ChePlugin{
 				Publisher: pluginPublisher,
-				Name: pluginName,
-				Version: pluginVersion,
+				Name:      pluginName,
+				Version:   pluginVersion,
 				Containers: []model.Container{
 					{
 						Name:  "pluginsidecar",
@@ -70,7 +70,7 @@ func TestAddPluginRunnerRequirements(t *testing.T) {
 								Name:  "THEIA_PLUGIN_ENDPOINT_PORT",
 								Value: strconv.Itoa(4040),
 							},
-							{ Name: "THEIA_PLUGINS",
+							{Name: "THEIA_PLUGINS",
 								Value: "local-dir:///plugins/sidecars/test_publisher_test_name_tv",
 							},
 						},
@@ -88,14 +88,14 @@ func TestAddPluginRunnerRequirements(t *testing.T) {
 		{
 			name: "Check that all configuration needed for plugin runner is added, when plugins are on the Theia host",
 			args: args{
-				plugin: generateDefaultTestChePlugin(),
-				rand:   generateMockOfRandom("newTestEndpoint", 4040),
+				plugin:       generateDefaultTestChePlugin(),
+				rand:         generateMockOfRandom("newTestEndpoint", 4040),
 				useLocalhost: true,
 			},
 			want: model.ChePlugin{
 				Publisher: pluginPublisher,
-				Name: pluginName,
-				Version: pluginVersion,
+				Name:      pluginName,
+				Version:   pluginVersion,
 				Containers: []model.Container{
 					{
 						Name:  "pluginsidecar",
@@ -108,7 +108,7 @@ func TestAddPluginRunnerRequirements(t *testing.T) {
 						},
 						MountSources: true,
 						Env: []model.EnvVar{
-							{ Name: "THEIA_PLUGINS",
+							{Name: "THEIA_PLUGINS",
 								Value: "local-dir:///plugins/sidecars/test_publisher_test_name_tv",
 							},
 						},
@@ -127,7 +127,7 @@ func TestAddPluginRunnerRequirements(t *testing.T) {
 
 func TestAddExtension(t *testing.T) {
 	type args struct {
-		plugin           model.ChePlugin
+		plugin model.ChePlugin
 	}
 	tests := []struct {
 		name string
@@ -139,8 +139,8 @@ func TestAddExtension(t *testing.T) {
 			args: args{
 				plugin: model.ChePlugin{
 					Publisher: pluginPublisher,
-					Name: pluginName,
-					Version: pluginVersion,
+					Name:      pluginName,
+					Version:   pluginVersion,
 					Containers: []model.Container{
 						{
 							Name:  "pluginsidecar",
@@ -174,10 +174,10 @@ func TestAddExtension(t *testing.T) {
 					},
 				},
 			},
-			want: 				model.ChePlugin{
+			want: model.ChePlugin{
 				Publisher: pluginPublisher,
-				Name: pluginName,
-				Version: pluginVersion,
+				Name:      pluginName,
+				Version:   pluginVersion,
 				Containers: []model.Container{
 					{
 						Name:  "pluginsidecar",
@@ -209,9 +209,9 @@ func TestAddExtension(t *testing.T) {
 						TargetPort: defaultPort,
 					},
 				},
-				WorkspaceEnv: []model.EnvVar {
+				WorkspaceEnv: []model.EnvVar{
 					model.EnvVar{
-						Name:  "THEIA_PLUGIN_REMOTE_ENDPOINT_" + strings.ReplaceAll(pluginPublisher + "_" + pluginName + "_" + pluginVersion, " ", "_"),
+						Name:  "THEIA_PLUGIN_REMOTE_ENDPOINT_" + strings.ReplaceAll(pluginPublisher+"_"+pluginName+"_"+pluginVersion, " ", "_"),
 						Value: "ws://" + defaultEndpointName + ":" + strconv.Itoa(defaultPort),
 					},
 				},
@@ -229,8 +229,8 @@ func TestAddExtension(t *testing.T) {
 func generateDefaultTestChePlugin() model.ChePlugin {
 	return model.ChePlugin{
 		Publisher: pluginPublisher,
-		Name: pluginName,
-		Version: pluginVersion,
+		Name:      pluginName,
+		Version:   pluginVersion,
 		Containers: []model.Container{
 			{
 				Name:         "pluginsidecar",

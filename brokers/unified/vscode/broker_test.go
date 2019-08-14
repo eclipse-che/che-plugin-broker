@@ -13,13 +13,13 @@
 package vscode
 
 import (
-	"strings"
 	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	tests "github.com/eclipse/che-plugin-broker/brokers/test"
@@ -569,7 +569,7 @@ func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(usedLocalhost bo
 				Value: "4242",
 			},
 		}
-		expectedPlugin.Endpoints = []model.Endpoint {
+		expectedPlugin.Endpoints = []model.Endpoint{
 			model.Endpoint{
 				Name:       "randomString1234567890",
 				Public:     false,
@@ -577,7 +577,7 @@ func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(usedLocalhost bo
 			},
 		}
 		expectedPlugin.WorkspaceEnv = append(expectedPlugin.WorkspaceEnv, model.EnvVar{
-			Name:  "THEIA_PLUGIN_REMOTE_ENDPOINT_" + strings.ReplaceAll(pluginPublisher + "_" + pluginName + "_" + pluginVersion, " ", "_"),
+			Name:  "THEIA_PLUGIN_REMOTE_ENDPOINT_" + strings.ReplaceAll(pluginPublisher+"_"+pluginName+"_"+pluginVersion, " ", "_"),
 			Value: "ws://randomString1234567890:4242",
 		})
 	}

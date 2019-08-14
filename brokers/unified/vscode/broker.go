@@ -159,7 +159,7 @@ func (b *brokerImpl) injectRemotePlugin(plugin model.ChePlugin, archivesPaths []
 			if err != nil {
 				return err
 			}
-			
+
 			pluginArchivePath := filepath.Join(pluginFolderPath, b.generatePluginArchiveName(plugin, archive))
 			b.PrintDebug("Copying VS Code extension '%s' from '%s' to '%s'", plugin.ID, archive, pluginArchivePath)
 			err = b.ioUtil.CopyFile(archive, pluginArchivePath)

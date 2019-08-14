@@ -54,7 +54,7 @@ var (
 	// instead of the Kubernetes service name to build Theia or VSCode plugin
 	// endpoint URL
 	// True by default since until now all remote VS Code or Theia plugin containers
-	// are started on the same POD as the Theia IDE container 
+	// are started on the same POD as the Theia IDE container
 	UseLocalhostInPluginUrls = true
 
 	// OnlyApplyMetadataActions configures the broker to only apply metadata-related
@@ -185,7 +185,7 @@ func Print() {
 	log.Printf("    Workspace: %s", RuntimeID.Workspace)
 	log.Printf("    Environment: %s", RuntimeID.Environment)
 	log.Printf("    OwnerId: %s", RuntimeID.OwnerId)
-	if (SelfSignedCertificateFilePath != "") {
+	if SelfSignedCertificateFilePath != "" {
 		log.Printf("  Self signed certificate %s", SelfSignedCertificateFilePath)
 	}
 }

@@ -47,7 +47,7 @@ commands:
       - workdir: /projects/src/github.com/eclipse/che-plugin-broker/
         type: exec
         command: >-
-          printf 'Start "init" plugin broker compilation...\n' &&
+          printf 'Launch "init" plugin broker compilation...\n' &&
           make build-init &&
           printf '\033[32mDone.\033[0m'
         component: dev
@@ -56,7 +56,7 @@ commands:
       - workdir: /projects/src/github.com/eclipse/che-plugin-broker
         type: exec
         command: >-
-          printf 'Start "unified" plugin broker compilation...\n' &&
+          printf 'Launch "unified" plugin broker compilation...\n' &&
           make build-unified  &&
           printf '\033[32mDone.\033[0m'
         component: dev
@@ -91,32 +91,11 @@ commands:
     actions:
       - workdir: /projects/src/github.com/eclipse/che-plugin-broker
         type: exec
-        command: './unified-plugin-broker --disable-push=true --runtime-id=workspace:developer:eclipse-che --registry-address=http://plugin-registry:8080'
+        command: './unified-plugin-broker --disable-push=true --runtime-id=workspace:developer:eclipse-che --registry-address=http://plugin-registry:8080 --metas ./brokers/unified/cmd/config-plugin-ids.json'
         component: dev
   - name: start "init" plugin broker
     actions:
       - workdir: /projects/src/github.com/eclipse/che-plugin-broker
         type: exec
         command: './init-plugin-broker --disable-push=true --runtime-id=workspace:developer:eclipse-che'
-        component: dev
-  - name: generate test config.json with "list workspace" plugins for "unified" plugin broker
-    actions:
-      - workdir: /projects/src/github.com/eclipse/che-plugin-broker
-        type: exec
-        command: |-
-          if [ -f config.json ]; then rm config.json; fi;
-          cat <<EOF>>config.json
-          [
-              {
-                  "id": "ms-kubernetes-tools/vscode-kubernetes-tools/latest"
-              },
-              {
-                  "id": "eclipse/che-machine-exec-plugin/latest"
-              },
-              {
-                  "id": "eclipse/che-theia/latest"
-              }
-          ]
-          EOF
-          echo 'config.json for unified plugin broker successfully generated.'
         component: dev

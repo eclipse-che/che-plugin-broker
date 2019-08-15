@@ -59,15 +59,9 @@ To compile `unified` plugin broker use task with name `compile "unified" plugin 
 To start `init` plugin broker use command `start "init" plugin broker`. After execution this task volume `/plugins` in the `dev` container should be clean
 (you can check it with help of terminal).
 
-### Generate config.json with list plugins for 'unified' plugin broker
-
-`unified` plugin broker uses config.json to get "workspace" plugin list. Then broker uses this 'list' to get meta.yaml information from plugin-registry service and download plugin binaries to the folder `plugins/sidecars`.
-
-We provide simple task to generate sample config.json file in the same folder with `unified` plugin broker binary. Use task `generate test config.json with "list workspace" plugins for "unified" plugin broker` to invoke it.
-
 ### Start 'unified' plugin broker
 
-Before start `unified` plugin broker first [generate config.json with list plugins](generate_config.json_with_list_plugins_for_'unified'_plugin_broker). Then use task `start "unified" plugin broker`. After execution this task volume `/plugins` should contains downloaded plugin binaries in the subfolder `sidecars`(you can check it with help of terminal).
+To start `unified` plugin broker use task `start "unified" plugin broker`. After execution this task volume `/plugins` should contains downloaded plugin binaries in the subfolder `sidecars`(you can check it with help of terminal).
 
 ### Run tests
 

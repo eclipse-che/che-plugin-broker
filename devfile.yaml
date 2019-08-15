@@ -14,7 +14,7 @@ components:
     alias: ms-vscode.go
 
   - type: dockerimage
-    image: 'eclipse/che-plugin-broker-dev:next'
+    image: 'eclipse/che-plugin-broker-dev:latest'
     alias: dev
     mountSources: true
     memoryLimit: 1G
@@ -44,64 +44,64 @@ components:
 commands:
   - name: compile "init" plugin broker
     actions:
-      - workdir: /projects/src/github.com/eclipse/che-plugin-broker/brokers/init/cmd
+      - workdir: /projects/src/github.com/eclipse/che-plugin-broker/
         type: exec
         command: >-
-          printf 'Start "init" plugin broker compilation...\n' && 
-          CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o init-plugin-broker main.go &&
+          printf 'Start "init" plugin broker compilation...\n' &&
+          make build-init &&
           printf '\033[32mDone.\033[0m'
         component: dev
   - name: compile "unified" plugin broker
     actions:
-      - workdir: /projects/src/github.com/eclipse/che-plugin-broker/brokers/unified/cmd
+      - workdir: /projects/src/github.com/eclipse/che-plugin-broker
         type: exec
         command: >-
           printf 'Start "unified" plugin broker compilation...\n' &&
-          CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o unified-plugin-broker main.go &&
+          make build-unified  &&
           printf '\033[32mDone.\033[0m'
         component: dev
   - name: run tests
     actions:
       - workdir: /projects/src/github.com/eclipse/che-plugin-broker
         type: exec
-        command: go test -race ./...
+        command: make test
         component: dev
   - name: format code
     actions:
       - workdir: /projects/src/github.com/eclipse/che-plugin-broker
         type: exec
-        command: 'go fmt ./... && printf "\033[32mDone.\033[0m"'
+        command: 'make fmt && printf "\033[32mDone.\033[0m"'
         component: dev
   - name: lint code
     actions:
       - workdir: /projects/src/github.com/eclipse/che-plugin-broker
         type: exec
-        command: 'golangci-lint run -v'
+        command: 'make lint'
         component: dev
   - name: update dependencies
     actions:
       - workdir: /projects/src/github.com/eclipse/che-plugin-broker
         type: exec
         command: >-
-          printf 'Update dependencies...\n' && 
-          dep ensure && 
+          printf 'Update dependencies...\n' &&
+          make dep-update &&
           printf "\033[32mDone.\033[0m"
         component: dev
   - name: start "unified" plugin broker
     actions:
-      - workdir: /projects/src/github.com/eclipse/che-plugin-broker/brokers/unified/cmd
+      - workdir: /projects/src/github.com/eclipse/che-plugin-broker
         type: exec
         command: './unified-plugin-broker --disable-push=true --runtime-id=workspace:developer:eclipse-che --registry-address=http://plugin-registry:8080'
         component: dev
   - name: start "init" plugin broker
     actions:
-      - workdir: /projects/src/github.com/eclipse/che-plugin-broker/brokers/init/cmd
+      - workdir: /projects/src/github.com/eclipse/che-plugin-broker
         type: exec
         command: './init-plugin-broker --disable-push=true --runtime-id=workspace:developer:eclipse-che'
         component: dev
   - name: generate test config.json with "list workspace" plugins for "unified" plugin broker
     actions:
-      - workdir: /projects/src/github.com/eclipse/che-plugin-broker/brokers/unified/cmd
+      - workdir: /projects/src/github.com/eclipse/che-plugin-broker
         type: exec
         command: |-
           if [ -f config.json ]; then rm config.json; fi;

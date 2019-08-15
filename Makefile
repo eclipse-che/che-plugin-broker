@@ -28,6 +28,14 @@ test:
 lint:
 	golangci-lint run -v
 
+.PHONY: fmt
+fmt:
+	go fmt ./...
+
+.PHONY: dep-update
+dep-update:
+	dep ensure
+
 .PHONY: build-docker-init
 build-docker-init:
 	docker build -t eclipse/che-init-plugin-broker:latest -f build/init/Dockerfile .

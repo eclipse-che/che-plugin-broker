@@ -31,7 +31,7 @@ components:
     image: 'quay.io/eclipse/che-plugin-registry:nightly'
     alias: plugin-registry
     endpoints:
-      - name: plugin-registry
+      - name: plugin-registry-local
         attributes:
           protocol: http
           public: 'true'
@@ -91,7 +91,7 @@ commands:
     actions:
       - workdir: /projects/src/github.com/eclipse/che-plugin-broker
         type: exec
-        command: './unified-plugin-broker --disable-push=true --runtime-id=workspace:developer:eclipse-che --registry-address=http://plugin-registry:8080 --metas ./brokers/unified/cmd/config-plugin-ids.json'
+        command: './unified-plugin-broker --disable-push=true --runtime-id=workspace:developer:eclipse-che --registry-address=http://plugin-registry-local:8080 --metas ./brokers/unified/cmd/config-plugin-ids.json'
         component: dev
   - name: start "init" plugin broker
     actions:

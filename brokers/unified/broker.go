@@ -69,7 +69,7 @@ func NewBroker(localhostSidecar bool) *Broker {
 	return NewBrokerWithParams(common.NewBroker(), utils.New(), storage.New(), common.NewRand(), &http.Client{}, localhostSidecar)
 }
 
-// DownloadMetasAndStart downloads metas from plugin registry for specified
+// Start downloads metas from plugin registry for specified
 // pluginFQNs and then executes plugins metas processing and sending data to Che master
 func (b *Broker) Start(pluginFQNs []model.PluginFQN, defaultRegistry string) error {
 	pluginMetas, err := b.getPluginMetas(pluginFQNs, defaultRegistry)
@@ -142,51 +142,6 @@ func (b *Broker) ProcessPlugins(metas []model.PluginMeta) error {
 	return nil
 }
 
-func ValidateMeta(meta model.PluginMeta) error {
-	switch meta.APIVersion {
-	case "":
-		return fmt.Errorf("Plugin '%s' is invalid. Field 'apiVersion' must be present", meta.ID)
-	case "v2":
-		// validate here something
-	default:
-		return fmt.Errorf("Plugin '%s' is invalid. Field 'apiVersion' contains invalid version '%s'", meta.ID, meta.APIVersion)
-	}
-
-	switch strings.ToLower(meta.Type) {
-	case ChePluginType:
-		fallthrough
-	case EditorPluginType:
-		if len(meta.Spec.Extensions) != 0 {
-			return fmt.Errorf("Plugin '%s' is invalid. Field 'spec.extensions' is not allowed in plugin of type '%s'", meta.ID, meta.Type)
-		}
-		if len(meta.Spec.Containers) == 0 {
-			return fmt.Errorf("Plugin '%s' is invalid. Field 'spec.containers' must not be empty", meta.ID)
-		}
-	case TheiaPluginType:
-		fallthrough
-	case VscodePluginType:
-		if len(meta.Spec.Extensions) == 0 {
-			return fmt.Errorf("Plugin '%s' is invalid. Field 'spec.extensions' must not be empty", meta.ID)
-		}
-		if len(meta.Spec.Containers) > 1 {
-			return fmt.Errorf("Plugin '%s' is invalid. Containers list 'spec.containers' must not contain more than 1 container, but '%d' found", meta.ID, len(meta.Spec.Containers))
-		}
-		if len(meta.Spec.Endpoints) != 0 {
-			return fmt.Errorf("Plugin '%s' is invalid. Setting endpoints at 'spec.endpoints' is not allowed in plugins of type '%s'", meta.ID, meta.Type)
-		}
-	}
-	return nil
-}
-
-func validateMetas(metas []model.PluginMeta) error {
-	for _, meta := range metas {
-		if err := ValidateMeta(meta); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // GetPluginMeta downloads the metadata for a plugin. If specified,
 // defaultRegistry is used as the registry when plugin does not specify its registry.
 // If defaultRegistry is empty, and plugin does not specify a registry, an error is returned.
@@ -255,6 +210,53 @@ func (b *Broker) serializeTooling() (string, error) {
 	return string(pluginsBytes), nil
 }
 
+// ValidateMeta ensures that a plugin meta conforms to expectations at a basic level, e.g. that
+// required fields are present.
+func ValidateMeta(meta model.PluginMeta) error {
+	switch meta.APIVersion {
+	case "":
+		return fmt.Errorf("Plugin '%s' is invalid. Field 'apiVersion' must be present", meta.ID)
+	case "v2":
+		// validate here something
+	default:
+		return fmt.Errorf("Plugin '%s' is invalid. Field 'apiVersion' contains invalid version '%s'", meta.ID, meta.APIVersion)
+	}
+
+	switch strings.ToLower(meta.Type) {
+	case ChePluginType:
+		fallthrough
+	case EditorPluginType:
+		if len(meta.Spec.Extensions) != 0 {
+			return fmt.Errorf("Plugin '%s' is invalid. Field 'spec.extensions' is not allowed in plugin of type '%s'", meta.ID, meta.Type)
+		}
+		if len(meta.Spec.Containers) == 0 {
+			return fmt.Errorf("Plugin '%s' is invalid. Field 'spec.containers' must not be empty", meta.ID)
+		}
+	case TheiaPluginType:
+		fallthrough
+	case VscodePluginType:
+		if len(meta.Spec.Extensions) == 0 {
+			return fmt.Errorf("Plugin '%s' is invalid. Field 'spec.extensions' must not be empty", meta.ID)
+		}
+		if len(meta.Spec.Containers) > 1 {
+			return fmt.Errorf("Plugin '%s' is invalid. Containers list 'spec.containers' must not contain more than 1 container, but '%d' found", meta.ID, len(meta.Spec.Containers))
+		}
+		if len(meta.Spec.Endpoints) != 0 {
+			return fmt.Errorf("Plugin '%s' is invalid. Setting endpoints at 'spec.endpoints' is not allowed in plugins of type '%s'", meta.ID, meta.Type)
+		}
+	}
+	return nil
+}
+
+func validateMetas(metas []model.PluginMeta) error {
+	for _, meta := range metas {
+		if err := ValidateMeta(meta); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func sortMetas(metas []model.PluginMeta) (che []model.PluginMeta, vscode []model.PluginMeta, err error) {
 	vscodeMetas := make([]model.PluginMeta, 0)
 	cheBrokerMetas := make([]model.PluginMeta, 0)
@@ -291,6 +293,8 @@ func getRegistryURL(plugin model.PluginFQN, defaultRegistry string) (string, err
 	return registry, nil
 }
 
+// ConvertMetaToPlugin converts model.PluginMeta to model.ChePlugin, to allow the plugin configuration
+// to be passed back to Che.
 func ConvertMetaToPlugin(meta model.PluginMeta) model.ChePlugin {
 	return model.ChePlugin{
 		ID:           meta.ID,

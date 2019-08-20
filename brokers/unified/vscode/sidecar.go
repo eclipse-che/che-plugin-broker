@@ -19,7 +19,7 @@ import (
 	"github.com/eclipse/che-plugin-broker/model"
 )
 
-// AddPluginRequirements adds to ChePlugin configuration needed to run remote Theia plugins in the provided ChePlugin.
+// AddPluginRunnerRequirements adds to ChePlugin configuration needed to run remote Theia plugins in the provided ChePlugin.
 // Method adds needed ports, endpoints, volumes, environment variables.
 // ChePlugin with one container is supported only.
 func AddPluginRunnerRequirements(plugin model.ChePlugin, rand common.Random, useLocalhost bool) model.ChePlugin {

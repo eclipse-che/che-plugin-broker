@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
+	"path"
 	"strings"
 
 	jsonrpc "github.com/eclipse/che-go-jsonrpc"
@@ -83,6 +85,13 @@ func (b *Broker) Start(pluginFQNs []model.PluginFQN, defaultRegistry string) err
 	b.PubStarted()
 	b.PrintInfo("Unified Che Plugin Broker")
 	b.PrintPlan(pluginMetas)
+
+	err = resolveRelativeExtensionPaths(pluginMetas, defaultRegistry)
+	if err != nil {
+		b.PubFailed(err.Error())
+		b.PubLog(err.Error())
+		return err
+	}
 
 	err = b.ProcessPlugins(pluginMetas)
 	if err != nil {
@@ -291,6 +300,31 @@ func getRegistryURL(plugin model.PluginFQN, defaultRegistry string) (string, err
 		registry = strings.TrimSuffix(defaultRegistry, "/") + "/plugins"
 	}
 	return registry, nil
+}
+
+// resolveRelativeExtensionPaths takes a slice of plugin metas and updates relative extension
+// references (e.g. relative:extension/[...]) to point to relative paths in the default registry.
+func resolveRelativeExtensionPaths(metas []model.PluginMeta, defaultRegistry string) error {
+	for i, meta := range metas {
+		for j, extension := range meta.Spec.Extensions {
+			if strings.HasPrefix(extension, "relative:extension/") {
+				if defaultRegistry == "" {
+					return fmt.Errorf("cannot resolve relative extension path without default registry")
+				}
+				pluginURL, err := url.Parse(defaultRegistry)
+				if err != nil {
+					return fmt.Errorf("failed to parse default registry URL: %s", err)
+				}
+				relativePath := strings.TrimPrefix(extension, "relative:extension/")
+				if strings.Contains(relativePath, "..") {
+					return fmt.Errorf("plugin reference path '%s' cannot refer to parent directories", relativePath)
+				}
+				pluginURL.Path = path.Join(pluginURL.Path, strings.TrimPrefix(extension, "relative:extension/"))
+				metas[i].Spec.Extensions[j] = pluginURL.String()
+			}
+		}
+	}
+	return nil
 }
 
 // ConvertMetaToPlugin converts model.PluginMeta to model.ChePlugin, to allow the plugin configuration

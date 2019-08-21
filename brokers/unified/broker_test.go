@@ -1200,6 +1200,144 @@ func TestBroker_getPluginMetas(t *testing.T) {
 	}
 }
 
+func TestBroker_resolveRelativeExtensionPaths(t *testing.T) {
+	type args struct {
+		metas           []model.PluginMeta
+		defaultRegistry string
+	}
+	type want struct {
+		metas     []model.PluginMeta
+		errRegexp *regexp.Regexp
+	}
+	type test struct {
+		name string
+		args args
+		want want
+	}
+	tests := []test{
+		{
+			name: "Does nothing when no relative paths",
+			args: args{
+				metas: []model.PluginMeta{
+					createMetaWithExtension("testID", "https://location.com/path/to/plugin.theia"),
+				},
+				defaultRegistry: "https://my.registry.com/testpath/",
+			},
+			want: want{
+				metas: []model.PluginMeta{
+					createMetaWithExtension("testID", "https://location.com/path/to/plugin.theia"),
+				},
+				errRegexp: nil,
+			},
+		},
+		{
+			name: "Uses default registry when relative path specified (with trailing slash)",
+			args: args{
+				metas: []model.PluginMeta{
+					createMetaWithExtension("testID1", "relative:extension/path/to/plugin.theia"),
+					createMetaWithExtension("testID2", "relative:extension//path/to/plugin.vsix"),
+				},
+				defaultRegistry: "https://my.registry.com/testpath/",
+			},
+			want: want{
+				metas: []model.PluginMeta{
+					createMetaWithExtension("testID1", "https://my.registry.com/testpath/path/to/plugin.theia"),
+					createMetaWithExtension("testID2", "https://my.registry.com/testpath/path/to/plugin.vsix"),
+				},
+				errRegexp: nil,
+			},
+		},
+		{
+			name: "Uses default registry when relative path specified (no trailing slash)",
+			args: args{
+				metas: []model.PluginMeta{
+					createMetaWithExtension("testID1", "relative:extension/path/to/plugin.theia"),
+					createMetaWithExtension("testID2", "relative:extension//path/to/plugin.vsix"),
+				},
+				defaultRegistry: "https://my.registry.com/testpath",
+			},
+			want: want{
+				metas: []model.PluginMeta{
+					createMetaWithExtension("testID1", "https://my.registry.com/testpath/path/to/plugin.theia"),
+					createMetaWithExtension("testID2", "https://my.registry.com/testpath/path/to/plugin.vsix"),
+				},
+				errRegexp: nil,
+			},
+		},
+		{
+			name: "Handles multiple extensions in one meta",
+			args: args{
+				metas: []model.PluginMeta{
+					createMetaWithExtension("testID1", "relative:extension/path/to/plugin.theia", "relative:extension//path/to/plugin.vsix"),
+					createMetaWithExtension("testID2", "relative:extension//path/to/plugin.vsix"),
+				},
+				defaultRegistry: "https://my.registry.com/testpath",
+			},
+			want: want{
+				metas: []model.PluginMeta{
+					createMetaWithExtension("testID1", "https://my.registry.com/testpath/path/to/plugin.theia", "https://my.registry.com/testpath/path/to/plugin.vsix"),
+					createMetaWithExtension("testID2", "https://my.registry.com/testpath/path/to/plugin.vsix"),
+				},
+				errRegexp: nil,
+			},
+		},
+		{
+			name: "Returns error when default registry not defined",
+			args: args{
+				metas: []model.PluginMeta{
+					createMetaWithExtension("testID1", "relative:extension/path/to/plugin.theia"),
+					createMetaWithExtension("testID2", "relative:extension//path/to/plugin.vsix"),
+				},
+				defaultRegistry: "",
+			},
+			want: want{
+				metas:     nil,
+				errRegexp: regexp.MustCompile("cannot resolve relative extension path without default registry"),
+			},
+		},
+		{
+			name: "Returns error when default registry cannot be parsed",
+			args: args{
+				metas: []model.PluginMeta{
+					createMetaWithExtension("testID1", "relative:extension/path/to/plugin.theia"),
+					createMetaWithExtension("testID2", "relative:extension//path/to/plugin.vsix"),
+				},
+				defaultRegistry: ":invalid.url",
+			},
+			want: want{
+				metas:     nil,
+				errRegexp: regexp.MustCompile("failed to parse default registry URL: .*"),
+			},
+		},
+		{
+			name: "Returns error when extension relative path refers to parent",
+			args: args{
+				metas: []model.PluginMeta{
+					createMetaWithExtension("testID1", "relative:extension/path/to/../parent"),
+					createMetaWithExtension("testID2", "relative:extension//path/to/plugin.vsix"),
+				},
+				defaultRegistry: "https://my.registry.com/testpath",
+			},
+			want: want{
+				metas:     nil,
+				errRegexp: regexp.MustCompile("plugin reference path .* cannot refer to parent directories"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := resolveRelativeExtensionPaths(tt.args.metas, tt.args.defaultRegistry)
+			if tt.want.errRegexp != nil {
+				assertErrorMatches(t, tt.want.errRegexp, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.ElementsMatch(t, tt.args.metas, tt.want.metas)
+		})
+	}
+}
+
 func createDefaultVSCodeMeta() model.PluginMeta {
 	return createVSCodeMeta("test ID")
 }
@@ -1288,6 +1426,17 @@ func createCheEditorMeta(ID string) model.PluginMeta {
 					Image: defaultImage,
 				},
 			},
+		},
+	}
+}
+
+func createMetaWithExtension(ID string, extensions ...string) model.PluginMeta {
+	return model.PluginMeta{
+		Type:       TestTheiaPluginType,
+		ID:         ID,
+		APIVersion: "v2",
+		Spec: model.PluginMetaSpec{
+			Extensions: extensions,
 		},
 	}
 }

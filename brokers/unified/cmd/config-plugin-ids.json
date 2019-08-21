@@ -7,7 +7,7 @@
   },
   {
     "id": "redhat/java/0.43.0",
-    "registry": "https://raw.githubusercontent.com/eclipse/che-plugin-registry/master/v3/plugins"
+    "registry": "https://raw.githubusercontent.com/eclipse/che-plugin-registry/master/v3"
   },
   {
     "id": "eclipse/che-theia/next"

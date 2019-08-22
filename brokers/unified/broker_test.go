@@ -283,7 +283,7 @@ func TestBroker_processPlugins(t *testing.T) {
 				metas: []model.PluginMeta{createChePluginMeta("id1"), createCheEditorMeta("id2")},
 			},
 			want: want{
-				commonPlugins: []model.ChePlugin{createChePlugin("id1"), createChePlugin("id2")},
+				commonPlugins: []model.ChePlugin{createChePlugin("id1"), createCheEditorPlugin("id2")},
 			},
 		},
 		{
@@ -368,6 +368,7 @@ func TestBroker_processPlugins(t *testing.T) {
 						Name:      "name1",
 						Version:   "v0.13",
 						ID:        "id1",
+						Type:      ChePluginType,
 						Endpoints: []model.Endpoint{
 							{
 								Name:       "end1",
@@ -399,6 +400,7 @@ func TestBroker_processPlugins(t *testing.T) {
 						Name:      "name2",
 						Version:   "v0",
 						ID:        "id2",
+						Type:      EditorPluginType,
 						Endpoints: []model.Endpoint{
 							{
 								Name:       "end2",
@@ -585,7 +587,8 @@ func TestBroker_processPlugins(t *testing.T) {
 				},
 				commonPlugins: []model.ChePlugin{
 					{
-						ID: "id11",
+						Type: "che plugin",
+						ID:   "id11",
 						Containers: []model.Container{
 							{
 								Image: defaultImage,
@@ -593,7 +596,8 @@ func TestBroker_processPlugins(t *testing.T) {
 						},
 					},
 					{
-						ID: "id12",
+						Type: "Che Plugin",
+						ID:   "id12",
 						Containers: []model.Container{
 							{
 								Image: defaultImage,
@@ -601,7 +605,8 @@ func TestBroker_processPlugins(t *testing.T) {
 						},
 					},
 					{
-						ID: "id13",
+						Type: "cHE plugIN",
+						ID:   "id13",
 						Containers: []model.Container{
 							{
 								Image: defaultImage,
@@ -1443,7 +1448,20 @@ func createMetaWithExtension(ID string, extensions ...string) model.PluginMeta {
 
 func createChePlugin(ID string) model.ChePlugin {
 	return model.ChePlugin{
-		ID: ID,
+		ID:   ID,
+		Type: TestChePluginType,
+		Containers: []model.Container{
+			{
+				Image: defaultImage,
+			},
+		},
+	}
+}
+
+func createCheEditorPlugin(ID string) model.ChePlugin {
+	return model.ChePlugin{
+		ID:   ID,
+		Type: TestEditorPluginType,
 		Containers: []model.Container{
 			{
 				Image: defaultImage,

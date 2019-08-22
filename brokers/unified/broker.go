@@ -331,12 +331,14 @@ func resolveRelativeExtensionPaths(metas []model.PluginMeta, defaultRegistry str
 // to be passed back to Che.
 func ConvertMetaToPlugin(meta model.PluginMeta) model.ChePlugin {
 	return model.ChePlugin{
-		ID:           meta.ID,
-		Name:         meta.Name,
-		Publisher:    meta.Publisher,
-		Version:      meta.Version,
-		Containers:   meta.Spec.Containers,
-		Endpoints:    meta.Spec.Endpoints,
-		WorkspaceEnv: meta.Spec.WorkspaceEnv,
+		ID:            meta.ID,
+		Name:          meta.Name,
+		Type:          meta.Type,
+		Publisher:     meta.Publisher,
+		Version:       meta.Version,
+		Containers:    meta.Spec.Containers,
+		Endpoints:     meta.Spec.Endpoints,
+		WorkspaceEnv:  meta.Spec.WorkspaceEnv,
+		PluginPatcher: meta.Spec.PluginPatcher,
 	}
 }

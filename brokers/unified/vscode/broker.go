@@ -180,6 +180,7 @@ func convertMetaToPlugin(meta model.PluginMeta) model.ChePlugin {
 	return model.ChePlugin{
 		ID:           meta.ID,
 		Name:         meta.Name,
+		Type:         meta.Type,
 		Publisher:    meta.Publisher,
 		Version:      meta.Version,
 		Containers:   meta.Spec.Containers,

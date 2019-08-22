@@ -50,10 +50,11 @@ type PluginMeta struct {
 }
 
 type PluginMetaSpec struct {
-	Endpoints    []Endpoint  `json:"endpoints" yaml:"endpoints"`
-	Containers   []Container `json:"containers" yaml:"containers"`
-	WorkspaceEnv []EnvVar    `json:"workspaceEnv" yaml:"workspaceEnv"`
-	Extensions   []string    `json:"extensions" yaml:"extensions"`
+	Endpoints     []Endpoint    `json:"endpoints" yaml:"endpoints"`
+	Containers    []Container   `json:"containers" yaml:"containers"`
+	WorkspaceEnv  []EnvVar      `json:"workspaceEnv" yaml:"workspaceEnv"`
+	Extensions    []string      `json:"extensions" yaml:"extensions"`
+	PluginPatcher PluginPatcher `json:"pluginPatcher" yaml:"pluginPatcher"`
 }
 
 type PluginFQN struct {
@@ -98,14 +99,34 @@ type Container struct {
 	Ports        []ExposedPort `json:"ports" yaml:"ports"`
 	MemoryLimit  string        `json:"memoryLimit,omitempty" yaml:"memoryLimit,omitempty"`
 	MountSources bool          `json:"mountSources" yaml:"mountSources"`
+
+	// Base root command inside container
+	Command []string `json:"command" yaml:"command"`
+	// Arguments of the base root command inside container
+	Args []string `json:"args" yaml:"args"`
 }
 
 type ChePlugin struct {
-	ID           string      `json:"id" yaml:"id"`
-	Version      string      `json:"version" yaml:"version"`
-	Name         string      `json:"name" yaml:"name"`
-	Publisher    string      `json:"publisher" yaml:"publisher"`
-	Endpoints    []Endpoint  `json:"endpoints" yaml:"endpoints"`
-	Containers   []Container `json:"containers" yaml:"containers"`
-	WorkspaceEnv []EnvVar    `json:"workspaceEnv" yaml:"workspaceEnv"`
+	ID            string        `json:"id" yaml:"id"`
+	Version       string        `json:"version" yaml:"version"`
+	Name          string        `json:"name" yaml:"name"`
+	Type          string        `json:"type" yaml:"type"`
+	Publisher     string        `json:"publisher" yaml:"publisher"`
+	Endpoints     []Endpoint    `json:"endpoints" yaml:"endpoints"`
+	Containers    []Container   `json:"containers" yaml:"containers"`
+	WorkspaceEnv  []EnvVar      `json:"workspaceEnv" yaml:"workspaceEnv"`
+	PluginPatcher PluginPatcher `json:"pluginPatcher" yaml:"pluginPatcher"`
+}
+
+type PluginPatcher struct {
+	// List init containers
+	InitContainers []Container `json:"initContainers" yaml:"initContainers"`
+
+	// List plugin types matched to PluginPatcher
+	PluginTypeMatcher []string `json:"pluginTypeMatcher" yaml:"pluginTypeMatcher"`
+
+	// Command to patch original plugin container command
+	PluginContainerCommand []string `json:"pluginContainerCommand" yaml:"pluginContainerCommand"`
+	// Argument to patch original plugin container arguments
+	PluginContainerArgs []string `json:"pluginContainerArgs" yaml:"pluginContainerArgs"`
 }

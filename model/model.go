@@ -50,10 +50,11 @@ type PluginMeta struct {
 }
 
 type PluginMetaSpec struct {
-	Endpoints    []Endpoint  `json:"endpoints" yaml:"endpoints"`
-	Containers   []Container `json:"containers" yaml:"containers"`
-	WorkspaceEnv []EnvVar    `json:"workspaceEnv" yaml:"workspaceEnv"`
-	Extensions   []string    `json:"extensions" yaml:"extensions"`
+	Endpoints      []Endpoint  `json:"endpoints" yaml:"endpoints"`
+	Containers     []Container `json:"containers" yaml:"containers"`
+	InitContainers []Container `json:"initContainers" yaml:"initContainers"`
+	WorkspaceEnv   []EnvVar    `json:"workspaceEnv" yaml:"workspaceEnv"`
+	Extensions     []string    `json:"extensions" yaml:"extensions"`
 }
 
 type PluginFQN struct {
@@ -101,11 +102,12 @@ type Container struct {
 }
 
 type ChePlugin struct {
-	ID           string      `json:"id" yaml:"id"`
-	Version      string      `json:"version" yaml:"version"`
-	Name         string      `json:"name" yaml:"name"`
-	Publisher    string      `json:"publisher" yaml:"publisher"`
-	Endpoints    []Endpoint  `json:"endpoints" yaml:"endpoints"`
-	Containers   []Container `json:"containers" yaml:"containers"`
-	WorkspaceEnv []EnvVar    `json:"workspaceEnv" yaml:"workspaceEnv"`
+	ID             string      `json:"id" yaml:"id"`
+	Version        string      `json:"version" yaml:"version"`
+	Name           string      `json:"name" yaml:"name"`
+	Publisher      string      `json:"publisher" yaml:"publisher"`
+	Endpoints      []Endpoint  `json:"endpoints" yaml:"endpoints"`
+	Containers     []Container `json:"containers" yaml:"containers"`
+	InitContainers []Container `json:"initContainers" yaml:"initContainers"`
+	WorkspaceEnv   []EnvVar    `json:"workspaceEnv" yaml:"workspaceEnv"`
 }

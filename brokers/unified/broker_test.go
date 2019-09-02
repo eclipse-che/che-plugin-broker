@@ -318,6 +318,9 @@ func TestBroker_processPlugins(t *testing.T) {
 								createContainer("container1"),
 								createContainer("container2"),
 							},
+							InitContainers: []model.Container{
+								createContainer("initContainer1"),
+							},
 							WorkspaceEnv: []model.EnvVar{
 								{
 									Name:  "workspaceEnv1",
@@ -352,6 +355,9 @@ func TestBroker_processPlugins(t *testing.T) {
 							Containers: []model.Container{
 								createContainer("container3"),
 							},
+							InitContainers: []model.Container{
+								createContainer("initContainer2"),
+							},
 							WorkspaceEnv: []model.EnvVar{
 								{
 									Name:  "workspaceEnv3",
@@ -383,6 +389,9 @@ func TestBroker_processPlugins(t *testing.T) {
 							createContainer("container1"),
 							createContainer("container2"),
 						},
+						InitContainers: []model.Container{
+							createContainer("initContainer1"),
+						},
 						WorkspaceEnv: []model.EnvVar{
 							{
 								Name:  "workspaceEnv1",
@@ -408,6 +417,9 @@ func TestBroker_processPlugins(t *testing.T) {
 						},
 						Containers: []model.Container{
 							createContainer("container3"),
+						},
+						InitContainers: []model.Container{
+							createContainer("initContainer2"),
 						},
 						WorkspaceEnv: []model.EnvVar{
 							{

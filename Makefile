@@ -53,3 +53,23 @@ test-local:
 			--runtime-id wsId:env:ownerId \
 			--registry-address https://che-plugin-registry.openshift.io/v3 \
 			--metas ./config-plugin-ids.json
+
+.PHONY: test-metadata
+test-metadata:
+	cd ./brokers/metadata/cmd; \
+		go build main.go; \
+		./main \
+			--disable-push \
+			--runtime-id wsId:env:ownerId \
+			--registry-address https://che-plugin-registry.openshift.io/v3 \
+			--metas ../../unified/cmd/config-plugin-ids.json
+
+.PHONY: test-artifacts
+test-artifacts:
+	cd ./brokers/artifacts/cmd; \
+		go build main.go; \
+		./main \
+			--disable-push \
+			--runtime-id wsId:env:ownerId \
+			--registry-address https://che-plugin-registry.openshift.io/v3 \
+			--metas ../../unified/cmd/config-plugin-ids.json

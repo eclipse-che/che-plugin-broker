@@ -99,6 +99,10 @@ type Container struct {
 	Ports        []ExposedPort `json:"ports" yaml:"ports"`
 	MemoryLimit  string        `json:"memoryLimit,omitempty" yaml:"memoryLimit,omitempty"`
 	MountSources bool          `json:"mountSources" yaml:"mountSources"`
+	// Base root command inside container
+	Command []string `json:"command" yaml:"command"`
+	// Arguments of the base root command inside container
+	Args []string `json:"args" yaml:"args"`
 }
 
 type ChePlugin struct {

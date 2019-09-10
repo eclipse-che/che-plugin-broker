@@ -431,6 +431,94 @@ func TestBroker_processPlugins(t *testing.T) {
 			},
 		},
 		{
+			name:  "Properly converts PluginMeta to ChePlugin with overrided root commands in the containers",
+			mocks: mocks{},
+			args: args{
+				metas: []model.PluginMeta{
+					{
+						APIVersion:  "v2",
+						Publisher:   "pub1",
+						Name:        "name1",
+						Version:     "v0.13",
+						ID:          "id1",
+						Type:        ChePluginType,
+						Title:       "test title",
+						DisplayName: "test display name",
+						Description: "test description",
+						Icon:        "https://icon.com/icon.svg",
+						Spec: model.PluginMetaSpec{
+							Endpoints: []model.Endpoint{
+								{
+									Name:       "end1",
+									TargetPort: 80,
+									Public:     true,
+									Attributes: map[string]string{
+										"attr1":     "val1",
+										"testAttr2": "value2",
+									},
+								},
+							},
+							Containers: []model.Container{
+								createContainerWithRootCommand("container1", []string{"tail", "-f", "/dev/null"}, []string{}),
+								createContainerWithRootCommand("container2", []string{}, []string{"tail", "-f", "/dev/null"}),
+							},
+							InitContainers: []model.Container{
+								createContainerWithRootCommand("container2", []string{"cp"}, []string{"-rf", "test-file", "/some-volume/test"}),
+							},
+							WorkspaceEnv: []model.EnvVar{
+								{
+									Name:  "workspaceEnv1",
+									Value: "something",
+								},
+								{
+									Name:  "workspaceEnv2",
+									Value: "somethingElse",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: want{
+				commonPlugins: []model.ChePlugin{
+					{
+						Publisher: "pub1",
+						Name:      "name1",
+						Version:   "v0.13",
+						ID:        "id1",
+						Endpoints: []model.Endpoint{
+							{
+								Name:       "end1",
+								TargetPort: 80,
+								Public:     true,
+								Attributes: map[string]string{
+									"attr1":     "val1",
+									"testAttr2": "value2",
+								},
+							},
+						},
+						Containers: []model.Container{
+							createContainerWithRootCommand("container1", []string{"tail", "-f", "/dev/null"}, []string{}),
+							createContainerWithRootCommand("container2", []string{}, []string{"tail", "-f", "/dev/null"}),
+						},
+						InitContainers: []model.Container{
+							createContainerWithRootCommand("container2", []string{"cp"}, []string{"-rf", "test-file", "/some-volume/test"}),
+						},
+						WorkspaceEnv: []model.EnvVar{
+							{
+								Name:  "workspaceEnv1",
+								Value: "something",
+							},
+							{
+								Name:  "workspaceEnv2",
+								Value: "somethingElse",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "Meta type checking is case insensitive",
 			args: args{
 				metas: []model.PluginMeta{
@@ -1462,6 +1550,14 @@ func createChePlugin(ID string) model.ChePlugin {
 			},
 		},
 	}
+}
+
+func createContainerWithRootCommand(containerName string, command []string, args []string) model.Container {
+	container := createContainer(containerName)
+	container.Command = command
+	container.Args = args
+
+	return container
 }
 
 func createContainer(name string) model.Container {

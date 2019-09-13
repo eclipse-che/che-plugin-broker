@@ -631,6 +631,7 @@ func expectedPluginsWithSingleRemotePluginWithInitContainer(volumeIsPersisted bo
 					{
 						Name:      "plugins",
 						MountPath: "/plugins",
+						PersistVolume: true,
 					},
 				},
 				MountSources: true,
@@ -701,6 +702,7 @@ func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(usedLocalhost bo
 					{
 						Name:      "plugins",
 						MountPath: "/plugins",
+						PersistVolume: true,
 					},
 				},
 				MountSources: true,

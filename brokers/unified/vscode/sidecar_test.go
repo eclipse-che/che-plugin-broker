@@ -57,6 +57,7 @@ func TestAddPluginRunnerRequirements(t *testing.T) {
 							{
 								Name:      "plugins",
 								MountPath: "/plugins",
+								PersistVolume: true,
 							},
 						},
 						MountSources: true,
@@ -104,6 +105,7 @@ func TestAddPluginRunnerRequirements(t *testing.T) {
 							{
 								Name:      "plugins",
 								MountPath: "/plugins",
+								PersistVolume: true,
 							},
 						},
 						MountSources: true,
@@ -149,6 +151,7 @@ func TestAddExtension(t *testing.T) {
 								{
 									Name:      "plugins",
 									MountPath: "/plugins",
+									PersistVolume: true,
 								},
 							},
 							MountSources: true,
@@ -186,6 +189,7 @@ func TestAddExtension(t *testing.T) {
 							{
 								Name:      "plugins",
 								MountPath: "/plugins",
+								PersistVolume: true,
 							},
 						},
 						MountSources: true,

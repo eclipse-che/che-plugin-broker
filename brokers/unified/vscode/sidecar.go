@@ -28,6 +28,7 @@ func AddPluginRunnerRequirements(plugin model.ChePlugin, rand common.Random, use
 	container.Volumes = append(container.Volumes, model.Volume{
 		Name:      "plugins",
 		MountPath: "/plugins",
+		PersistVolume: true,
 	})
 	container.MountSources = true
 	if !useLocalhost {

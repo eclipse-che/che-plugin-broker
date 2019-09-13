@@ -213,7 +213,7 @@ func TestBroker_processPlugin(t *testing.T) {
 			want: expectedNoPlugin(),
 		},
 		{
-			name: "Successful brokering of remote plugin with initContainers",
+			name: "Successful brokering of remote plugin with initContainers and persisted volume",
 			meta: model.PluginMeta{
 				Type:      vscodePluginType,
 				ID:        pluginID,
@@ -234,8 +234,9 @@ func TestBroker_processPlugin(t *testing.T) {
 							Image: image,
 							Volumes: []model.Volume{
 								{
-									Name:      "Volume-for-init-container",
-									MountPath: "/test-volume",
+									Name:          "Volume-for-init-container",
+									MountPath:     "/test-volume",
+									PersistVolume: true,
 								},
 							},
 							Env: []model.EnvVar{
@@ -249,8 +250,47 @@ func TestBroker_processPlugin(t *testing.T) {
 				},
 			},
 			useLocalhost: false,
-			want: expectedPluginsWithSingleRemotePluginWithInitContainer(
-				false),
+			want:         expectedPluginsWithSingleRemotePluginWithInitContainer(true),
+		},
+		{
+			name: "Successful brokering of remote plugin with initContainers and ephemeral volume",
+			meta: model.PluginMeta{
+				Type:      vscodePluginType,
+				ID:        pluginID,
+				Version:   pluginVersion,
+				Publisher: pluginPublisher,
+				Name:      pluginName,
+				Spec: model.PluginMetaSpec{
+					Extensions: []string{
+						"https://red-hot-chilli.peppers/plugin.theia",
+					},
+					Containers: []model.Container{
+						{
+							Image: image,
+						},
+					},
+					InitContainers: []model.Container{
+						{
+							Image: image,
+							Volumes: []model.Volume{
+								{
+									Name:          "Volume-for-init-container",
+									MountPath:     "/test-volume",
+									PersistVolume: false,
+								},
+							},
+							Env: []model.EnvVar{
+								{
+									Name:  "ExecBin",
+									Value: "/test-volume/someExecBin",
+								},
+							},
+						},
+					},
+				},
+			},
+			useLocalhost: false,
+			want:         expectedPluginsWithSingleRemotePluginWithInitContainer(false),
 		},
 		{
 			name: "Successful brokering of remote plugin when extension points to .theia archive, using a generated host name",
@@ -578,7 +618,7 @@ func TestBroker_processPlugin(t *testing.T) {
 	}
 }
 
-func expectedPluginsWithSingleRemotePluginWithInitContainer(usedLocalhost bool) []model.ChePlugin {
+func expectedPluginsWithSingleRemotePluginWithInitContainer(volumeIsPersisted bool) []model.ChePlugin {
 	expectedPlugin := model.ChePlugin{
 		ID:        pluginID,
 		Version:   pluginVersion,
@@ -601,8 +641,9 @@ func expectedPluginsWithSingleRemotePluginWithInitContainer(usedLocalhost bool) 
 				Image: image,
 				Volumes: []model.Volume{
 					{
-						Name:      "Volume-for-init-container",
-						MountPath: "/test-volume",
+						Name:          "Volume-for-init-container",
+						MountPath:     "/test-volume",
+						PersistVolume: volumeIsPersisted,
 					},
 				},
 				Env: []model.EnvVar{
@@ -614,30 +655,30 @@ func expectedPluginsWithSingleRemotePluginWithInitContainer(usedLocalhost bool) 
 			},
 		},
 	}
-	if !usedLocalhost {
-		expectedPlugin.Containers[0].Ports = []model.ExposedPort{
-			{
-				ExposedPort: 4242,
-			},
-		}
-		expectedPlugin.Containers[0].Env = []model.EnvVar{
-			{
-				Name:  "THEIA_PLUGIN_ENDPOINT_PORT",
-				Value: "4242",
-			},
-		}
-		expectedPlugin.Endpoints = []model.Endpoint{
-			model.Endpoint{
-				Name:       "randomString1234567890",
-				Public:     false,
-				TargetPort: 4242,
-			},
-		}
-		expectedPlugin.WorkspaceEnv = append(expectedPlugin.WorkspaceEnv, model.EnvVar{
-			Name:  "THEIA_PLUGIN_REMOTE_ENDPOINT_" + strings.ReplaceAll(pluginPublisher+"_"+pluginName+"_"+pluginVersion, " ", "_"),
-			Value: "ws://randomString1234567890:4242",
-		})
+
+	expectedPlugin.Containers[0].Ports = []model.ExposedPort{
+		{
+			ExposedPort: 4242,
+		},
 	}
+	expectedPlugin.Containers[0].Env = []model.EnvVar{
+		{
+			Name:  "THEIA_PLUGIN_ENDPOINT_PORT",
+			Value: "4242",
+		},
+	}
+	expectedPlugin.Endpoints = []model.Endpoint{
+		model.Endpoint{
+			Name:       "randomString1234567890",
+			Public:     false,
+			TargetPort: 4242,
+		},
+	}
+	expectedPlugin.WorkspaceEnv = append(expectedPlugin.WorkspaceEnv, model.EnvVar{
+		Name:  "THEIA_PLUGIN_REMOTE_ENDPOINT_" + strings.ReplaceAll(pluginPublisher+"_"+pluginName+"_"+pluginVersion, " ", "_"),
+		Value: "ws://randomString1234567890:4242",
+	})
+
 	expectedPlugin.Containers[0].Env = append(expectedPlugin.Containers[0].Env, model.EnvVar{
 		Name:  "THEIA_PLUGINS",
 		Value: "local-dir:///plugins/sidecars/" + getPluginUniqueName(expectedPlugin),

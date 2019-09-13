@@ -82,8 +82,22 @@ type Command struct {
 }
 
 type Volume struct {
-	MountPath string `json:"mountPath" yaml:"mountPath"`
-	Name      string `json:"name" yaml:"name"`
+	MountPath     string `json:"mountPath" yaml:"mountPath"`
+	Name          string `json:"name" yaml:"name"`
+	PersistVolume bool   `json:"persistVolume" yaml:"persistVolume"`
+}
+
+// UnmarshalYAML is custom yaml unmarshaller to set up default volume state.
+func (v *Volume) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	type volume Volume
+	// Volume is persisted by default
+	raw := volume{PersistVolume: true}
+	if err := unmarshal(&raw); err != nil {
+		return err
+	}
+
+	*v = Volume(raw)
+	return nil
 }
 
 type ExposedPort struct {

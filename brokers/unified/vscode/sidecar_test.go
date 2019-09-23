@@ -55,8 +55,8 @@ func TestAddPluginRunnerRequirements(t *testing.T) {
 						Image: "test/test:latest",
 						Volumes: []model.Volume{
 							{
-								Name:      "plugins",
-								MountPath: "/plugins",
+								Name:          "plugins",
+								MountPath:     "/plugins",
 								PersistVolume: true,
 							},
 						},
@@ -103,8 +103,8 @@ func TestAddPluginRunnerRequirements(t *testing.T) {
 						Image: "test/test:latest",
 						Volumes: []model.Volume{
 							{
-								Name:      "plugins",
-								MountPath: "/plugins",
+								Name:          "plugins",
+								MountPath:     "/plugins",
 								PersistVolume: true,
 							},
 						},
@@ -149,8 +149,8 @@ func TestAddExtension(t *testing.T) {
 							Image: "test/test:latest",
 							Volumes: []model.Volume{
 								{
-									Name:      "plugins",
-									MountPath: "/plugins",
+									Name:          "plugins",
+									MountPath:     "/plugins",
 									PersistVolume: true,
 								},
 							},
@@ -187,8 +187,8 @@ func TestAddExtension(t *testing.T) {
 						Image: "test/test:latest",
 						Volumes: []model.Volume{
 							{
-								Name:      "plugins",
-								MountPath: "/plugins",
+								Name:          "plugins",
+								MountPath:     "/plugins",
 								PersistVolume: true,
 							},
 						},

@@ -629,8 +629,8 @@ func expectedPluginsWithSingleRemotePluginWithInitContainer(volumeIsPersisted bo
 				Image: image,
 				Volumes: []model.Volume{
 					{
-						Name:      "plugins",
-						MountPath: "/plugins",
+						Name:          "plugins",
+						MountPath:     "/plugins",
 						PersistVolume: true,
 					},
 				},
@@ -700,8 +700,8 @@ func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(usedLocalhost bo
 				Image: image,
 				Volumes: []model.Volume{
 					{
-						Name:      "plugins",
-						MountPath: "/plugins",
+						Name:          "plugins",
+						MountPath:     "/plugins",
 						PersistVolume: true,
 					},
 				},

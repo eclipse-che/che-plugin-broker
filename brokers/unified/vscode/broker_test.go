@@ -234,9 +234,9 @@ func TestBroker_processPlugin(t *testing.T) {
 							Image: image,
 							Volumes: []model.Volume{
 								{
-									Name:          "Volume-for-init-container",
-									MountPath:     "/test-volume",
-									PersistVolume: true,
+									Name:      "Volume-for-init-container",
+									MountPath: "/test-volume",
+									Ephemeral: false,
 								},
 							},
 							Env: []model.EnvVar{
@@ -250,7 +250,7 @@ func TestBroker_processPlugin(t *testing.T) {
 				},
 			},
 			useLocalhost: false,
-			want:         expectedPluginsWithSingleRemotePluginWithInitContainer(true),
+			want:         expectedPluginsWithSingleRemotePluginWithInitContainer(false),
 		},
 		{
 			name: "Successful brokering of remote plugin with initContainers and ephemeral volume",
@@ -274,9 +274,9 @@ func TestBroker_processPlugin(t *testing.T) {
 							Image: image,
 							Volumes: []model.Volume{
 								{
-									Name:          "Volume-for-init-container",
-									MountPath:     "/test-volume",
-									PersistVolume: false,
+									Name:      "Volume-for-init-container",
+									MountPath: "/test-volume",
+									Ephemeral: true,
 								},
 							},
 							Env: []model.EnvVar{
@@ -290,7 +290,7 @@ func TestBroker_processPlugin(t *testing.T) {
 				},
 			},
 			useLocalhost: false,
-			want:         expectedPluginsWithSingleRemotePluginWithInitContainer(false),
+			want:         expectedPluginsWithSingleRemotePluginWithInitContainer(true),
 		},
 		{
 			name: "Successful brokering of remote plugin when extension points to .theia archive, using a generated host name",
@@ -618,7 +618,7 @@ func TestBroker_processPlugin(t *testing.T) {
 	}
 }
 
-func expectedPluginsWithSingleRemotePluginWithInitContainer(volumeIsPersisted bool) []model.ChePlugin {
+func expectedPluginsWithSingleRemotePluginWithInitContainer(ephemeral bool) []model.ChePlugin {
 	expectedPlugin := model.ChePlugin{
 		ID:        pluginID,
 		Version:   pluginVersion,
@@ -629,9 +629,8 @@ func expectedPluginsWithSingleRemotePluginWithInitContainer(volumeIsPersisted bo
 				Image: image,
 				Volumes: []model.Volume{
 					{
-						Name:          "plugins",
-						MountPath:     "/plugins",
-						PersistVolume: true,
+						Name:      "plugins",
+						MountPath: "/plugins",
 					},
 				},
 				MountSources: true,
@@ -642,9 +641,9 @@ func expectedPluginsWithSingleRemotePluginWithInitContainer(volumeIsPersisted bo
 				Image: image,
 				Volumes: []model.Volume{
 					{
-						Name:          "Volume-for-init-container",
-						MountPath:     "/test-volume",
-						PersistVolume: volumeIsPersisted,
+						Name:      "Volume-for-init-container",
+						MountPath: "/test-volume",
+						Ephemeral: ephemeral,
 					},
 				},
 				Env: []model.EnvVar{
@@ -700,9 +699,8 @@ func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(usedLocalhost bo
 				Image: image,
 				Volumes: []model.Volume{
 					{
-						Name:          "plugins",
-						MountPath:     "/plugins",
-						PersistVolume: true,
+						Name:      "plugins",
+						MountPath: "/plugins",
 					},
 				},
 				MountSources: true,

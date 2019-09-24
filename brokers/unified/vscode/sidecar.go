@@ -26,9 +26,8 @@ func AddPluginRunnerRequirements(plugin model.ChePlugin, rand common.Random, use
 	// TODO limitation is one and only sidecar
 	container := plugin.Containers[0]
 	container.Volumes = append(container.Volumes, model.Volume{
-		Name:          "plugins",
-		MountPath:     "/plugins",
-		PersistVolume: true,
+		Name:      "plugins",
+		MountPath: "/plugins",
 	})
 	container.MountSources = true
 	if !useLocalhost {

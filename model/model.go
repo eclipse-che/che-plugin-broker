@@ -84,6 +84,7 @@ type Command struct {
 type Volume struct {
 	MountPath string `json:"mountPath" yaml:"mountPath"`
 	Name      string `json:"name" yaml:"name"`
+	Ephemeral bool   `json:"ephemeral" yaml:"ephemeral"`
 }
 
 type ExposedPort struct {

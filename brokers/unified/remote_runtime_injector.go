@@ -28,7 +28,7 @@ const (
 	RemoteEndPointVolumePath = "/remote-endpoint"
 
 	RemoteEndPontExecutableEnvVar = "PLUGIN_REMOTE_ENDPOINT"
-	RemoteEndPointExecutable      = "entrypoint.sh"
+	RemoteEndPointExecutable      = "plugin-remote-endpoint"
 	RemoteEndPointExecPath        = RemoteEndPointVolumePath + "/" + RemoteEndPointExecutable
 )
 

@@ -624,7 +624,7 @@ func expectedPluginsWithSingleRemotePluginWithInitContainer(ephemeral bool, plug
 		Version:   pluginVersion,
 		Publisher: pluginPublisher,
 		Name:      pluginName,
-		Type: pluginType,
+		Type:      pluginType,
 		Containers: []model.Container{
 			{
 				Image: image,
@@ -695,7 +695,7 @@ func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(usedLocalhost bo
 		Version:   pluginVersion,
 		Publisher: pluginPublisher,
 		Name:      pluginName,
-		Type: pluginType,
+		Type:      pluginType,
 		Containers: []model.Container{
 			{
 				Image: image,

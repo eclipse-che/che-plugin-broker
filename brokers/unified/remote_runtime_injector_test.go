@@ -1,0 +1,166 @@
+//
+// Copyright (c) 2019 Red Hat, Inc.
+// This program and the accompanying materials are made
+// available under the terms of the Eclipse Public License 2.0
+// which is available at https://www.eclipse.org/legal/epl-2.0/
+//
+// SPDX-License-Identifier: EPL-2.0
+//
+// Contributors:
+//   Red Hat, Inc. - initial API and implementation
+//
+
+package unified
+
+import (
+	"testing"
+
+	"github.com/eclipse/che-plugin-broker/model"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestShouldNotInjectRemotePluginRuntimeForChePluginType(t *testing.T) {
+	editorPlugin := createEditorPluginWithRuntimeInjection()
+	vscodePlugin := createPlugin(model.ChePluginType)
+
+	plugins := []model.ChePlugin{*editorPlugin, *vscodePlugin}
+
+	InjectRemoteRuntime(plugins)
+
+	assert.Equal(t, plugins, []model.ChePlugin{*createEditorPluginWithRuntimeInjection(), *createPlugin(model.ChePluginType)})
+}
+
+func TestShouldNotInjectRemotePluginRuntimeWithEditorWithNoInitContainers(t *testing.T) {
+	editorPlugin := createEditorPlugin()
+	vscodePlugin := createPlugin(model.VscodePluginType)
+
+	plugins := []model.ChePlugin{*editorPlugin, *vscodePlugin}
+
+	InjectRemoteRuntime(plugins)
+
+	assert.Equal(t, plugins, []model.ChePlugin{*createEditorPlugin(), *createPlugin(model.VscodePluginType)})
+}
+
+func TestShouldNotInjectRemotePluginRuntimeWhenNoEditor(t *testing.T) {
+	vscodePlugin1 := createPlugin(model.VscodePluginType)
+	vscodePlugin2 := createPlugin(model.VscodePluginType)
+
+	plugins := []model.ChePlugin{*vscodePlugin1, *vscodePlugin2}
+
+	InjectRemoteRuntime(plugins)
+
+	assert.Equal(t, plugins, []model.ChePlugin{*createPlugin(model.VscodePluginType), *createPlugin(model.VscodePluginType)})
+}
+
+func TestShouldInjectRemotePluginRuntime(t *testing.T) {
+	editorPlugin := createEditorPluginWithRuntimeInjection()
+	vscodePlugin := createPlugin(model.VscodePluginType)
+
+	plugins := []model.ChePlugin{*editorPlugin, *vscodePlugin}
+
+	InjectRemoteRuntime(plugins)
+
+	assert.Equal(t, plugins, []model.ChePlugin{*createEditorPluginWithRuntimeInjection(), *exectedVsCodePluginWithRuntimeInjection()})
+}
+
+func createEditorPluginWithRuntimeInjection() *model.ChePlugin {
+	editorPlugin := createEditorPlugin()
+	editorPlugin.InitContainers = []model.Container{
+		{
+			Image: "eclipse/che-theia-runtime-binary",
+			Name:  InjectorContainerName,
+			Env:   []model.EnvVar{},
+			Volumes: []model.Volume{
+				{
+					Name:      RemoteEndPointVolume,
+					MountPath: RemoteEndPointVolumePath,
+					Ephemeral: true,
+				},
+			},
+		},
+	}
+	return editorPlugin
+}
+
+func createEditorPlugin() *model.ChePlugin {
+	return &model.ChePlugin{
+		ID:        "some-id-1",
+		Version:   "latest",
+		Name:      DefaultEditorName,
+		Type:      model.EditorPluginType,
+		Publisher: "eclipse",
+		Containers: []model.Container{
+			{
+				Image: "eclipse/che-theia",
+				Name:  "che-theia",
+				Env:   []model.EnvVar{},
+			},
+		},
+	}
+}
+
+func createPlugin(pluginType string) *model.ChePlugin {
+	return &model.ChePlugin{
+		ID:        "some-id-2",
+		Version:   "latest",
+		Name:      "vscode-xml",
+		Type:      pluginType,
+		Publisher: "eclipse",
+		Containers: []model.Container{
+			{
+				Image: "eclipse/xml-lsp",
+				Name:  "xml-lsp",
+				Env: []model.EnvVar{
+					{
+						Name:  "Test",
+						Value: "some-value",
+					},
+				},
+				Volumes: []model.Volume{
+					{
+						Name:      "projects",
+						MountPath: "/projects",
+					},
+				},
+			},
+		},
+	}
+}
+
+func exectedVsCodePluginWithRuntimeInjection() *model.ChePlugin {
+	return &model.ChePlugin{
+		ID:        "some-id-2",
+		Version:   "latest",
+		Name:      "vscode-xml",
+		Type:      model.VscodePluginType,
+		Publisher: "eclipse",
+		Containers: []model.Container{
+			{
+				Image: "eclipse/xml-lsp",
+				Name:  "xml-lsp",
+				Env: []model.EnvVar{
+					{
+						Name:  "Test",
+						Value: "some-value",
+					},
+					{
+						Name:  RemoteEndPontExecutableEnvVar,
+						Value: RemoteEndPointExecPath,
+					},
+				},
+				Volumes: []model.Volume{
+					{
+						Name:      "projects",
+						MountPath: "/projects",
+					},
+					{
+						Name:      RemoteEndPointVolume,
+						MountPath: RemoteEndPointVolumePath,
+						Ephemeral: true,
+					},
+				},
+				Command: []string{RemoteEndPointExecPath},
+			},
+		},
+	}
+}

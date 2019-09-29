@@ -40,15 +40,14 @@ type RemotePluginInjection struct {
 }
 
 func InjectRemoteRuntime(plugins []model.ChePlugin) {
-	_, err := findEditorPlugin(plugins)
+	editorPlugin, err := findEditorPlugin(plugins)
 	if err != nil {
 		return
 	}
 
-	// injection, err := getInjection(editorPlugin)
-	// if err != nil {
-	// 	return
-	// }
+	if !hasRuntimeContainerWithInjection(*editorPlugin) {
+		return
+	}
 
 	injection := &RemotePluginInjection{
 		Volumes: model.Volume{
@@ -69,28 +68,28 @@ func InjectRemoteRuntime(plugins []model.ChePlugin) {
 
 func findEditorPlugin(plugins []model.ChePlugin) (*model.ChePlugin, error) {
 	for _, plugin := range plugins {
-		if plugin.Type == model.EditorPluginType {
+		if strings.ToLower(plugin.Type) == model.EditorPluginType &&
+			strings.ToLower(plugin.Name) == DefaultEditorName &&
+			len(plugin.InitContainers) > 0 {
 			return &plugin, nil
 		}
 	}
 	return nil, errors.New("Unable to find editor plugin")
 }
 
-// func getInjection(editorPlugin *model.ChePlugin) (RemotePluginInjection, error) {
-// var injectionContainer model.Container
-// for _, initContainer := range editorPlugin.InitContainers {
-// 	if initContainer.Name == InjectorContainerName {
-// 		injectionContainer = initContainer
-// 		continue
-// 	}
-// }
-// injectionContainer.Env
-// }
+func hasRuntimeContainerWithInjection(editorPlugin model.ChePlugin) bool {
+	for _, initContainer := range editorPlugin.InitContainers {
+		if initContainer.Name == InjectorContainerName {
+			return true
+		}
+	}
+	return false
+}
 
 func inject(plugin *model.ChePlugin, injection *RemotePluginInjection) {
 	pluginType := strings.ToLower(plugin.Type)
 
-	if pluginType != model.ChePluginType && pluginType != model.VscodePluginType {
+	if pluginType != model.TheiaPluginType && pluginType != model.VscodePluginType {
 		return
 	}
 	// sidecar container has one and only one container.

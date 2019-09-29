@@ -24,7 +24,7 @@ import (
 // ChePlugin with one container is supported only.
 func AddPluginRunnerRequirements(plugin model.ChePlugin, rand common.Random, useLocalhost bool) model.ChePlugin {
 	// TODO limitation is one and only sidecar
-	container := plugin.Containers[0]
+	container := &plugin.Containers[0]
 	container.Volumes = append(container.Volumes, model.Volume{
 		Name:      "plugins",
 		MountPath: "/plugins",
@@ -46,7 +46,6 @@ func AddPluginRunnerRequirements(plugin model.ChePlugin, rand common.Random, use
 		Name:  "THEIA_PLUGINS",
 		Value: "local-dir:///plugins/sidecars/" + getPluginUniqueName(plugin),
 	})
-	plugin.Containers[0] = container
 
 	return plugin
 }

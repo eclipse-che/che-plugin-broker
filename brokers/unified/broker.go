@@ -95,6 +95,10 @@ func (b *Broker) Start(pluginFQNs []model.PluginFQN, defaultRegistry string) err
 		return err
 	}
 
+	if plugins, err := b.Storage.Plugins(); err == nil {
+		InjectRemoteRuntime(plugins)
+	}
+
 	result, err := b.serializeTooling()
 	if err != nil {
 		b.PubFailed(err.Error())
@@ -142,10 +146,6 @@ func (b *Broker) ProcessPlugins(metas []model.PluginMeta) error {
 			return err
 		}
 	}
-
-	// if plugins, err := b.Storage.Plugins(); err != nil {
-	// 	InjectRemoteRuntime(plugins)
-	// }
 
 	return nil
 }

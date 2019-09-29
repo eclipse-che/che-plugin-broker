@@ -29,7 +29,7 @@ const (
 )
 
 type RemotePluginInjection struct {
-	Volumes model.Volume
+	Volume model.Volume
 	Env     model.EnvVar
 	Command []string
 	Args    []string
@@ -84,7 +84,7 @@ func getRuntimeInjection(editorPlugin *model.ChePlugin) (*RemotePluginInjection,
 	}
 
 	return &RemotePluginInjection{
-		Volumes: *volume,
+		Volume: *volume,
 		Env:     *runtimeBinaryPathEnv,
 		Command: []string{runtimeBinaryPathEnv.Value},
 	}, nil
@@ -127,7 +127,7 @@ func inject(plugin *model.ChePlugin, injection *RemotePluginInjection) {
 	container := &plugin.Containers[0]
 
 	container.Env = append(container.Env, injection.Env)
-	container.Volumes = append(container.Volumes, injection.Volumes)
+	container.Volumes = append(container.Volumes, injection.Volume)
 	if len(container.Command) == 0 && len(container.Args) == 0 {
 		container.Command = injection.Command
 	}

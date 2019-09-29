@@ -19,6 +19,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	ExecutablePathTest = "/some-path"
+	VolumeNameTest     = "some-volume"
+	VolumePathTest     = "/some-volume"
+)
+
 func TestShouldNotInjectRemotePluginRuntimeForChePluginType(t *testing.T) {
 	editorPlugin := createEditorPluginWithRuntimeInjection()
 	vscodePlugin := createPlugin(model.ChePluginType)
@@ -69,11 +75,20 @@ func createEditorPluginWithRuntimeInjection() *model.ChePlugin {
 		{
 			Image: "eclipse/che-theia-runtime-binary",
 			Name:  InjectorContainerName,
-			Env:   []model.EnvVar{},
+			Env: []model.EnvVar{
+				{
+					Name:  RemoteEndPontExecutableEnvVar,
+					Value: ExecutablePathTest,
+				},
+				{
+					Name:  VolumeNameEnvVar,
+					Value: VolumeNameTest,
+				},
+			},
 			Volumes: []model.Volume{
 				{
-					Name:      RemoteEndPointVolume,
-					MountPath: RemoteEndPointVolumePath,
+					Name:      VolumeNameTest,
+					MountPath: VolumePathTest,
 					Ephemeral: true,
 				},
 			},
@@ -145,7 +160,7 @@ func exectedVsCodePluginWithRuntimeInjection() *model.ChePlugin {
 					},
 					{
 						Name:  RemoteEndPontExecutableEnvVar,
-						Value: RemoteEndPointExecPath,
+						Value: ExecutablePathTest,
 					},
 				},
 				Volumes: []model.Volume{
@@ -154,12 +169,12 @@ func exectedVsCodePluginWithRuntimeInjection() *model.ChePlugin {
 						MountPath: "/projects",
 					},
 					{
-						Name:      RemoteEndPointVolume,
-						MountPath: RemoteEndPointVolumePath,
+						Name:      VolumeNameTest,
+						MountPath: VolumePathTest,
 						Ephemeral: true,
 					},
 				},
-				Command: []string{RemoteEndPointExecPath},
+				Command: []string{ExecutablePathTest},
 			},
 		},
 	}

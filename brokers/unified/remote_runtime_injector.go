@@ -24,12 +24,8 @@ const (
 
 	InjectorContainerName = "remote-runtime-injector"
 
-	RemoteEndPointVolume     = "remote-endpoint"
-	RemoteEndPointVolumePath = "/remote-endpoint"
-
-	RemoteEndPontExecutableEnvVar = "PLUGIN_REMOTE_ENDPOINT"
-	RemoteEndPointExecutable      = "plugin-remote-endpoint"
-	RemoteEndPointExecPath        = RemoteEndPointVolumePath + "/" + RemoteEndPointExecutable
+	RemoteEndPontExecutableEnvVar = "PLUGIN_REMOTE_ENDPOINT_EXECUTABLE"
+	VolumeNameEnvVar              = "REMOTE_ENDPOINT_VOLUME_NAME"
 )
 
 type RemotePluginInjection struct {
@@ -40,33 +36,22 @@ type RemotePluginInjection struct {
 }
 
 func InjectRemoteRuntime(plugins []model.ChePlugin) {
-	editorPlugin, err := findEditorPlugin(plugins)
+	editorPlugin, err := findDefaultEditorPlugin(plugins)
 	if err != nil {
 		return
 	}
 
-	if !hasRuntimeContainerWithInjection(*editorPlugin) {
+	injection, err := getRuntimeInjection(editorPlugin)
+	if err != nil {
 		return
 	}
 
-	injection := &RemotePluginInjection{
-		Volumes: model.Volume{
-			Name:      RemoteEndPointVolume,
-			MountPath: RemoteEndPointVolumePath,
-			Ephemeral: true,
-		},
-		Env: model.EnvVar{
-			Name:  RemoteEndPontExecutableEnvVar,
-			Value: RemoteEndPointExecPath,
-		},
-		Command: []string{RemoteEndPointExecPath},
-	}
 	for _, plugin := range plugins {
 		inject(&plugin, injection)
 	}
 }
 
-func findEditorPlugin(plugins []model.ChePlugin) (*model.ChePlugin, error) {
+func findDefaultEditorPlugin(plugins []model.ChePlugin) (*model.ChePlugin, error) {
 	for _, plugin := range plugins {
 		if strings.ToLower(plugin.Type) == model.EditorPluginType &&
 			strings.ToLower(plugin.Name) == DefaultEditorName &&
@@ -74,16 +59,62 @@ func findEditorPlugin(plugins []model.ChePlugin) (*model.ChePlugin, error) {
 			return &plugin, nil
 		}
 	}
-	return nil, errors.New("Unable to find editor plugin")
+	return nil, errors.New("Unable to find default editor plugin")
 }
 
-func hasRuntimeContainerWithInjection(editorPlugin model.ChePlugin) bool {
-	for _, initContainer := range editorPlugin.InitContainers {
-		if initContainer.Name == InjectorContainerName {
-			return true
+func getRuntimeInjection(editorPlugin *model.ChePlugin) (*RemotePluginInjection, error) {
+	containerInjector, err := findContainerInjector(editorPlugin.InitContainers)
+	if err != nil {
+		return nil, err
+	}
+
+	runtimeBinaryPathEnv, err := findEnv(RemoteEndPontExecutableEnvVar, containerInjector.Env)
+	if err != nil || runtimeBinaryPathEnv.Value == "" {
+		return nil, err
+	}
+
+	volumeName, err := findEnv(VolumeNameEnvVar, containerInjector.Env)
+	if err != nil || runtimeBinaryPathEnv.Value == "" {
+		return nil, err
+	}
+
+	volume, err := findVolume(volumeName.Value, containerInjector.Volumes)
+	if err != nil {
+		return nil, err
+	}
+
+	return &RemotePluginInjection{
+		Volumes: *volume,
+		Env:     *runtimeBinaryPathEnv,
+		Command: []string{runtimeBinaryPathEnv.Value},
+	}, nil
+}
+
+func findContainerInjector(containers []model.Container) (*model.Container, error) {
+	for _, container := range containers {
+		if container.Name == InjectorContainerName {
+			return &container, nil
 		}
 	}
-	return false
+	return nil, errors.New("Unable to find injector container")
+}
+
+func findEnv(envName string, envVars []model.EnvVar) (*model.EnvVar, error) {
+	for _, envVar := range envVars {
+		if envVar.Name == envName {
+			return &envVar, nil
+		}
+	}
+	return nil, errors.New("Unable to find env by name")
+}
+
+func findVolume(volumeName string, volumes []model.Volume) (*model.Volume, error) {
+	for _, volume := range volumes {
+		if volume.Name == volumeName {
+			return &volume, nil
+		}
+	}
+	return nil, errors.New("Unable to find volume by name")
 }
 
 func inject(plugin *model.ChePlugin, injection *RemotePluginInjection) {

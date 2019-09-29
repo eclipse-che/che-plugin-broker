@@ -272,7 +272,7 @@ func TestBroker_processPlugins(t *testing.T) {
 				},
 			},
 			want: want{
-				commonPlugins: []model.ChePlugin{createChePlugin("id2"), createChePlugin("id6")},
+				commonPlugins: []model.ChePlugin{createChePlugin("id2", TestChePluginType), createChePlugin("id6", TestChePluginType)},
 				vscodeMetas:   []model.PluginMeta{createVSCodeMeta("id1"), createVSCodeMeta("id4"), createTheiaMeta("id3"), createTheiaMeta("id5")},
 			},
 		},
@@ -283,7 +283,7 @@ func TestBroker_processPlugins(t *testing.T) {
 				metas: []model.PluginMeta{createChePluginMeta("id1"), createCheEditorMeta("id2")},
 			},
 			want: want{
-				commonPlugins: []model.ChePlugin{createChePlugin("id1"), createChePlugin("id2")},
+				commonPlugins: []model.ChePlugin{createChePlugin("id1", TestChePluginType), createChePlugin("id2", TestEditorPluginType)},
 			},
 		},
 		{
@@ -297,7 +297,7 @@ func TestBroker_processPlugins(t *testing.T) {
 						Name:        "name1",
 						Version:     "v0.13",
 						ID:          "id1",
-						Type:        ChePluginType,
+						Type:        model.ChePluginType,
 						Title:       "test title",
 						DisplayName: "test display name",
 						Description: "test description",
@@ -339,7 +339,7 @@ func TestBroker_processPlugins(t *testing.T) {
 						Name:        "name2",
 						Version:     "v0",
 						ID:          "id2",
-						Type:        EditorPluginType,
+						Type:        model.EditorPluginType,
 						Title:       "test title",
 						DisplayName: "test display name",
 						Description: "test description",
@@ -374,6 +374,7 @@ func TestBroker_processPlugins(t *testing.T) {
 						Name:      "name1",
 						Version:   "v0.13",
 						ID:        "id1",
+						Type:      model.ChePluginType,
 						Endpoints: []model.Endpoint{
 							{
 								Name:       "end1",
@@ -408,6 +409,7 @@ func TestBroker_processPlugins(t *testing.T) {
 						Name:      "name2",
 						Version:   "v0",
 						ID:        "id2",
+						Type:      model.EditorPluginType,
 						Endpoints: []model.Endpoint{
 							{
 								Name:       "end2",
@@ -441,7 +443,7 @@ func TestBroker_processPlugins(t *testing.T) {
 						Name:        "name1",
 						Version:     "v0.13",
 						ID:          "id1",
-						Type:        ChePluginType,
+						Type:        model.ChePluginType,
 						Title:       "test title",
 						DisplayName: "test display name",
 						Description: "test description",
@@ -486,6 +488,7 @@ func TestBroker_processPlugins(t *testing.T) {
 						Name:      "name1",
 						Version:   "v0.13",
 						ID:        "id1",
+						Type:        model.ChePluginType,
 						Endpoints: []model.Endpoint{
 							{
 								Name:       "end1",
@@ -686,6 +689,7 @@ func TestBroker_processPlugins(t *testing.T) {
 				commonPlugins: []model.ChePlugin{
 					{
 						ID: "id11",
+						Type: "che plugin",
 						Containers: []model.Container{
 							{
 								Image: defaultImage,
@@ -694,6 +698,7 @@ func TestBroker_processPlugins(t *testing.T) {
 					},
 					{
 						ID: "id12",
+						Type:       "Che Plugin",
 						Containers: []model.Container{
 							{
 								Image: defaultImage,
@@ -702,6 +707,7 @@ func TestBroker_processPlugins(t *testing.T) {
 					},
 					{
 						ID: "id13",
+						Type: "cHE plugIN",
 						Containers: []model.Container{
 							{
 								Image: defaultImage,
@@ -752,7 +758,7 @@ func TestBroker_processPlugins(t *testing.T) {
 			args: args{
 				metas: []model.PluginMeta{
 					{
-						Type:       ChePluginType,
+						Type:       model.ChePluginType,
 						ID:         "test id",
 						Version:    "test version",
 						Publisher:  "test publisher",
@@ -1541,9 +1547,10 @@ func createMetaWithExtension(ID string, extensions ...string) model.PluginMeta {
 	}
 }
 
-func createChePlugin(ID string) model.ChePlugin {
+func createChePlugin(ID string, pluginType string) model.ChePlugin {
 	return model.ChePlugin{
 		ID: ID,
+		Type: pluginType,
 		Containers: []model.Container{
 			{
 				Image: defaultImage,

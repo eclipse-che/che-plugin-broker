@@ -113,4 +113,5 @@ type ChePlugin struct {
 	Containers     []Container `json:"containers" yaml:"containers"`
 	InitContainers []Container `json:"initContainers" yaml:"initContainers"`
 	WorkspaceEnv   []EnvVar    `json:"workspaceEnv" yaml:"workspaceEnv"`
+	Type           string      `json:"type" yaml:"type"`
 }

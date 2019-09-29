@@ -14,45 +14,21 @@ package vscode
 
 import (
 	"strconv"
-	"strings"
 
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/model"
 )
 
-const (
-	RemoteEndPointVolume     = "remote-endpoint"
-	RemoteEndPointVolumePath = "/remote-endpoint"
-
-	RemoteEndPontExecutableEnvVar = "PLUGIN_REMOTE_ENDPOINT"
-	RemoteEndPointExecutable      = "entrypoint.sh"
-	RemoteEndPointExecPath        = RemoteEndPointVolumePath + "/" + RemoteEndPointExecutable
-)
-
 // AddPluginRunnerRequirements adds to ChePlugin configuration needed to run remote Theia plugins in the provided ChePlugin.
 // Method adds needed ports, endpoints, volumes, environment variables.
 // ChePlugin with one container is supported only.
-func AddPluginRunnerRequirements(plugin model.ChePlugin, pluginType string, rand common.Random, useLocalhost bool) model.ChePlugin {
+func AddPluginRunnerRequirements(plugin model.ChePlugin, rand common.Random, useLocalhost bool) model.ChePlugin {
 	// TODO limitation is one and only sidecar
 	container := plugin.Containers[0]
-	container.Volumes = append(
-		container.Volumes,
-		model.Volume{
-			Name:      "plugins",
-			MountPath: "/plugins",
-		},
-		model.Volume{
-			Name:      RemoteEndPointVolume,
-			MountPath: RemoteEndPointVolumePath,
-			Ephemeral: true,
-		},
-	)
-
-	pluginType = strings.ToLower(pluginType)
-	if (pluginType == model.ChePluginType || pluginType == model.VscodePluginType) &&
-		len(container.Command) == 0 && len(container.Args) == 0 {
-		container.Command = []string{RemoteEndPointExecPath}
-	}
+	container.Volumes = append(container.Volumes, model.Volume{
+		Name:      "plugins",
+		MountPath: "/plugins",
+	})
 
 	container.MountSources = true
 	if !useLocalhost {
@@ -66,17 +42,10 @@ func AddPluginRunnerRequirements(plugin model.ChePlugin, pluginType string, rand
 			Value: strconv.Itoa(port),
 		})
 	}
-	container.Env = append(container.Env,
-		model.EnvVar{
-			Name:  "THEIA_PLUGINS",
-			Value: "local-dir:///plugins/sidecars/" + getPluginUniqueName(plugin),
-		},
-		model.EnvVar{
-			Name:  RemoteEndPontExecutableEnvVar,
-			Value: RemoteEndPointExecPath,
-		},
-	)
-
+	container.Env = append(container.Env, model.EnvVar{
+		Name:  "THEIA_PLUGINS",
+		Value: "local-dir:///plugins/sidecars/" + getPluginUniqueName(plugin),
+	})
 	plugin.Containers[0] = container
 
 	return plugin

@@ -129,7 +129,7 @@ func (b *brokerImpl) ProcessPlugin(meta model.PluginMeta) error {
 		err = b.injectLocalPlugin(plugin, archivesPaths)
 		return err
 	}
-	return b.injectRemotePlugin(plugin, archivesPaths, workDir, meta.Type)
+	return b.injectRemotePlugin(plugin, archivesPaths, workDir)
 }
 
 func (b *brokerImpl) injectLocalPlugin(plugin model.ChePlugin, archivesPaths []string) error {
@@ -149,8 +149,8 @@ func getPluginUniqueName(plugin model.ChePlugin) string {
 	return re.ReplaceAllString(plugin.Publisher+"_"+plugin.Name+"_"+plugin.Version, `_`)
 }
 
-func (b *brokerImpl) injectRemotePlugin(plugin model.ChePlugin, archivesPaths []string, workDir string, pluginType string) error {
-	plugin = AddPluginRunnerRequirements(plugin, pluginType, b.rand, b.localhostSidecar)
+func (b *brokerImpl) injectRemotePlugin(plugin model.ChePlugin, archivesPaths []string, workDir string) error {
+	plugin = AddPluginRunnerRequirements(plugin, b.rand, b.localhostSidecar)
 	for _, archive := range archivesPaths {
 		if !cfg.OnlyApplyMetadataActions {
 			pluginName := getPluginUniqueName(plugin)
@@ -186,6 +186,7 @@ func convertMetaToPlugin(meta model.PluginMeta) model.ChePlugin {
 		InitContainers: meta.Spec.InitContainers,
 		Endpoints:      meta.Spec.Endpoints,
 		WorkspaceEnv:   meta.Spec.WorkspaceEnv,
+		Type:           meta.Type,
 	}
 }
 

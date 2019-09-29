@@ -143,6 +143,10 @@ func (b *Broker) ProcessPlugins(metas []model.PluginMeta) error {
 		}
 	}
 
+	// if plugins, err := b.Storage.Plugins(); err != nil {
+	// 	InjectRemoteRuntime(plugins)
+	// }
+
 	return nil
 }
 
@@ -334,5 +338,6 @@ func ConvertMetaToPlugin(meta model.PluginMeta) model.ChePlugin {
 		InitContainers: meta.Spec.InitContainers,
 		Endpoints:      meta.Spec.Endpoints,
 		WorkspaceEnv:   meta.Spec.WorkspaceEnv,
+		Type:           meta.Type,
 	}
 }

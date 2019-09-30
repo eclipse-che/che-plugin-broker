@@ -174,7 +174,6 @@ func exectedVsCodePluginWithRuntimeInjection() *model.ChePlugin {
 						Ephemeral: true,
 					},
 				},
-				Command: []string{ExecutablePathTest},
 			},
 		},
 	}

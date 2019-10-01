@@ -108,7 +108,7 @@ func findEnv(envName string, envVars []model.EnvVar) (*model.EnvVar, error) {
 	for _, envVar := range envVars {
 		if envVar.Name == envName {
 			result = &envVar
-			continue
+			break
 		}
 	}
 	if result == nil {

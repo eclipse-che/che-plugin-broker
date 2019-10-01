@@ -77,7 +77,7 @@ func createEditorPluginWithRuntimeInjection() *model.ChePlugin {
 			Name:  InjectorContainerName,
 			Env: []model.EnvVar{
 				{
-					Name:  RemoteEndPontExecutableEnvVar,
+					Name:  RemoteEndPointExecutableEnvVar,
 					Value: ExecutablePathTest,
 				},
 				{
@@ -101,7 +101,7 @@ func createEditorPlugin() *model.ChePlugin {
 	return &model.ChePlugin{
 		ID:        "some-id-1",
 		Version:   "latest",
-		Name:      DefaultEditorName,
+		Name:      CheTheiaEditorName,
 		Type:      model.EditorPluginType,
 		Publisher: "eclipse",
 		Containers: []model.Container{
@@ -159,7 +159,7 @@ func exectedVsCodePluginWithRuntimeInjection() *model.ChePlugin {
 						Value: "some-value",
 					},
 					{
-						Name:  RemoteEndPontExecutableEnvVar,
+						Name:  RemoteEndPointExecutableEnvVar,
 						Value: ExecutablePathTest,
 					},
 				},

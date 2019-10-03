@@ -29,16 +29,15 @@ const (
 )
 
 type RemotePluginInjection struct {
-	Volume model.Volume
+	Volume  model.Volume
 	Env     model.EnvVar
 	Command []string
 	Args    []string
 }
 
 func InjectRemoteRuntime(plugins []model.ChePlugin) error {
-	editorPlugin, err := findCheTheiaEditor(plugins)
+	editorPlugin := findCheTheiaEditor(plugins)
 	if editorPlugin == nil {
-		// it's ok, maybe used some another editor instead of che-theia
 		return nil
 	}
 
@@ -54,15 +53,16 @@ func InjectRemoteRuntime(plugins []model.ChePlugin) error {
 	return nil
 }
 
-func findCheTheiaEditor(plugins []model.ChePlugin) (*model.ChePlugin, error) {
+func findCheTheiaEditor(plugins []model.ChePlugin) *model.ChePlugin {
 	for _, plugin := range plugins {
 		if strings.ToLower(plugin.Type) == model.EditorPluginType &&
 			strings.ToLower(plugin.Name) == CheTheiaEditorName &&
 			len(plugin.InitContainers) > 0 {
-			return &plugin, nil
+			return &plugin
 		}
 	}
-	return nil, errors.New("Unable to find che-theia editor plugin")
+	// it's ok, maybe used some another editor instead of che-theia
+	return nil
 }
 
 func getRuntimeInjection(editorPlugin *model.ChePlugin) (*RemotePluginInjection, error) {
@@ -88,7 +88,7 @@ func getRuntimeInjection(editorPlugin *model.ChePlugin) (*RemotePluginInjection,
 	}
 
 	return &RemotePluginInjection{
-		Volume: *volume,
+		Volume:  *volume,
 		Env:     *runtimeBinaryPathEnv,
 		Command: []string{runtimeBinaryPathEnv.Value},
 	}, nil

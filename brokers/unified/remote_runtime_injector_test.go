@@ -31,9 +31,10 @@ func TestShouldNotInjectRemotePluginRuntimeForChePluginType(t *testing.T) {
 
 	plugins := []model.ChePlugin{*editorPlugin, *vscodePlugin}
 
-	InjectRemoteRuntime(plugins)
+	err := InjectRemoteRuntime(plugins)
 
 	assert.Equal(t, plugins, []model.ChePlugin{*createEditorPluginWithRuntimeInjection(), *createPlugin(model.ChePluginType)})
+	assert.Equal(t, err, nil)
 }
 
 func TestShouldNotInjectRemotePluginRuntimeWithEditorWithNoInitContainers(t *testing.T) {
@@ -42,9 +43,10 @@ func TestShouldNotInjectRemotePluginRuntimeWithEditorWithNoInitContainers(t *tes
 
 	plugins := []model.ChePlugin{*editorPlugin, *vscodePlugin}
 
-	InjectRemoteRuntime(plugins)
+	err := InjectRemoteRuntime(plugins)
 
 	assert.Equal(t, plugins, []model.ChePlugin{*createEditorPlugin(), *createPlugin(model.VscodePluginType)})
+	assert.Equal(t, err, nil)
 }
 
 func TestShouldNotInjectRemotePluginRuntimeWhenNoEditor(t *testing.T) {
@@ -53,9 +55,10 @@ func TestShouldNotInjectRemotePluginRuntimeWhenNoEditor(t *testing.T) {
 
 	plugins := []model.ChePlugin{*vscodePlugin1, *vscodePlugin2}
 
-	InjectRemoteRuntime(plugins)
+	err := InjectRemoteRuntime(plugins)
 
 	assert.Equal(t, plugins, []model.ChePlugin{*createPlugin(model.VscodePluginType), *createPlugin(model.VscodePluginType)})
+	assert.Equal(t, err, nil)
 }
 
 func TestShouldInjectRemotePluginRuntime(t *testing.T) {
@@ -64,9 +67,10 @@ func TestShouldInjectRemotePluginRuntime(t *testing.T) {
 
 	plugins := []model.ChePlugin{*editorPlugin, *vscodePlugin}
 
-	InjectRemoteRuntime(plugins)
+	err := InjectRemoteRuntime(plugins)
 
 	assert.Equal(t, plugins, []model.ChePlugin{*createEditorPluginWithRuntimeInjection(), *exectedVsCodePluginWithRuntimeInjection()})
+	assert.Equal(t, err, nil)
 }
 
 func createEditorPluginWithRuntimeInjection() *model.ChePlugin {

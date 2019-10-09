@@ -24,7 +24,7 @@ const (
 
 	InjectorContainerName = "remote-runtime-injector"
 
-	RemoteEndPointExecutableEnvVar = "PLUGIN_REMOTE_ENDPOINT_EXECUTABLE"
+	RemoteEndpointExecutableEnvVar = "PLUGIN_REMOTE_ENDPOINT_EXECUTABLE"
 	VolumeNameEnvVar               = "REMOTE_ENDPOINT_VOLUME_NAME"
 )
 
@@ -72,7 +72,7 @@ func getRuntimeInjection(editorPlugin *model.ChePlugin) (*RemotePluginInjection,
 		return nil, nil
 	}
 
-	runtimeBinaryPathEnv, err := findEnv(RemoteEndPointExecutableEnvVar, containerInjector.Env)
+	runtimeBinaryPathEnv, err := findEnv(RemoteEndpointExecutableEnvVar, containerInjector.Env)
 	if err != nil {
 		return nil, err
 	}

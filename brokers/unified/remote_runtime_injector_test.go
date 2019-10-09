@@ -81,7 +81,7 @@ func createEditorPluginWithRuntimeInjection() *model.ChePlugin {
 			Name:  InjectorContainerName,
 			Env: []model.EnvVar{
 				{
-					Name:  RemoteEndPointExecutableEnvVar,
+					Name:  RemoteEndpointExecutableEnvVar,
 					Value: ExecutablePathTest,
 				},
 				{
@@ -163,7 +163,7 @@ func exectedVsCodePluginWithRuntimeInjection() *model.ChePlugin {
 						Value: "some-value",
 					},
 					{
-						Name:  RemoteEndPointExecutableEnvVar,
+						Name:  RemoteEndpointExecutableEnvVar,
 						Value: ExecutablePathTest,
 					},
 				},

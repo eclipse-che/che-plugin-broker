@@ -186,6 +186,7 @@ func convertMetaToPlugin(meta model.PluginMeta) model.ChePlugin {
 		InitContainers: meta.Spec.InitContainers,
 		Endpoints:      meta.Spec.Endpoints,
 		WorkspaceEnv:   meta.Spec.WorkspaceEnv,
+		Type:           meta.Type,
 	}
 }
 

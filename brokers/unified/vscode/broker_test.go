@@ -250,7 +250,7 @@ func TestBroker_processPlugin(t *testing.T) {
 				},
 			},
 			useLocalhost: false,
-			want:         expectedPluginsWithSingleRemotePluginWithInitContainer(false),
+			want:         expectedPluginsWithSingleRemotePluginWithInitContainer(false, vscodePluginType),
 		},
 		{
 			name: "Successful brokering of remote plugin with initContainers and ephemeral volume",
@@ -290,7 +290,7 @@ func TestBroker_processPlugin(t *testing.T) {
 				},
 			},
 			useLocalhost: false,
-			want:         expectedPluginsWithSingleRemotePluginWithInitContainer(true),
+			want:         expectedPluginsWithSingleRemotePluginWithInitContainer(true, vscodePluginType),
 		},
 		{
 			name: "Successful brokering of remote plugin when extension points to .theia archive, using a generated host name",
@@ -313,7 +313,7 @@ func TestBroker_processPlugin(t *testing.T) {
 			},
 			useLocalhost: false,
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
-				false),
+				false, vscodePluginType),
 		},
 		{
 			name: "Successful brokering of remote plugin when extension points to .theia archive, using localhost as the host name",
@@ -336,7 +336,7 @@ func TestBroker_processPlugin(t *testing.T) {
 			},
 			useLocalhost: true,
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
-				true),
+				true, vscodePluginType),
 		},
 		{
 			name: "Successful brokering of local plugin with extensions field with several extensions",
@@ -413,7 +413,7 @@ func TestBroker_processPlugin(t *testing.T) {
 			},
 			useLocalhost: false,
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
-				false),
+				false, vscodePluginType),
 		},
 		{
 			name: "Successful brokering of remote plugin with extensions field with several extensions, using localhost as the host name",
@@ -436,7 +436,7 @@ func TestBroker_processPlugin(t *testing.T) {
 			},
 			useLocalhost: true,
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
-				true),
+				true, vscodePluginType),
 		},
 		{
 			name: "Successful brokering of remote plugin with extensions field with several extensions, using a generated the host name",
@@ -461,7 +461,7 @@ func TestBroker_processPlugin(t *testing.T) {
 			},
 			useLocalhost: false,
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
-				false),
+				false, vscodePluginType),
 		},
 		{
 			name: "Successful brokering of remote plugin with extensions field with several extensions, using localhost as the host name",
@@ -486,7 +486,7 @@ func TestBroker_processPlugin(t *testing.T) {
 			},
 			useLocalhost: true,
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
-				true),
+				true, vscodePluginType),
 		},
 		{
 			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs, using a generated host name",
@@ -511,7 +511,7 @@ func TestBroker_processPlugin(t *testing.T) {
 			},
 			useLocalhost: false,
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
-				false),
+				false, vscodePluginType),
 		},
 		{
 			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs, using localhost as the host name",
@@ -536,7 +536,7 @@ func TestBroker_processPlugin(t *testing.T) {
 			},
 			useLocalhost: true,
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
-				true),
+				true, vscodePluginType),
 		},
 		{
 			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs when plugin type is Theia, using a generated host name",
@@ -561,7 +561,7 @@ func TestBroker_processPlugin(t *testing.T) {
 			},
 			useLocalhost: false,
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
-				false),
+				false, theiaPluginType),
 		},
 		{
 			name: "Successful brokering of remote plugin with extensions field with mixed extensions and archives URLs when plugin type is Theia, using localhost as the host name",
@@ -586,7 +586,7 @@ func TestBroker_processPlugin(t *testing.T) {
 			},
 			useLocalhost: true,
 			want: expectedPluginsWithSingleRemotePluginWithSeveralExtensions(
-				true),
+				true, theiaPluginType),
 		},
 	}
 	for _, tt := range cases {
@@ -618,12 +618,13 @@ func TestBroker_processPlugin(t *testing.T) {
 	}
 }
 
-func expectedPluginsWithSingleRemotePluginWithInitContainer(ephemeral bool) []model.ChePlugin {
+func expectedPluginsWithSingleRemotePluginWithInitContainer(ephemeral bool, pluginType string) []model.ChePlugin {
 	expectedPlugin := model.ChePlugin{
 		ID:        pluginID,
 		Version:   pluginVersion,
 		Publisher: pluginPublisher,
 		Name:      pluginName,
+		Type:      pluginType,
 		Containers: []model.Container{
 			{
 				Image: image,
@@ -688,12 +689,13 @@ func expectedPluginsWithSingleRemotePluginWithInitContainer(ephemeral bool) []mo
 	}
 }
 
-func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(usedLocalhost bool) []model.ChePlugin {
+func expectedPluginsWithSingleRemotePluginWithSeveralExtensions(usedLocalhost bool, pluginType string) []model.ChePlugin {
 	expectedPlugin := model.ChePlugin{
 		ID:        pluginID,
 		Version:   pluginVersion,
 		Publisher: pluginPublisher,
 		Name:      pluginName,
+		Type:      pluginType,
 		Containers: []model.Container{
 			{
 				Image: image,

@@ -31,11 +31,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const ChePluginType = "che plugin"
-const EditorPluginType = "che editor"
-const TheiaPluginType = "theia plugin"
-const VscodePluginType = "vs code extension"
-
 // RegistryURLFormat specifies the format string for registry urls
 // when downloading metas
 const RegistryURLFormat = "%s/%s/meta.yaml"
@@ -98,6 +93,17 @@ func (b *Broker) Start(pluginFQNs []model.PluginFQN, defaultRegistry string) err
 		b.PubFailed(err.Error())
 		b.PubLog(err.Error())
 		return err
+	}
+
+	plugins, err := b.Storage.Plugins()
+	if err != nil {
+		b.PubFailed(err.Error())
+		b.PubLog(err.Error())
+	}
+
+	if err := InjectRemoteRuntime(plugins); err != nil {
+		b.PubFailed(err.Error())
+		b.PubLog(err.Error())
 	}
 
 	result, err := b.serializeTooling()
@@ -232,18 +238,18 @@ func ValidateMeta(meta model.PluginMeta) error {
 	}
 
 	switch strings.ToLower(meta.Type) {
-	case ChePluginType:
+	case model.ChePluginType:
 		fallthrough
-	case EditorPluginType:
+	case model.EditorPluginType:
 		if len(meta.Spec.Extensions) != 0 {
 			return fmt.Errorf("Plugin '%s' is invalid. Field 'spec.extensions' is not allowed in plugin of type '%s'", meta.ID, meta.Type)
 		}
 		if len(meta.Spec.Containers) == 0 {
 			return fmt.Errorf("Plugin '%s' is invalid. Field 'spec.containers' must not be empty", meta.ID)
 		}
-	case TheiaPluginType:
+	case model.TheiaPluginType:
 		fallthrough
-	case VscodePluginType:
+	case model.VscodePluginType:
 		if len(meta.Spec.Extensions) == 0 {
 			return fmt.Errorf("Plugin '%s' is invalid. Field 'spec.extensions' must not be empty", meta.ID)
 		}
@@ -271,13 +277,13 @@ func sortMetas(metas []model.PluginMeta) (che []model.PluginMeta, vscode []model
 	cheBrokerMetas := make([]model.PluginMeta, 0)
 	for _, meta := range metas {
 		switch strings.ToLower(meta.Type) {
-		case ChePluginType:
+		case model.ChePluginType:
 			fallthrough
-		case EditorPluginType:
+		case model.EditorPluginType:
 			cheBrokerMetas = append(cheBrokerMetas, meta)
-		case TheiaPluginType:
+		case model.TheiaPluginType:
 			fallthrough
-		case VscodePluginType:
+		case model.VscodePluginType:
 			vscodeMetas = append(vscodeMetas, meta)
 		case "":
 			return nil, nil, fmt.Errorf("Type field is missing in meta information of plugin '%s'", meta.ID)
@@ -339,5 +345,6 @@ func ConvertMetaToPlugin(meta model.PluginMeta) model.ChePlugin {
 		InitContainers: meta.Spec.InitContainers,
 		Endpoints:      meta.Spec.Endpoints,
 		WorkspaceEnv:   meta.Spec.WorkspaceEnv,
+		Type:           meta.Type,
 	}
 }

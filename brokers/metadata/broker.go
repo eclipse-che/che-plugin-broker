@@ -109,7 +109,7 @@ func (b *Broker) ProcessPlugins(metas []model.PluginMeta) error {
 	for _, meta := range metas {
 		plugin := ConvertMetaToPlugin(meta)
 
-		if isTheiaOrVscodePlugin(meta) && len(meta.Spec.Containers) > 0 {
+		if utils.IsTheiaOrVscodePlugin(meta) && len(meta.Spec.Containers) > 0 {
 			AddPluginRunnerRequirements(plugin, b.rand, b.localhostSidecar)
 		}
 

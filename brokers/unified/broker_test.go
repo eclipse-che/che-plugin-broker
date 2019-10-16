@@ -992,7 +992,7 @@ func TestBroker_processPlugins(t *testing.T) {
 			},
 		},
 		{
-			name: "Returns error when there is endpoint in vs code extension",
+			name: "VsCode extension should support endpoints",
 			args: args{
 				metas: []model.PluginMeta{{
 					Type:       TestVscodePluginType,
@@ -1016,11 +1016,11 @@ func TestBroker_processPlugins(t *testing.T) {
 				}},
 			},
 			want: want{
-				err: "Plugin 'test id' is invalid. Setting endpoints at 'spec.endpoints' is not allowed in plugins of type 'VS Code extension'",
+				vscodeMetas: []model.PluginMeta{createVsCodeMetaWithEndPoint("test id")},
 			},
 		},
 		{
-			name: "Returns error when there is endpoint in theia plugin",
+			name: "Theia plugin should support endpoints",
 			args: args{
 				metas: []model.PluginMeta{{
 					Type:       TestTheiaPluginType,
@@ -1044,7 +1044,7 @@ func TestBroker_processPlugins(t *testing.T) {
 				}},
 			},
 			want: want{
-				err: "Plugin 'test id' is invalid. Setting endpoints at 'spec.endpoints' is not allowed in plugins of type 'Theia plugin'",
+				vscodeMetas: []model.PluginMeta{createTheiaMetaWithEndPoint("test id")},
 			},
 		},
 	}
@@ -1480,6 +1480,22 @@ func createDefaultCheEditorMetaWithApiVersion(APIVersion string, ID string) mode
 	return meta
 }
 
+func createVsCodeMetaWithEndPoint(ID string) model.PluginMeta {
+	meta := createVSCodeMeta(ID)
+	meta.Spec.Endpoints = []model.Endpoint{
+		{
+			TargetPort: 80,
+		},
+	}
+	meta.Spec.Containers = []model.Container{
+		{
+			Image: defaultImage,
+		},
+	}
+
+	return meta
+}
+
 func createVSCodeMeta(ID string) model.PluginMeta {
 	return model.PluginMeta{
 		Type:       TestVscodePluginType,
@@ -1491,6 +1507,22 @@ func createVSCodeMeta(ID string) model.PluginMeta {
 			},
 		},
 	}
+}
+
+func createTheiaMetaWithEndPoint(ID string) model.PluginMeta {
+	meta := createTheiaMeta(ID)
+	meta.Spec.Endpoints = []model.Endpoint{
+		{
+			TargetPort: 80,
+		},
+	}
+	meta.Spec.Containers = []model.Container{
+		{
+			Image: defaultImage,
+		},
+	}
+
+	return meta
 }
 
 func createTheiaMeta(ID string) model.PluginMeta {

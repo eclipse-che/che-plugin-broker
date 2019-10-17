@@ -256,9 +256,6 @@ func ValidateMeta(meta model.PluginMeta) error {
 		if len(meta.Spec.Containers) > 1 {
 			return fmt.Errorf("Plugin '%s' is invalid. Containers list 'spec.containers' must not contain more than 1 container, but '%d' found", meta.ID, len(meta.Spec.Containers))
 		}
-		if len(meta.Spec.Endpoints) != 0 {
-			return fmt.Errorf("Plugin '%s' is invalid. Setting endpoints at 'spec.endpoints' is not allowed in plugins of type '%s'", meta.ID, meta.Type)
-		}
 	}
 	return nil
 }

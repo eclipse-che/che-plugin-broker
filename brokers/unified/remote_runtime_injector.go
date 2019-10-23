@@ -29,10 +29,8 @@ const (
 )
 
 type RemotePluginInjection struct {
-	Volume  model.Volume
-	Env     model.EnvVar
-	Command []string
-	Args    []string
+	Volume model.Volume
+	Env    model.EnvVar
 }
 
 func InjectRemoteRuntime(plugins []model.ChePlugin) error {
@@ -88,9 +86,8 @@ func getRuntimeInjection(editorPlugin *model.ChePlugin) (*RemotePluginInjection,
 	}
 
 	return &RemotePluginInjection{
-		Volume:  *volume,
-		Env:     *runtimeBinaryPathEnv,
-		Command: []string{runtimeBinaryPathEnv.Value},
+		Volume: *volume,
+		Env:    *runtimeBinaryPathEnv,
 	}, nil
 }
 
@@ -141,7 +138,4 @@ func inject(plugin *model.ChePlugin, injection *RemotePluginInjection) {
 
 	container.Env = append(container.Env, injection.Env)
 	container.Volumes = append(container.Volumes, injection.Volume)
-	if len(container.Command) == 0 && len(container.Args) == 0 {
-		container.Command = injection.Command
-	}
 }

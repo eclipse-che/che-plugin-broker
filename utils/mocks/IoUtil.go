@@ -96,6 +96,29 @@ func (_m *IoUtil) Fetch(url string) ([]byte, error) {
 	return r0, r1
 }
 
+// GetFilesByGlob provides a mock function with given fields: glob
+func (_m *IoUtil) GetFilesByGlob(glob string) ([]string, error) {
+	ret := _m.Called(glob)
+
+	var r0 []string
+	if rf, ok := ret.Get(0).(func(string) []string); ok {
+		r0 = rf(glob)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(glob)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // MkDir provides a mock function with given fields: _a0
 func (_m *IoUtil) MkDir(_a0 string) error {
 	ret := _m.Called(_a0)
@@ -103,6 +126,20 @@ func (_m *IoUtil) MkDir(_a0 string) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string) error); ok {
 		r0 = rf(_a0)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// RemoveAll provides a mock function with given fields: path
+func (_m *IoUtil) RemoveAll(path string) error {
+	ret := _m.Called(path)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(path)
 	} else {
 		r0 = ret.Error(0)
 	}

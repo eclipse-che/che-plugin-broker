@@ -42,6 +42,8 @@ type IoUtil interface {
 	Untar(tarPath string, dest string) error
 	CreateFile(file string, tr io.Reader) error
 	Fetch(url string) ([]byte, error)
+	GetFilesByGlob(glob string) ([]string, error)
+	RemoveAll(path string) error
 }
 
 type impl struct {
@@ -305,6 +307,16 @@ func (util *impl) CreateFile(file string, tr io.Reader) error {
 		return err
 	}
 	return f.Sync()
+}
+
+// GetFilesByGlob is a wrapper around filepath.Glob() to allow mocking in tests
+func (util *impl) GetFilesByGlob(glob string) ([]string, error) {
+	return filepath.Glob(glob)
+}
+
+// DeleteFiles is a wrapper around os.RemoveAll() to allow mocking in tests
+func (util *impl) RemoveAll(path string) error {
+	return os.RemoveAll(path)
 }
 
 func Close(c io.Closer) {

@@ -13,13 +13,13 @@ ci:
 build:
 	$(GOENV) go build $(GOFLAGS) ./...
 
-.PHONY: build-init
-build-init:
-	$(GOENV) go build $(GOFLAGS) -o init-plugin-broker brokers/init/cmd/main.go
+.PHONY: build-artifacts
+build-artifacts:
+	$(GOENV) go build $(GOFLAGS) -o plugin-artifacts-broker brokers/artifacts/cmd/main.go
 
-.PHONY: build-unified
-build-unified:
-	$(GOENV) go build $(GOFLAGS) -o unified-plugin-broker brokers/unified/cmd/main.go
+.PHONY: build-metadata
+build-metadata:
+	$(GOENV) go build $(GOFLAGS) -o plugin-metadata-broker brokers/metadata/cmd/main.go
 
 .PHONY: test
 test:
@@ -37,23 +37,13 @@ fmt:
 dep-update:
 	dep ensure
 
-.PHONY: build-docker-init
-build-docker-init:
-	docker build -t eclipse/che-init-plugin-broker:latest -f build/init/Dockerfile .
+.PHONY: build-docker-artifacts
+build-docker-artifacts:
+	docker build -t eclipse/che-plugin-artifacts-broker:latest -f build/artifacts/Dockerfile .
 
-.PHONY: build-docker-unified
-build-docker-unified:
-	docker build -t eclipse/che-unified-plugin-broker:latest -f build/unified/Dockerfile .
-
-.PHONY: test-local
-test-local:
-	cd ./brokers/unified/cmd; \
-		go build main.go; \
-		./main \
-			--disable-push \
-			--runtime-id wsId:env:ownerId \
-			--registry-address ${PLUGIN_REGISTRY_URL} \
-			--metas ./config-plugin-ids.json
+.PHONY: build-docker-metadata
+build-docker-metadata:
+	docker build -t eclipse/che-plugin-metadata-broker:latest -f build/metadata/Dockerfile .
 
 .PHONY: test-metadata
 test-metadata:
@@ -63,7 +53,7 @@ test-metadata:
 			--disable-push \
 			--runtime-id wsId:env:ownerId \
 			--registry-address ${PLUGIN_REGISTRY_URL} \
-			--metas ../../unified/cmd/config-plugin-ids.json
+			--metas ../../testdata/config-plugin-ids.json
 
 .PHONY: test-artifacts
 test-artifacts:
@@ -73,4 +63,4 @@ test-artifacts:
 			--disable-push \
 			--runtime-id wsId:env:ownerId \
 			--registry-address ${PLUGIN_REGISTRY_URL} \
-			--metas ../../unified/cmd/config-plugin-ids.json
+			--metas ../../testdata/config-plugin-ids.json

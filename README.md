@@ -4,48 +4,13 @@
 
 # This repo contains implementations of several Che plugin brokers
 
-## init-plugin-broker
+## artifacts-plugin-broker
 
-Cleanups content of /plugins/ folder.
-Should be started before other brokers not to remove files they are adding to plugins folder.
+This broker runs as an init container on the workspace pod. Its job is to take in a list of plugin identifiers (either references to a plugin in the registry or a link to a plugin meta.yaml) and ensure that the correct .vsix and .theia extenions are downloaded into the `/plugins` directory, for each plugin requested for the workspace.
 
-## unified-plugin-broker
+## metadata-plugin-broker
 
-Which can process plugins of types:
-- Che Plugin
-- VS Code extension
-- Che Editor
-- Theia plugin
-
-But it ignores case of plugin type, so any other variants of the same type but with different case of letters is considered the same.
-
-What it actually does:
-
-### All plugin/editor types
-
-- Downloads meta.yaml of a plugin or editor from Che plugin registry 
-- Evaluates Che workspace sidecars config from the above mentioned meta.yaml
-
-### Theia plugin/VS Code extension
-
-- Downloads .theia and/or vsix archives and
-- If meta.spec contains `containers` field with a container definition extension/plugin is considered remote. Otherwise it is considered local
-- For the local plugin case, copies plugin or extension archives to `/plugins`
-- For the remote plugin case:
-  - Copies plugin or extension archives to `/plugins/sidecars/<unique plugin name>/`
-  - Evaluates Che workspace sidecar config for running VS Code or Theia extensions/plugins as Che Theia remote plugins in a sidecar:
-    - with projects volume
-    - with plugins volume
-    - adds env var to sidecar env vars with name
-   `THEIA_PLUGINS` and value `local-dir:///plugins/sidecars/<unique plugin name>`
-    - only if some plugins might live in a distinct host as the Theia instance (when [`UseLocalHostInPluginsUrls`](https://github.com/eclipse/che-plugin-broker/blob/23a7e2dba19527a19b5cf8fdfaac90c020d3e9ae/cfg/cfg.go#L58) is `False`):
-      - adds an endpoint with random port between 4000 and 10000 and a random name
-      - adds env var to sidecar env vars with name
-     `THEIA_PLUGIN_ENDPOINT_PORT` and value `<endpoint port>`
-      - adds env var to workspace-wide env vars with name
-     `THEIA_PLUGIN_REMOTE_ENDPOINT_<unique_plugin_name>` and value
-     `ws://<endpoint name>:<endpoint port>`
-- Sends sidecar config to Che workspace master
+This broker must be run prior to starting the workspace's pod, as its job is to provision required containers, volumes, and environment variables for the workspace to be able to start with the installed plugins enabled.
 
 ## Development
 
@@ -59,56 +24,24 @@ mockery -name=NameOfAnInterfaceToMock
 
 ### Build
 
-- build all the code:
+There is a Makefile included in the repo to make building and testing the code easier:
 
-```shell
-CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo ./...
-```
+| make target | function |
+| --- | --- |
+| `make ci` | Run CI tests in docker |
+| `make build` | Build all code |
+| `make build-artifacts` | Build only the artifacts broker, as binary `plugin-artifacts-broker` in the root of this repo |
+| `make build-metadata` | Build only the metadata broker, as binary `plugin-metadata-broekr` in the root of this repo |
+| `make test` | Run all tests in repo |
+| `make lint` | Run `golangci-lint` on repo |
+| `make fmt` | Run `go fmt` on all `.go` files |
+| `make dep-update` | Run `dep ensure`; must be run after updating dependencies |
+| `make build-docker-artifacts` | Build `eclipse/che-plugin-artifacts-broker` image |
+| `make build-docker-metadata` | Build `eclipse/che-plugin-metadata-broker` image |
+| `test-metadata` | Build and run metadata broker locally, using plugin ids from `brokers/testdata/config-plugin-ids.json`; prints output to stdout |
+| `test-artifacts` | Build and run artifacts broker locally, using plugin ids from `brokers/testdata/config-plugin-ids.json`; downloads all extensions to `/plugins` locally (directory must be writable, e.g. via a softlink to a user-writable directory) |
 
-- build Init plugin broker binary:
-
-```shell
-CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o init-plugin-broker brokers/init/cmd/main.go
-```
-
-- build Unified plugin broker binary:
-
-```shell
-CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o unified-plugin-broker brokers/unified/cmd/main.go
-```
-
-### Run checks
-
-- run tests:
-
-```shell
-go test -v -race ./...
-```
-
-- run linters:
-
-```shell
-golangci-lint run -v
-```
-
-- run CI checks locally in Docker (includes build/test/linters):
-
-```shell
-docker build -f build/CI/Dockerfile .
-```
-
-### Check brokers locally
-
-Prerequisites:
-
-    - Folder /plugins exists on the host and writable for the user
-
-- Go to a broker cmd directory, e.g. `brokers/unified/cmd`
-- Compile binaries `go build main.go`
-- Run binary `./main -disable-push -runtime-id wsId:env:ownerId`
-- Check JSON with sidecar configuration in the very bottom of the output
-- Check that needed files are in `/plugins`
-- To cleanup `/plugins` folder **init** broker can be used
+For more information, view the targets in the Makefile.
 
 ### Dependencies
 
@@ -121,17 +54,3 @@ dep ensure
 
 `dep ensure` doesn't automatically change Gopkg.toml which contains dependencies constrants.
 So, when a dependency is introduced or changed it should be reflected in Gopkg.toml.
-
-### Build of Docker images
-
-- build Init plugin broker
-
-```shell
-docker build -t eclipse/che-init-plugin-broker:latest -f build/init/Dockerfile .
-```
-
-- build Unified plugin broker
-
-```shell
-docker build -t eclipse/che-unified-plugin-broker:latest -f build/unified/Dockerfile .
-```

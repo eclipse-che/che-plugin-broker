@@ -35,16 +35,16 @@ git push origin $GITHUB_TAG
 # checkout to new tag
 git checkout $GITHUB_TAG
 
-# Unified Plugin Broker
-docker build -t eclipse/che-unified-plugin-broker:${IMAGE_TAG} -f ${ROOT_DIR}/build/unified/Dockerfile ${ROOT_DIR}
-docker push eclipse/che-unified-plugin-broker:${IMAGE_TAG}
+# Artifacts Plugin Broker
+docker build -t eclipse/che-plugin-artifacts-broker:${IMAGE_TAG} -f ${ROOT_DIR}/build/artifacts/Dockerfile ${ROOT_DIR}
+docker push eclipse/che-plugin-artifacts-broker:${IMAGE_TAG}
 # Push latest bugfix image
-docker tag eclipse/che-unified-plugin-broker:${IMAGE_TAG} eclipse/che-unified-plugin-broker:${IMAGE_LATEST_TAG}
-docker push eclipse/che-unified-plugin-broker:${IMAGE_LATEST_TAG}
+docker tag eclipse/che-plugin-artifacts-broker:${IMAGE_TAG} eclipse/che-plugin-artifacts-broker:${IMAGE_LATEST_TAG}
+docker push eclipse/che-plugin-artifacts-broker:${IMAGE_LATEST_TAG}
 
-# Init Plugin Broker
-docker build -t eclipse/che-init-plugin-broker:${IMAGE_TAG} -f ${ROOT_DIR}/build/init/Dockerfile ${ROOT_DIR}
-docker push eclipse/che-init-plugin-broker:${IMAGE_TAG}
+# Metadata Plugin Broker
+docker build -t eclipse/che-plugin-metadata-broker:${IMAGE_TAG} -f ${ROOT_DIR}/build/metadata/Dockerfile ${ROOT_DIR}
+docker push eclipse/che-plugin-metadata-broker:${IMAGE_TAG}
 # Push latest bugfix image
-docker tag eclipse/che-init-plugin-broker:${IMAGE_TAG} eclipse/che-init-plugin-broker:${IMAGE_LATEST_TAG}
-docker push eclipse/che-init-plugin-broker:${IMAGE_LATEST_TAG}
+docker tag eclipse/che-plugin-metadata-broker:${IMAGE_TAG} eclipse/che-plugin-metadata-broker:${IMAGE_LATEST_TAG}
+docker push eclipse/che-plugin-metadata-broker:${IMAGE_LATEST_TAG}

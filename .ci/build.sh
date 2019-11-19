@@ -10,17 +10,17 @@ docker login -u ${DOCKER_HUB_LOGIN} -p ${DOCKER_HUB_PASSWORD}
 # Run tests and all the other checks on repo
 docker build -f ${ROOT_DIR}/build/CI/Dockerfile ${ROOT_DIR}
 
-# Unified Plugin Broker
-docker build -t eclipse/che-unified-plugin-broker:latest -f ${ROOT_DIR}/build/unified/Dockerfile ${ROOT_DIR}
-docker tag eclipse/che-unified-plugin-broker:latest eclipse/che-unified-plugin-broker:${TAG}
-docker push eclipse/che-unified-plugin-broker:latest
-docker push eclipse/che-unified-plugin-broker:${TAG}
+# Metadata Plugin Broker
+docker build -t eclipse/che-plugin-metadata-broker:latest -f ${ROOT_DIR}/build/metadata/Dockerfile ${ROOT_DIR}
+docker tag eclipse/che-plugin-metadata-broker:latest eclipse/che-plugin-metadata-broker:${TAG}
+docker push eclipse/che-plugin-metadata-broker:latest
+docker push eclipse/che-plugin-metadata-broker:${TAG}
 
-# Init Plugin Broker
-docker build -t eclipse/che-init-plugin-broker:latest -f ${ROOT_DIR}/build/init/Dockerfile ${ROOT_DIR}
-docker tag eclipse/che-init-plugin-broker:latest eclipse/che-init-plugin-broker:${TAG}
-docker push eclipse/che-init-plugin-broker:latest
-docker push eclipse/che-init-plugin-broker:${TAG}
+# Artifacts Plugin Broker
+docker build -t eclipse/che-plugin-artifacts-broker:latest -f ${ROOT_DIR}/build/artifacts/Dockerfile ${ROOT_DIR}
+docker tag eclipse/che-plugin-artifacts-broker:latest eclipse/che-plugin-artifacts-broker:${TAG}
+docker push eclipse/che-plugin-artifacts-broker:latest
+docker push eclipse/che-plugin-artifacts-broker:${TAG}
 
 # Development image
 docker build -t eclipse/che-plugin-broker-dev:latest -f ${ROOT_DIR}/build/dev/Dockerfile ${ROOT_DIR}

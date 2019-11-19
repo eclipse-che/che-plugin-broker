@@ -14,16 +14,17 @@ FROM registry.access.redhat.com/devtools/go-toolset-rhel7:1.11.13-11 as builder
 ENV PATH=/opt/rh/go-toolset-1.11/root/usr/bin:$PATH \
     GOPATH=/go/
 USER root
-WORKDIR /go/src/github.com/eclipse/che-plugin-broker/brokers/init/cmd/
+WORKDIR /go/src/github.com/eclipse/che-plugin-broker/brokers/artifacts/cmd/
 COPY . /go/src/github.com/eclipse/che-plugin-broker/
 RUN adduser appuser && \
-    CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o init-plugin-broker main.go
+    CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o artifacts-broker main.go
 
-FROM scratch
+# https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8-minimal
+FROM registry.access.redhat.com/ubi8-minimal:8.0-213
 
 USER appuser
 COPY --from=builder /etc/passwd /etc/passwd
-COPY --from=builder /go/src/github.com/eclipse/che-plugin-broker/brokers/init/cmd/init-plugin-broker /
-ENTRYPOINT ["/init-plugin-broker"]
+COPY --from=builder /go/src/github.com/eclipse/che-plugin-broker/brokers/artifacts/cmd/artifacts-broker /
+ENTRYPOINT ["/artifacts-broker"]
 
 # append Brew metadata here

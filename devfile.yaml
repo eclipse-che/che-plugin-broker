@@ -42,22 +42,22 @@ components:
     memoryLimit: 256M
 
 commands:
-  - name: compile "init" plugin broker
+  - name: compile plugin metadata broker
     actions:
       - workdir: /projects/src/github.com/eclipse/che-plugin-broker/
         type: exec
         command: >-
-          printf 'Launch "init" plugin broker compilation...\n' &&
-          make build-init &&
+          printf 'Starting plugin metadata broker compilation...\n' &&
+          make build-metadata &&
           printf '\033[32mDone.\033[0m'
         component: dev
-  - name: compile "unified" plugin broker
+  - name: compile "artifacts" plugin broker
     actions:
       - workdir: /projects/src/github.com/eclipse/che-plugin-broker
         type: exec
         command: >-
-          printf 'Launch "unified" plugin broker compilation...\n' &&
-          make build-unified  &&
+          printf 'Starting plugin artifacts broker compilation...\n' &&
+          make build-artifacts  &&
           printf '\033[32mDone.\033[0m'
         component: dev
   - name: run tests
@@ -87,15 +87,15 @@ commands:
           make dep-update &&
           printf "\033[32mDone.\033[0m"
         component: dev
-  - name: start "unified" plugin broker
+  - name: start plugin artifacts broker
     actions:
       - workdir: /projects/src/github.com/eclipse/che-plugin-broker
         type: exec
-        command: './unified-plugin-broker --disable-push=true --runtime-id=workspace:developer:eclipse-che --registry-address=http://plugin-registry-local:8080 --metas ./brokers/unified/cmd/config-plugin-ids.json'
+        command: './plugin-artifacts-broker --disable-push=true --runtime-id=workspace:developer:eclipse-che --registry-address=http://plugin-registry-local:8080 --metas ./brokers/testdata/config-plugin-ids.json'
         component: dev
-  - name: start "init" plugin broker
+  - name: start plugin metadata broker
     actions:
       - workdir: /projects/src/github.com/eclipse/che-plugin-broker
         type: exec
-        command: './init-plugin-broker --disable-push=true --runtime-id=workspace:developer:eclipse-che'
+        command: './plugin-metadata-broker --disable-push=true --runtime-id=workspace:developer:eclipse-che --registry-address=http://plugin-registry-local:8080 --metas ./brokers/testdata/config-plugin-ids.json'
         component: dev

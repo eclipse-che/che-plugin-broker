@@ -1,6 +1,9 @@
 [![CircleCI](https://circleci.com/gh/eclipse/che-plugin-broker.svg?style=svg)](https://circleci.com/gh/eclipse/che-plugin-broker)
-
 [![codecov](https://codecov.io/gh/eclipse/che-plugin-broker/branch/master/graph/badge.svg)](https://codecov.io/gh/eclipse/che-plugin-broker)
+
+[![Master Build Status](https://ci.centos.org/buildStatus/icon?subject=master&job=devtools-che-plugin-broker-build-master/)](https://ci.centos.org/job/devtools-che-plugin-broker-build-master/)
+[![Nightly Build Status](https://ci.centos.org/buildStatus/icon?subject=nightly&job=devtools-che-plugin-broker-nightly/)](https://ci.centos.org/job/devtools-che-plugin-broker-nightly/)
+[![Release Build Status](https://ci.centos.org/buildStatus/icon?subject=release&job=devtools-che-plugin-broker-release/)](https://ci.centos.org/job/devtools-che-plugin-broker-release/)
 
 # This repo contains implementations of several Che plugin brokers
 
@@ -54,3 +57,10 @@ dep ensure
 
 `dep ensure` doesn't automatically change Gopkg.toml which contains dependencies constrants.
 So, when a dependency is introduced or changed it should be reflected in Gopkg.toml.
+
+### CentOS CI
+The following [CentOS CI jobs](https://ci.centos.org/) are associated with the repository:
+
+- [`master`](https://ci.centos.org/job/devtools-che-plugin-broker-build-master/) - builds CentOS images on each commit to the [`master`](https://github.com/eclipse/che-plugin-broker/tree/master) branch and pushes them to [quay.io](https://quay.io/organization/eclipse).
+- [`nightly`](https://ci.centos.org/job/devtools-che-plugin-broker-nightly/) - builds CentOS images and pushes them to [quay.io](https://quay.io/organization/eclipse) on a daily basis from the [`master`](https://github.com/eclipse/che-plugin-broker/tree/master) branch.
+- [`release`](https://ci.centos.org/job/devtools-che-plugin-broker-release/) - builds CentOS and corresponding RHEL images from the [`release`](https://github.com/eclipse/che-plugin-broker/tree/release) branch. CentOS images are public and pushed to [quay.io](https://quay.io/organization/eclipse). RHEL images are also pushed to quay.io, but to the private repositories.

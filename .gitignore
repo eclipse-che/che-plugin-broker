@@ -1,8 +1,8 @@
 # Compiled Object files, Static and Dynamic libs (Shared Objects)
 
 # Ignore binaries with these names but not folders with the same names
-init-plugin-broker
-unified-plugin-broker
+plugin-artifacts-broker
+plugin-metadata-broker
 **/cmd/cmd
 main
 

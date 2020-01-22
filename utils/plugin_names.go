@@ -25,3 +25,8 @@ var re = regexp.MustCompile(`[^a-zA-Z_0-9]+`)
 func GetPluginUniqueName(meta model.PluginMeta) string {
 	return re.ReplaceAllString(meta.Publisher+"_"+meta.Name+"_"+meta.Version, `_`)
 }
+
+// ConvertIDToUniqueName converts a plugin ID to a unique plugin name
+func ConvertIDToUniqueName(id string) string {
+	return re.ReplaceAllString(id, "_")
+}

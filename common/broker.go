@@ -38,6 +38,7 @@ type Broker interface {
 	PrintPlan(metas []model.PluginMeta)
 	PrintDebug(format string, v ...interface{})
 	PrintInfo(format string, v ...interface{})
+	PrintInfoBuffer(info []string)
 	// It is not convenient in tests with mocks.
 	// It should exit current context but when mocked it does not exit.
 	// Instead use: PubLog, log.Fatal

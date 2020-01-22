@@ -57,6 +57,11 @@ func (_m *Broker) PrintInfo(format string, v ...interface{}) {
 	_m.Called(_ca...)
 }
 
+// PrintInfoBuffer provides a mock function with given fields: info
+func (_m *Broker) PrintInfoBuffer(info []string) {
+	_m.Called(info)
+}
+
 // PrintPlan provides a mock function with given fields: metas
 func (_m *Broker) PrintPlan(metas []model.PluginMeta) {
 	_m.Called(metas)

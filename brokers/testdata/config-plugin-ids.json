@@ -14,5 +14,8 @@
   },
   {
     "id": "redhat-developer/che-omnisharp-plugin/0.0.1"
+  },
+  {
+    "id": "joaompinto/vscode-asciidoctor/2.7.7"
   }
 ]

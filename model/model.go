@@ -115,3 +115,22 @@ type ChePlugin struct {
 	WorkspaceEnv   []EnvVar    `json:"workspaceEnv" yaml:"workspaceEnv"`
 	Type           string      `json:"type" yaml:"type"`
 }
+
+// CachedPlugin represents an "installed" plugin on the filesystem.
+// Contains a plugin ID and the extensions it has stored in /plugins
+// CachedExtensions is a map of extension URL -> filesystem path, where
+// the filesystem path may be an empty string if the extension has not yet
+// been downloaded.
+type CachedPlugin struct {
+	ID               string            `json:"pluginId" yaml:"pluginId"`
+	IsRemote         bool              `json:"isRemote" yaml:"isRemote"`
+	CachedExtensions map[string]string `json:"cachedExtensions" yaml:"cachedExtensions"`
+}
+
+// InstalledPluginJSON represents the JSON object to be stored when tracking
+// plugins installed in the current workspace, consisting of a list of cached
+// plugins and a version number to track compatibility.
+type InstalledPluginJSON struct {
+	Version string         `json:"version" yaml:"version"`
+	Plugins []CachedPlugin `json:"plugins" yaml:"plugins"`
+}

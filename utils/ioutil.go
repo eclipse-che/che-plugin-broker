@@ -44,6 +44,10 @@ type IoUtil interface {
 	Fetch(url string) ([]byte, error)
 	GetFilesByGlob(glob string) ([]string, error)
 	RemoveAll(path string) error
+	ReadFile(path string) ([]byte, error)
+	WriteFile(path string, data []byte) error
+	RemoveFile(path string) error
+	FileExists(path string) bool
 }
 
 type impl struct {
@@ -314,7 +318,7 @@ func (util *impl) GetFilesByGlob(glob string) ([]string, error) {
 	return filepath.Glob(glob)
 }
 
-// DeleteFiles is a wrapper around os.RemoveAll() to allow mocking in tests
+// RemoveAll is a wrapper around os.RemoveAll() to allow mocking in tests
 func (util *impl) RemoveAll(path string) error {
 	return os.RemoveAll(path)
 }
@@ -324,4 +328,27 @@ func Close(c io.Closer) {
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+// ReadFile is a wrapper around ioutil.ReadFile() to allow mocking in tests
+func (util *impl) ReadFile(path string) ([]byte, error) {
+	return ioutil.ReadFile(path)
+}
+
+// DumpFile is a wrapper around ioutil.WriteFile() to allow mocking in tests.
+// Writes files with 0666 permissions.
+func (util *impl) WriteFile(path string, data []byte) error {
+	return ioutil.WriteFile(path, data, 0666)
+}
+
+// RemoveFile is a wrapper around os.Remove to allow mocking in tests.
+func (util *impl) RemoveFile(path string) error {
+	return os.Remove(path)
+}
+
+// FileExists checks if a file exists using os.Stat. If os.Stat returns any error,
+// false is returned.
+func (util *impl) FileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }

@@ -96,6 +96,20 @@ func (_m *IoUtil) Fetch(url string) ([]byte, error) {
 	return r0, r1
 }
 
+// FileExists provides a mock function with given fields: path
+func (_m *IoUtil) FileExists(path string) bool {
+	ret := _m.Called(path)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(string) bool); ok {
+		r0 = rf(path)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // GetFilesByGlob provides a mock function with given fields: glob
 func (_m *IoUtil) GetFilesByGlob(glob string) ([]string, error) {
 	ret := _m.Called(glob)
@@ -133,8 +147,45 @@ func (_m *IoUtil) MkDir(_a0 string) error {
 	return r0
 }
 
+// ReadFile provides a mock function with given fields: path
+func (_m *IoUtil) ReadFile(path string) ([]byte, error) {
+	ret := _m.Called(path)
+
+	var r0 []byte
+	if rf, ok := ret.Get(0).(func(string) []byte); ok {
+		r0 = rf(path)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(path)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // RemoveAll provides a mock function with given fields: path
 func (_m *IoUtil) RemoveAll(path string) error {
+	ret := _m.Called(path)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(path)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// RemoveFile provides a mock function with given fields: path
+func (_m *IoUtil) RemoveFile(path string) error {
 	ret := _m.Called(path)
 
 	var r0 error
@@ -217,6 +268,20 @@ func (_m *IoUtil) Unzip(arch string, dest string) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string, string) error); ok {
 		r0 = rf(arch, dest)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// WriteFile provides a mock function with given fields: path, data
+func (_m *IoUtil) WriteFile(path string, data []byte) error {
+	ret := _m.Called(path, data)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, []byte) error); ok {
+		r0 = rf(path, data)
 	} else {
 		r0 = ret.Error(0)
 	}

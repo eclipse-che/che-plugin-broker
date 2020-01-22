@@ -16,6 +16,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/eclipse/che-plugin-broker/cfg"
@@ -74,6 +75,14 @@ func (broker *brokerImpl) PrintInfo(format string, v ...interface{}) {
 	message := fmt.Sprintf(format, v...)
 	broker.PubLog(message)
 	log.Print(message)
+}
+
+func (broker *brokerImpl) PrintInfoBuffer(buffer []string) {
+	message := strings.Join(buffer, "\n")
+	broker.PubLog(message)
+	for _, line := range buffer {
+		log.Print(line)
+	}
 }
 
 func (broker *brokerImpl) PrintFatal(format string, v ...interface{}) {

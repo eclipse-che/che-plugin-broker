@@ -147,9 +147,14 @@ if [[ ${NOCOMMIT} -eq 0 ]]; then
     git pull origin "${PR_BRANCH}"
     git push origin "${PR_BRANCH}"
     lastCommitComment="$(git log -1 --pretty=%B)"
-    hub pull-request -o -f -m "${lastCommitComment}
+    if command -v hub &> /dev/null; then
+      hub pull-request -o -f -m "${lastCommitComment}
 
 ${lastCommitComment}" -b "${BRANCH}" -h "${PR_BRANCH}"
+    else
+      echo "Could not open PR in $REPO: 'hub' not installed"
+      echo "Please open a PR from ${PR_BRANCH} to master to bump next version number"
+    fi
   fi
 fi
 

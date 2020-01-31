@@ -1,6 +1,6 @@
 # Plugin broker release process
 
-Che plugin broker releases are built automatically from webhooks on the `release` branch and uses the version specified in `VERSION` to tag the built images. To create a new release:
+Che plugin broker releases are [built automatically](https://ci.centos.org/job/devtools-che-plugin-broker-release/) from webhooks on the `release` branch and use the version specified in `VERSION` to tag the built images. To create a new release:
 
 1. Create a `major.minor.x` branch if necessary (e.g. `v3.2.x`)
 2. Update `VERSION` file to refer to the new version to be released, with bugfix version number included (e.g. `v3.2.0`)
@@ -14,7 +14,7 @@ For bugfix releases, the `major.minor.x` branch should be reused, with necessary
 ## Automation
 There is a script to automate the release process, named `make-release.sh`:
 ```
-./make-release.sh --repo git@github.com:eclipse/che-plugin-registry --version 3.2.1 --trigger-release
+./make-release.sh --repo git@github.com:eclipse/che-plugin-broker --version 3.2.1 --trigger-release
 ```
 
 See `./make-release.sh --help` for usage.

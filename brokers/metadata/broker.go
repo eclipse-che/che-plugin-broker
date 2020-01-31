@@ -73,9 +73,15 @@ func (b *Broker) Start(pluginFQNs []model.PluginFQN, defaultRegistry string) err
 	b.PrintPlan(pluginMetas)
 
 	// Process plugins into ChePlugins
-	err = b.ProcessPlugins(pluginMetas)
+	plugins, err := b.ProcessPlugins(pluginMetas)
 	if err != nil {
 		return b.fail(err)
+	}
+	for _, plugin := range plugins {
+		err = b.Storage.AddPlugin(plugin)
+		if err != nil {
+			return b.fail(err)
+		}
 	}
 
 	// Serialize ChePlugins and return to Che server
@@ -91,26 +97,26 @@ func (b *Broker) Start(pluginFQNs []model.PluginFQN, defaultRegistry string) err
 }
 
 // ProcessPlugins converts a list of Plugin Metas into Che Plugins to be understood
-// by the Che server, adding them to storage for later retrieval. Additionally,
-// ProcessPlugins performs minimal validation. See also: ProcessPlugin
-func (b *Broker) ProcessPlugins(metas []model.PluginMeta) error {
+// by the Che server. Additionally, ProcessPlugins performs minimal validation.
+// See also: ProcessPlugin
+func (b *Broker) ProcessPlugins(metas []model.PluginMeta) ([]model.ChePlugin, error) {
 	err := utils.ValidateMetas(metas...)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	remoteInjection, err := GetRuntimeInjection(metas)
 	if err != nil {
-		return fmt.Errorf("failed to get remote runtime injection: %s", err)
+		return nil, fmt.Errorf("failed to get remote runtime injection: %s", err)
 	}
 
+	plugins := make([]model.ChePlugin, 0)
+
 	for _, meta := range metas {
-		err := b.ProcessPlugin(meta, remoteInjection)
-		if err != nil {
-			return err
-		}
+		plugin := b.ProcessPlugin(meta, remoteInjection)
+		plugins = append(plugins, plugin)
 	}
-	return nil
+	return plugins, nil
 }
 
 // ProcessPlugin processes a single plugin, adding any necessary requirements for
@@ -118,15 +124,14 @@ func (b *Broker) ProcessPlugins(metas []model.PluginMeta) error {
 // it to storage for later retrieval. Parameter remoteInjection represents the environment
 // variables and volumes potentially required by plugins for running the remote Theia
 // runtime (see: GetRuntimeInjection)
-func (b *Broker) ProcessPlugin(meta model.PluginMeta, remoteInjection *RemotePluginInjection) error {
+func (b *Broker) ProcessPlugin(meta model.PluginMeta, remoteInjection *RemotePluginInjection) model.ChePlugin {
 
 	if utils.IsTheiaOrVscodePlugin(meta) && len(meta.Spec.Containers) > 0 {
 		AddPluginRunnerRequirements(meta, b.rand, b.localhostSidecar)
 		InjectRemoteRuntime(&meta, remoteInjection)
 	}
 
-	plugin := ConvertMetaToPlugin(meta)
-	return b.Storage.AddPlugin(plugin)
+	return ConvertMetaToPlugin(meta)
 }
 
 // ConvertMetaToPlugin converts model.PluginMeta to model.ChePlugin, to allow the plugin configuration

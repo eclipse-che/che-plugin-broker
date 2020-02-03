@@ -9,6 +9,7 @@ NC='\033[0m'
 
 # set to 1 to actually trigger changes in the release branch
 TRIGGER_RELEASE="false"
+FORCE="false"
 
 # Wrapper for git commands
 function gitw() {
@@ -29,6 +30,8 @@ usage ()
   echo "        Show this message."
   echo "    --trigger-release, -t"
   echo "        Push changes to remote repo, triggering release."
+  echo "    --yes, -y"
+  echo "        Do not prompt for confirmation before triggering release"
   echo "Example: $0 --repo git@github.com:eclipse/che-subproject --version 'v3.2.1' --trigger-release"; echo
 }
 
@@ -39,6 +42,8 @@ while [[ "$#" -gt 0 ]]; do
     '-t'|'--trigger-release')
       echo "Triggering release."
       TRIGGER_RELEASE="true"; shift 0;;
+    '-y'|'--yes')
+      FORCE="true"; shift 0;;
     '-h'|'--help'|*) usage; exit 0;;
   esac
   shift 1
@@ -53,7 +58,7 @@ if [[ ${VERSION} != "v"* ]]; then
   echo "Version must be prefixed with 'v'"
   exit 1
 fi
-if [[ "$TRIGGER_RELEASE" = "true" ]]; then
+if [[ "$TRIGGER_RELEASE" = "true" ]] && [[ "$FORCE" != "true" ]]; then
   echo "Trigger release specified. This will *modify* remote repo $REPO:"
   echo "  1. Create branch ${VERSION%.*}.x"
   echo "  2. Increment VERSION and create a commit"

@@ -92,16 +92,19 @@ type ExposedPort struct {
 }
 
 type Container struct {
-	Name         string        `json:"name,omitempty" yaml:"name,omitempty"`
-	Image        string        `json:"image,omitempty" yaml:"image,omitempty"`
-	Env          []EnvVar      `json:"env" yaml:"env"`
-	Commands     []Command     `json:"commands" yaml:"commands"`
-	Volumes      []Volume      `json:"volumes" yaml:"volumes"`
-	Ports        []ExposedPort `json:"ports" yaml:"ports"`
-	MemoryLimit  string        `json:"memoryLimit,omitempty" yaml:"memoryLimit,omitempty"`
-	MountSources bool          `json:"mountSources" yaml:"mountSources"`
-	Command      []string      `json:"command" yaml:"command"`
-	Args         []string      `json:"args" yaml:"args"`
+	Name          string        `json:"name,omitempty" yaml:"name,omitempty"`
+	Image         string        `json:"image,omitempty" yaml:"image,omitempty"`
+	Env           []EnvVar      `json:"env" yaml:"env"`
+	Commands      []Command     `json:"commands" yaml:"commands"`
+	Volumes       []Volume      `json:"volumes" yaml:"volumes"`
+	Ports         []ExposedPort `json:"ports" yaml:"ports"`
+	CPULimit      string        `json:"CPULimit,omitempty" yaml:"CPULimit,omitempty"`
+	CPURequest    string        `json:"CPURequest,omitempty" yaml:"CPURequest,omitempty"`
+	MemoryLimit   string        `json:"memoryLimit,omitempty" yaml:"memoryLimit,omitempty"`
+	MemoryRequest string        `json:"memoryRequest,omitempty" yaml:"memoryRequest,omitempty"`
+	MountSources  bool          `json:"mountSources" yaml:"mountSources"`
+	Command       []string      `json:"command" yaml:"command"`
+	Args          []string      `json:"args" yaml:"args"`
 }
 
 type ChePlugin struct {

@@ -68,8 +68,8 @@ spec:
          - exposedPort: 13133
      memoryRequest: "256M"
      memoryLimit: "512M"
-     CPURequest: "500m"
-     CPULimit: "1000m"
+     cpuRequest: "500m"
+     cpuLimit: "1000m"
   initContainers:
   - name: remote-runtime-injector
     image: eclipse/che-theia-endpoint-runtime-binary:7.4.0

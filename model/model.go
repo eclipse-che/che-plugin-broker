@@ -98,8 +98,8 @@ type Container struct {
 	Commands      []Command     `json:"commands" yaml:"commands"`
 	Volumes       []Volume      `json:"volumes" yaml:"volumes"`
 	Ports         []ExposedPort `json:"ports" yaml:"ports"`
-	CPULimit      string        `json:"CPULimit,omitempty" yaml:"CPULimit,omitempty"`
-	CPURequest    string        `json:"CPURequest,omitempty" yaml:"CPURequest,omitempty"`
+	CPULimit      string        `json:"cpuLimit,omitempty" yaml:"cpuLimit,omitempty"`
+	CPURequest    string        `json:"cpuRequest,omitempty" yaml:"cpuRequest,omitempty"`
 	MemoryLimit   string        `json:"memoryLimit,omitempty" yaml:"memoryLimit,omitempty"`
 	MemoryRequest string        `json:"memoryRequest,omitempty" yaml:"memoryRequest,omitempty"`
 	MountSources  bool          `json:"mountSources" yaml:"mountSources"`

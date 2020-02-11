@@ -39,11 +39,11 @@ dep-update:
 
 .PHONY: build-docker-artifacts
 build-docker-artifacts:
-	docker build -t eclipse/che-plugin-artifacts-broker:latest -f build/artifacts/Dockerfile .
+	docker build -t quay.io/eclipse/che-plugin-artifacts-broker:latest -f build/artifacts/Dockerfile .
 
 .PHONY: build-docker-metadata
 build-docker-metadata:
-	docker build -t eclipse/che-plugin-metadata-broker:latest -f build/metadata/Dockerfile .
+	docker build -t quay.io/eclipse/che-plugin-metadata-broker:latest -f build/metadata/Dockerfile .
 
 .PHONY: test-metadata
 test-metadata:

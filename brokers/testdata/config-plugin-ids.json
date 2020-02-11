@@ -3,6 +3,9 @@
     "id": "ms-kubernetes-tools/vscode-kubernetes-tools/0.1.17"
   },
   {
+    "id": "redhat/vscode-openshift-connector/0.1.2"
+  },
+  {
     "id": "eclipse/che-machine-exec-plugin/0.0.1"
   },
   {

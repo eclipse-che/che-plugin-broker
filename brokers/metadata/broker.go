@@ -27,7 +27,6 @@ import (
 const RegistryURLFormat = "%s/%s/meta.yaml"
 
 // Broker is used to process Che plugins
-// Broker is used to process Che plugins
 type Broker struct {
 	common.Broker
 	ioUtils          utils.IoUtil
@@ -68,6 +67,13 @@ func (b *Broker) Start(pluginFQNs []model.PluginFQN, defaultRegistry string) err
 		return b.fail(fmt.Errorf("Failed to download plugin meta: %s", err))
 	}
 	b.PrintPlan(pluginMetas)
+
+	if collisions := utils.GetExtensionCollisions(pluginMetas); len(collisions) > 0 {
+		collisionLog := []string{"WARNING: multiple instances of the same extension will be included in this workspace:"}
+		collisionLog = append(collisionLog, utils.ConvertCollisionsToLog(collisions)...)
+		collisionLog = append(collisionLog, "These plugins may not work as expected. If errors occur please try disabling all but one of the conflicting plugins.")
+		b.PrintInfoBuffer(collisionLog)
+	}
 
 	// Process plugins into ChePlugins
 	plugins, err := b.ProcessPlugins(pluginMetas)

@@ -19,7 +19,6 @@ import (
 	jsonrpc "github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/model"
-	"github.com/eclipse/che-plugin-broker/storage"
 	"github.com/eclipse/che-plugin-broker/utils"
 )
 
@@ -31,7 +30,6 @@ const RegistryURLFormat = "%s/%s/meta.yaml"
 // Broker is used to process Che plugins
 type Broker struct {
 	common.Broker
-	Storage          storage.Storage
 	ioUtils          utils.IoUtil
 	rand             common.Random
 	localhostSidecar bool
@@ -41,7 +39,6 @@ type Broker struct {
 func NewBroker(localhostSidecar bool) *Broker {
 	return &Broker{
 		Broker:           common.NewBroker(),
-		Storage:          storage.New(),
 		ioUtils:          utils.New(),
 		rand:             common.NewRand(),
 		localhostSidecar: localhostSidecar,
@@ -77,15 +74,9 @@ func (b *Broker) Start(pluginFQNs []model.PluginFQN, defaultRegistry string) err
 	if err != nil {
 		return b.fail(err)
 	}
-	for _, plugin := range plugins {
-		err = b.Storage.AddPlugin(plugin)
-		if err != nil {
-			return b.fail(err)
-		}
-	}
 
 	// Serialize ChePlugins and return to Che server
-	result, err := b.serializeTooling()
+	result, err := b.serializeTooling(plugins)
 	if err != nil {
 		return b.fail(err)
 	}
@@ -125,7 +116,6 @@ func (b *Broker) ProcessPlugins(metas []model.PluginMeta) ([]model.ChePlugin, er
 // variables and volumes potentially required by plugins for running the remote Theia
 // runtime (see: GetRuntimeInjection)
 func (b *Broker) ProcessPlugin(meta model.PluginMeta, remoteInjection *RemotePluginInjection) model.ChePlugin {
-
 	if utils.IsTheiaOrVscodePlugin(meta) && len(meta.Spec.Containers) > 0 {
 		AddPluginRunnerRequirements(meta, b.rand, b.localhostSidecar)
 		InjectRemoteRuntime(&meta, remoteInjection)
@@ -150,11 +140,7 @@ func ConvertMetaToPlugin(meta model.PluginMeta) model.ChePlugin {
 	}
 }
 
-func (b *Broker) serializeTooling() (string, error) {
-	plugins, err := b.Storage.Plugins()
-	if err != nil {
-		return "", err
-	}
+func (b *Broker) serializeTooling(plugins []model.ChePlugin) (string, error) {
 	pluginsBytes, err := json.Marshal(plugins)
 	if err != nil {
 		return "", err

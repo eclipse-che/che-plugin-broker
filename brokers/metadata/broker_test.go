@@ -21,7 +21,6 @@ import (
 
 	commonMock "github.com/eclipse/che-plugin-broker/common/mocks"
 	"github.com/eclipse/che-plugin-broker/model"
-	storageMock "github.com/eclipse/che-plugin-broker/storage/mocks"
 	utilMock "github.com/eclipse/che-plugin-broker/utils/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -31,7 +30,6 @@ import (
 type mocks struct {
 	commonBroker *commonMock.Broker
 	ioUtils      *utilMock.IoUtil
-	storage      *storageMock.Storage
 	rand         *commonMock.Random
 	broker       *Broker
 }
@@ -39,7 +37,6 @@ type mocks struct {
 func initMocks() *mocks {
 	commonBroker := &commonMock.Broker{}
 	ioUtils := &utilMock.IoUtil{}
-	storage := &storageMock.Storage{}
 	rand := &commonMock.Random{}
 
 	commonBroker.On("PrintInfo", mock.AnythingOfType("string"))
@@ -54,11 +51,9 @@ func initMocks() *mocks {
 	return &mocks{
 		commonBroker: commonBroker,
 		ioUtils:      ioUtils,
-		storage:      storage,
 		rand:         rand,
 		broker: &Broker{
 			Broker:           commonBroker,
-			Storage:          storage,
 			ioUtils:          ioUtils,
 			rand:             rand,
 			localhostSidecar: false,
@@ -104,8 +99,6 @@ spec:
 `
 	m := initMocks()
 	m.ioUtils.On("Fetch", mock.AnythingOfType("string")).Return([]byte(pluginMetaContent), nil)
-	m.storage.On("AddPlugin", mock.AnythingOfType("model.ChePlugin")).Return(nil)
-	m.storage.On("Plugins").Return([]model.ChePlugin{}, nil)
 
 	err := m.broker.Start([]model.PluginFQN{pluginFQNWithoutRegistry}, "http://defaultRegistry.com")
 
@@ -124,7 +117,7 @@ func TestBroker_ProcessPluginsValidatesPlugins(t *testing.T) {
 		},
 	}
 	m := initMocks()
-	err := m.broker.ProcessPlugins(metas)
+	_, err := m.broker.ProcessPlugins(metas)
 
 	assert.Error(t, err)
 	assert.Regexp(t, regexp.MustCompile("Plugin .* is invalid."), err)
@@ -134,7 +127,7 @@ func TestBroker_ProcessPluginsGetsRuntimeInjection(t *testing.T) {
 	theiaMeta := loadPluginMetaFromFile(t, "theia-invalid-injection.yaml")
 	metas := []model.PluginMeta{*theiaMeta}
 	m := initMocks()
-	err := m.broker.ProcessPlugins(metas)
+	_, err := m.broker.ProcessPlugins(metas)
 
 	assert.Error(t, err)
 	assert.Regexp(t, regexp.MustCompile("Unable to find"), err)
@@ -146,12 +139,11 @@ func TestBroker_ProcessPluginsProcessesAllPlugins(t *testing.T) {
 	metas := []model.PluginMeta{*theiaMeta, *machineExecMeta}
 
 	m := initMocks()
-	m.storage.On("AddPlugin", mock.AnythingOfType("model.ChePlugin")).Return(nil)
-	err := m.broker.ProcessPlugins(metas)
+	plugins, err := m.broker.ProcessPlugins(metas)
 
 	assert.Nil(t, err)
-	m.storage.AssertExpectations(t)
-	m.storage.AssertNumberOfCalls(t, "AddPlugin", 2)
+	assert.Equal(t, len(plugins), 2)
+	assertListContainsPluginID(t, plugins, theiaMeta.ID)
 }
 
 // TestBroker_ProcessPluginAddsPluginRunnerRequirementsForVsCodePlugin is a high-level
@@ -165,21 +157,17 @@ func TestBroker_ProcessPluginAddsPluginRunnerRequirementsForVsCodePlugin(t *test
 	m.rand.On("String", 10).Return("randomString1234567890")
 	m.rand.On("String", 6).Return("randomString123456")
 
-	m.storage.On("AddPlugin", mock.MatchedBy(func(plugin model.ChePlugin) bool {
-		volumes := plugin.Containers[0].Volumes
-		for _, volume := range volumes {
+	plugin := m.broker.ProcessPlugin(*javaMeta, nil)
+
+	assert.NotNil(t, plugin)
+	assert.Conditionf(t, func() (success bool) {
+		for _, volume := range plugin.Containers[0].Volumes {
 			if volume.Name == "plugins" {
 				return true
 			}
 		}
 		return false
-	})).Return(nil)
-
-	err := m.broker.ProcessPlugin(*javaMeta, nil)
-
-	assert.Nil(t, err)
-	m.storage.AssertExpectations(t)
-	m.storage.AssertNumberOfCalls(t, "AddPlugin", 1)
+	}, "AddPlugin should add plugin runner requirements for plugin runner")
 }
 
 // TestBroker_ProcessPluginDoesNotAddRunnerRequirementsForChePluginType is a high-level
@@ -193,13 +181,9 @@ func TestBroker_ProcessPluginDoesNotAddRunnerRequirementsForChePluginType(t *tes
 	m.rand.On("String", 10).Return("randomString1234567890")
 	m.rand.On("String", 6).Return("randomString123456")
 
-	m.storage.On("AddPlugin", ConvertMetaToPlugin(*machineExecMeta)).Return(nil)
+	plugin := m.broker.ProcessPlugin(*machineExecMeta, nil)
 
-	err := m.broker.ProcessPlugin(*machineExecMeta, nil)
-
-	assert.Nil(t, err)
-	m.storage.AssertExpectations(t)
-	m.storage.AssertNumberOfCalls(t, "AddPlugin", 1)
+	assert.Equal(t, plugin, ConvertMetaToPlugin(*machineExecMeta))
 }
 
 // TestBroker_ProcessPluginDoesNotAddRunnerRequirementsForVsCodePluginWithNoContainers is a high-level
@@ -214,13 +198,9 @@ func TestBroker_ProcessPluginDoesNotAddRunnerRequirementsForVsCodePluginWithNoCo
 	m.rand.On("String", 10).Return("randomString1234567890")
 	m.rand.On("String", 6).Return("randomString123456")
 
-	m.storage.On("AddPlugin", ConvertMetaToPlugin(*noContainerMeta)).Return(nil)
+	plugin := m.broker.ProcessPlugin(*noContainerMeta, nil)
 
-	err := m.broker.ProcessPlugin(*noContainerMeta, nil)
-
-	assert.Nil(t, err)
-	m.storage.AssertExpectations(t)
-	m.storage.AssertNumberOfCalls(t, "AddPlugin", 1)
+	assert.Equal(t, plugin, ConvertMetaToPlugin(*noContainerMeta))
 }
 
 // TestBroker_ProcessPluginsInjectsRemoteRuntimeForVsCodePlugins is a high-level
@@ -243,7 +223,9 @@ func TestBroker_ProcessPluginsInjectsRemoteRuntimeForVsCodePlugins(t *testing.T)
 	m.rand.On("String", 10).Return("randomString1234567890")
 	m.rand.On("String", 6).Return("randomString123456")
 
-	m.storage.On("AddPlugin", mock.MatchedBy(func(plugin model.ChePlugin) bool {
+	plugin := m.broker.ProcessPlugin(*javaMeta, injection)
+
+	assert.Conditionf(t, func() (success bool) {
 		hasVolume := false
 		hasEnvVar := false
 		for _, volume := range plugin.Containers[0].Volumes {
@@ -257,13 +239,7 @@ func TestBroker_ProcessPluginsInjectsRemoteRuntimeForVsCodePlugins(t *testing.T)
 			}
 		}
 		return hasVolume && hasEnvVar
-	})).Return(nil)
-
-	err := m.broker.ProcessPlugin(*javaMeta, injection)
-
-	assert.Nil(t, err)
-	m.storage.AssertExpectations(t)
-	m.storage.AssertNumberOfCalls(t, "AddPlugin", 1)
+	}, "Plugin should have remote runtime injected")
 }
 
 // TestBroker_ProcessPluginDoesNotInjectRuntimeForChePluginType is a high-level
@@ -285,13 +261,9 @@ func TestBroker_ProcessPluginDoesNotInjectRuntimeForChePluginType(t *testing.T) 
 	m.rand.On("String", 10).Return("randomString1234567890")
 	m.rand.On("String", 6).Return("randomString123456")
 
-	m.storage.On("AddPlugin", ConvertMetaToPlugin(*machineExecMeta)).Return(nil)
+	plugin := m.broker.ProcessPlugin(*machineExecMeta, injection)
 
-	err := m.broker.ProcessPlugin(*machineExecMeta, injection)
-
-	assert.Nil(t, err)
-	m.storage.AssertExpectations(t)
-	m.storage.AssertNumberOfCalls(t, "AddPlugin", 1)
+	assert.Equal(t, plugin, ConvertMetaToPlugin(*machineExecMeta))
 }
 
 // TestBroker_ProcessPluginDoesNotAddRunnerRequirementsForVsCodePluginWithNoContainers is a high-level
@@ -313,13 +285,9 @@ func TestBroker_ProcessPluginDoesNotInjectRuntimeForVsCodePluginWithNoContainers
 	m.rand.On("String", 10).Return("randomString1234567890")
 	m.rand.On("String", 6).Return("randomString123456")
 
-	m.storage.On("AddPlugin", ConvertMetaToPlugin(*noContainerMeta)).Return(nil)
+	plugin := m.broker.ProcessPlugin(*noContainerMeta, injection)
 
-	err := m.broker.ProcessPlugin(*noContainerMeta, injection)
-
-	assert.Nil(t, err)
-	m.storage.AssertExpectations(t)
-	m.storage.AssertNumberOfCalls(t, "AddPlugin", 1)
+	assert.Equal(t, plugin, ConvertMetaToPlugin(*noContainerMeta))
 }
 
 func loadPluginMetaFromFile(t *testing.T, filename string) *model.PluginMeta {
@@ -333,6 +301,17 @@ func loadPluginMetaFromFile(t *testing.T, filename string) *model.PluginMeta {
 		t.Fatal(err)
 	}
 	return &pluginMeta
+}
+
+func assertListContainsPluginID(t *testing.T, plugins []model.ChePlugin, id string) {
+	found := false
+	for _, plugin := range plugins {
+		if plugin.ID == id {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "Expected to find plugin with id %s in list of plugins, but list is\n%v", plugins)
 }
 
 var pluginFQNWithoutRegistry = model.PluginFQN{

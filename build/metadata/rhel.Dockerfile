@@ -20,7 +20,9 @@ RUN adduser appuser && \
     CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o metadata-broker main.go
 
 # https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8-minimal
-FROM registry.access.redhat.com/ubi8-minimal:8.1-398
+FROM registry.access.redhat.com/ubi8-minimal:8.1-407
+
+RUN microdnf update -y systemd && microdnf clean all && rm -rf /var/cache/yum
 
 USER appuser
 # CRW-528 copy actual cert

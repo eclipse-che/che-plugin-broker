@@ -96,12 +96,12 @@ type ExecAction struct {
 }
 
 type Handler struct {
-	Exec  ExecAction `json:"exec,omitempty" yaml:"exec,omitempty"`
+	Exec  *ExecAction `json:"exec,omitempty" yaml:"exec,omitempty"`
 }
 
 type Lifecycle struct {
-	PostStart Handler `json:"postStart,omitempty" yaml:"postStart,omitempty"`
-	PreStop   Handler `json:"preStop,omitempty" yaml:"preStop,omitempty"`
+	PostStart *Handler `json:"postStart,omitempty" yaml:"postStart,omitempty"`
+	PreStop   *Handler `json:"preStop,omitempty" yaml:"preStop,omitempty"`
 }
 
 type Container struct {
@@ -118,7 +118,7 @@ type Container struct {
 	MountSources  bool          `json:"mountSources" yaml:"mountSources"`
 	Command       []string      `json:"command" yaml:"command"`
 	Args          []string      `json:"args" yaml:"args"`
-    Lifecycle     Lifecycle     `json:"lifecycle,omitempty" yaml:"lifecycle,omitempty"`
+    Lifecycle     *Lifecycle     `json:"lifecycle,omitempty" yaml:"lifecycle,omitempty"`
 }
 
 type ChePlugin struct {

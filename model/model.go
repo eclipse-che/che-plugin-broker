@@ -91,6 +91,19 @@ type ExposedPort struct {
 	ExposedPort int `json:"exposedPort" yaml:"exposedPort"`
 }
 
+type ExecAction struct {
+	Command []string `json:"command,omitempty" yaml:"command,omitempty"`
+}
+
+type Handler struct {
+	Exec  ExecAction `json:"exec,omitempty" yaml:"exec,omitempty"`
+}
+
+type Lifecycle struct {
+	PostStart Handler `json:"postStart,omitempty" yaml:"postStart,omitempty"`
+	PreStop   Handler `json:"preStop,omitempty" yaml:"preStop,omitempty"`
+}
+
 type Container struct {
 	Name          string        `json:"name,omitempty" yaml:"name,omitempty"`
 	Image         string        `json:"image,omitempty" yaml:"image,omitempty"`
@@ -105,6 +118,7 @@ type Container struct {
 	MountSources  bool          `json:"mountSources" yaml:"mountSources"`
 	Command       []string      `json:"command" yaml:"command"`
 	Args          []string      `json:"args" yaml:"args"`
+    Lifecycle     Lifecycle     `json:"lifecycle,omitempty" yaml:"lifecycle,omitempty"`
 }
 
 type ChePlugin struct {

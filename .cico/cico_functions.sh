@@ -115,3 +115,13 @@ function build_and_push() {
     echo "CICO: '${TAG}'  version of image pushed to '${REGISTRY}/${ORGANIZATION}/${IMAGE}' repo"
   fi
 }
+
+function build_and_push_development_container() {
+  IMAGE=$1
+  if [ -z "${TAG}" ]; then
+    echo "No tag specified, skipping build of development container"
+    return
+  fi
+  docker build -t "${REGISTRY}/${ORGANIZATION}/${IMAGE}:${TAG}" ./build/dev/
+  docker push "${REGISTRY}/${ORGANIZATION}/${IMAGE}:${TAG}"
+}

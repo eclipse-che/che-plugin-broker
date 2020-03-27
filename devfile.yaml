@@ -9,12 +9,17 @@ projects:
       branch: master
     clonePath: src/github.com/eclipse/che-plugin-broker
 components:
-  - id: ms-vscode/go/0.11.0
+  - id: ms-vscode/go/latest
     type: chePlugin
     alias: ms-vscode.go
+    preferences:
+      go.lintTool: 'golangci-lint'
+      go.lintFlags: '--fast'
+      go.useLanguageServer: false
+      go.formatTool: "goimports"
 
   - type: dockerimage
-    image: 'eclipse/che-plugin-broker-dev:latest'
+    image: 'quay.io/eclipse/che-plugin-broker-dev:nightly'
     alias: dev
     mountSources: true
     memoryLimit: 1G
@@ -51,7 +56,7 @@ commands:
           make build-metadata &&
           printf '\033[32mDone.\033[0m'
         component: dev
-  - name: compile "artifacts" plugin broker
+  - name: compile plugin artifacts broker
     actions:
       - workdir: /projects/src/github.com/eclipse/che-plugin-broker
         type: exec
@@ -91,11 +96,23 @@ commands:
     actions:
       - workdir: /projects/src/github.com/eclipse/che-plugin-broker
         type: exec
-        command: './plugin-artifacts-broker --disable-push=true --runtime-id=workspace:developer:eclipse-che --registry-address=http://plugin-registry-local:8080 --metas ./brokers/testdata/config-plugin-ids.json'
+        command: >-
+          make build-artifacts &&
+          ./plugin-artifacts-broker \
+            --disable-push=true \
+            --runtime-id=workspace:developer:eclipse-che \
+            --registry-address=http://plugin-registry-local:8080 \
+            --metas ./brokers/testdata/config-plugin-ids.json
         component: dev
   - name: start plugin metadata broker
     actions:
       - workdir: /projects/src/github.com/eclipse/che-plugin-broker
         type: exec
-        command: './plugin-metadata-broker --disable-push=true --runtime-id=workspace:developer:eclipse-che --registry-address=http://plugin-registry-local:8080 --metas ./brokers/testdata/config-plugin-ids.json'
+        command: >-
+          make build-metadata &&
+          ./plugin-metadata-broker \
+            --disable-push=true \
+            --runtime-id=workspace:developer:eclipse-che \
+            --registry-address=http://plugin-registry-local:8080 \
+            --metas ./brokers/testdata/config-plugin-ids.json
         component: dev

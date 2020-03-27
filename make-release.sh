@@ -14,9 +14,9 @@ FORCE="false"
 # Wrapper for git commands
 function gitw() {
   if [[ "$1" == "push" ]] && [[ "$TRIGGER_RELEASE" != "true" ]]; then
-    echo -e "    ${RED}'git $@'${NC} (dry run)"
+    echo -e "    ${RED}'git $*'${NC} (dry run)"
   else
-    echo -e "    ${GREEN}git $@${NC}"
+    echo -e "    ${GREEN}git $*${NC}"
     git "$@" 2>&1 | sed 's|^|        |g'
     return "${PIPESTATUS[0]}"
   fi
@@ -101,7 +101,7 @@ cd ./* || exit 1
 
 if [[ "$CREATE_BRANCH" = "true" ]]; then
   echo "Create branch $BRANCH"
-  if git ls-remote --exit-code --heads origin $BRANCH > /dev/null; then
+  if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null; then
     echo "Error: branch $BRANCH already exists in $REPO"
     exit 1
   fi

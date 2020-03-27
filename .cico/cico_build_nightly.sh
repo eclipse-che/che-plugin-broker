@@ -17,7 +17,7 @@ set -e
 SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
 export SCRIPT_DIR
 
-# shellcheck disable=SC1090
+shellcheck disable=SC1090
 . "${SCRIPT_DIR}"/cico_functions.sh
 
 load_jenkins_vars
@@ -28,3 +28,4 @@ build ./build/CI/Dockerfile
 set_nightly_tag
 build_and_push ./build/metadata che-plugin-metadata-broker
 build_and_push ./build/artifacts che-plugin-artifacts-broker
+build_and_push_development_container che-plugin-broker-dev

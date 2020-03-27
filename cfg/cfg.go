@@ -164,8 +164,8 @@ func Parse() {
 	if len(runtimeIDRaw) == 0 {
 		log.Fatal("Runtime ID required(set it with -runtime-id argument)")
 	}
-	parts := strings.Split(runtimeIDRaw, ":")
-	if len(parts) != 3 {
+	parts := strings.SplitN(runtimeIDRaw, ":", 3)
+	if len(parts) < 3 {
 		log.Fatalf("Expected runtime id to be in format 'workspace:env:ownerId'")
 	}
 	RuntimeID = model.RuntimeID{Workspace: parts[0], Environment: parts[1], OwnerId: parts[2]}

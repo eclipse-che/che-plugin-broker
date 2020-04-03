@@ -92,7 +92,7 @@ type ExposedPort struct {
 }
 
 type ExecAction struct {
-	Command []string `json:"command,omitempty" yaml:"command,omitempty"`
+	Command []string `json:"command" yaml:"command"`
 }
 
 type Handler struct {

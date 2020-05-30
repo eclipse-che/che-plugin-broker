@@ -11,7 +11,7 @@
 
 # https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/devtools/go-toolset-rhel7
 FROM registry.access.redhat.com/devtools/go-toolset-rhel7:1.13.4-18 as builder
-ENV PATH=/opt/rh/go-toolset-1.12/root/usr/bin:$PATH \
+ENV PATH=/opt/rh/go-toolset-1.13/root/usr/bin:$PATH \
     GOPATH=/go/
 USER root
 WORKDIR /go/src/github.com/eclipse/che-plugin-broker/brokers/metadata/cmd/

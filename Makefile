@@ -2,6 +2,12 @@ GOENV := CGO_ENABLED=0 GOOS=linux
 GOFLAGS := -a -ldflags '-w -s' -a -installsuffix cgo
 PLUGIN_REGISTRY_URL ?= "https://che-plugin-registry.openshift.io/v3"
 
+ifeq (s390x, $(shell uname -m))
+        RACE ?=
+else
+        RACE ?= -race
+endif
+
 all: ci build
 .PHONY: all
 
@@ -23,7 +29,7 @@ build-metadata:
 
 .PHONY: test
 test:
-	go test -v -race ./...
+	go test -v $(RACE) ./...
 
 .PHONY: lint
 lint:

@@ -23,8 +23,11 @@ export SCRIPT_DIR
 load_jenkins_vars
 install_deps
 
-build ./build/CI/Dockerfile
-
 set_release_tag
+
+check_buildx_support
+build ./build/CI/Dockerfile
 build_and_push ./build/metadata che-plugin-metadata-broker
 build_and_push ./build/artifacts che-plugin-artifacts-broker
+
+

@@ -67,6 +67,9 @@ var (
 
 	// SelfSignedCertificateFilePath path to certificate file that should be used while connection establishing
 	SelfSignedCertificateFilePath string
+
+	// CABundleDirPath Path to directory with trusted CA certificates
+	CABundleDirPath string
 )
 
 func init() {
@@ -139,6 +142,12 @@ func init() {
 		"",
 		"Path to Certificate that should be used while connection establishing",
 	)
+	flag.StringVar(
+		&CABundleDirPath,
+		"cadir",
+		"",
+		"Path to directory with trusted CA certificates",
+	)
 }
 
 // Parse parses configuration.
@@ -187,6 +196,9 @@ func Print() {
 	log.Printf("    OwnerId: %s", RuntimeID.OwnerId)
 	if SelfSignedCertificateFilePath != "" {
 		log.Printf("  Self signed certificate %s", SelfSignedCertificateFilePath)
+	}
+	if CABundleDirPath != "" {
+		log.Printf("  CA bundle certificates path %s", CABundleDirPath)
 	}
 }
 

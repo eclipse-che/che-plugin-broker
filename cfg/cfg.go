@@ -65,7 +65,7 @@ var (
 	// Used as a default registry if a plugin fully-qualified name does not specify a registry.
 	RegistryAddress string
 
-	// SelfSignedCertificateFilePath path to certificate file that should be used while connection establishing
+	// SelfSignedCertificateFilePath path to certificate file that should be used while connection establishing to Che server
 	SelfSignedCertificateFilePath string
 
 	// CABundleDirPath Path to directory with trusted CA certificates

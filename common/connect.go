@@ -39,8 +39,10 @@ func (tb *tunnelBroadcaster) Accept(e event.E) {
 }
 
 // ConfigureCertPool trusts given certificates
-// CAFilePath is a path to file which contains CA certificates
-// CADirPath is a path to directory with CA certificates files
+// CAFilePath is a path to file which contains CA certificates.
+//   Usually it contains Che server self-signed certificate.
+// CADirPath is a path to directory with CA certificates files.
+//   Usually they contain all the trusted CA in the cluster.
 func ConfigureCertPool(CAFilePath string, CADirPath string) {
 	if CAFilePath == "" && CADirPath == "" {
 		// Do nothing

@@ -74,22 +74,24 @@ func ConfigureCertPool(CAFilePath string, CADirPath string) {
 		}
 		// Iterate over all files in the given directory
 		for _, file := range files {
-			if !file.IsDir() {
-				fileExt := filepath.Ext(file.Name())
-				// Look up only for certificate files
-				if fileExt == ".crt" || fileExt == ".pem" {
-					certsFilePath := filepath.Join(CADirPath, file.Name())
-					certs, err := ioutil.ReadFile(certsFilePath)
-					if err != nil {
-						// Log error and continue
-						log.Printf("Failed to read certificate from file %q. Error: %v", certsFilePath, err)
-					} else {
-						// Append certs from the file to the system pool
-						if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
-							// Log error and continue
-							log.Printf("Failed to append %q to RootCAs.", file)
-						}
-					}
+			if file.IsDir() {
+				continue
+			}
+			fileExt := filepath.Ext(file.Name())
+			// Look up only for certificate files
+			if fileExt == ".crt" || fileExt == ".pem" {
+				certsFilePath := filepath.Join(CADirPath, file.Name())
+				certs, err := ioutil.ReadFile(certsFilePath)
+				if err != nil {
+					// Log error and continue
+					log.Printf("Failed to read certificate from file %q. Error: %v", certsFilePath, err)
+					continue
+				}
+				// Append certs from the file to the system pool
+				if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
+					// Log error and continue
+					log.Printf("Failed to append %q to RootCAs.", file)
+					continue
 				}
 			}
 		}

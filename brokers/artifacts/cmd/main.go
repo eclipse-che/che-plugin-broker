@@ -30,9 +30,7 @@ func main() {
 
 	broker := artifacts.NewBroker(cfg.UseLocalhostInPluginUrls)
 
-	if cfg.SelfSignedCertificateFilePath != "" {
-		common.ConfigureCertPool(cfg.SelfSignedCertificateFilePath)
-	}
+	common.ConfigureCertPool(cfg.SelfSignedCertificateFilePath, cfg.CABundleDirPath)
 
 	if !cfg.DisablePushingToEndpoint {
 		statusTun := common.ConnectOrFail(cfg.PushStatusesEndpoint, cfg.Token)

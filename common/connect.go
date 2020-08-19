@@ -15,13 +15,15 @@ package common
 import (
 	"log"
 	"net/http"
+	"path/filepath"
 
 	"crypto/tls"
 	"crypto/x509"
-	"github.com/eclipse/che-go-jsonrpc"
+	"io/ioutil"
+
+	jsonrpc "github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-go-jsonrpc/event"
 	"github.com/eclipse/che-go-jsonrpc/jsonrpcws"
-	"io/ioutil"
 )
 
 type tunnelBroadcaster struct {
@@ -36,22 +38,63 @@ func (tb *tunnelBroadcaster) Accept(e event.E) {
 	}
 }
 
-func ConfigureCertPool(customCertificateFilePath string) {
-	// Get the SystemCertPool, continue with an empty pool on error
+// ConfigureCertPool trusts given certificates
+// CAFilePath is a path to file which contains CA certificates.
+//   Usually it contains Che server self-signed certificate.
+// CADirPath is a path to directory with CA certificates files.
+//   Usually they contain all the trusted CA in the cluster.
+func ConfigureCertPool(CAFilePath string, CADirPath string) {
+	if CAFilePath == "" && CADirPath == "" {
+		// Do nothing
+		return
+	}
+
 	rootCAs, _ := x509.SystemCertPool()
 	if rootCAs == nil {
 		rootCAs = x509.NewCertPool()
 	}
 
-	// Read in the cert file
-	certs, err := ioutil.ReadFile(customCertificateFilePath)
-	if err != nil {
-		log.Fatalf("Failed to read custom certificate %q. Error: %v", customCertificateFilePath, err)
+	if CAFilePath != "" {
+		certs, err := ioutil.ReadFile(CAFilePath)
+		if err != nil {
+			log.Fatalf("Failed to read custom certificate %q. Error: %v", CAFilePath, err)
+		}
+
+		// Append our cert to the system pool
+		if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
+			log.Fatalf("Failed to append %q to RootCAs: %v", CAFilePath, err)
+		}
 	}
 
-	// Append our cert to the system pool
-	if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
-		log.Fatalf("Failed to append %q to RootCAs: %v", customCertificateFilePath, err)
+	if CADirPath != "" {
+		// Add all certificates from the given directory
+		files, err := ioutil.ReadDir(CADirPath)
+		if err != nil {
+			log.Fatalf("Failed to read certificates from directory %q. Error: %v", CADirPath, err)
+		}
+		// Iterate over all files in the given directory
+		for _, file := range files {
+			if file.IsDir() {
+				continue
+			}
+			fileExt := filepath.Ext(file.Name())
+			// Look up only for certificate files
+			if fileExt == ".crt" || fileExt == ".pem" {
+				certsFilePath := filepath.Join(CADirPath, file.Name())
+				certs, err := ioutil.ReadFile(certsFilePath)
+				if err != nil {
+					// Log error and continue
+					log.Printf("Failed to read certificate from file %q. Error: %v", certsFilePath, err)
+					continue
+				}
+				// Append certs from the file to the system pool
+				if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
+					// Log error and continue
+					log.Printf("Failed to append %q to RootCAs.", file)
+					continue
+				}
+			}
+		}
 	}
 
 	// Trust the augmented cert pool in our client

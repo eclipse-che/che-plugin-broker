@@ -10,6 +10,10 @@
   version = "=2.2.1"
   name = "gopkg.in/yaml.v2"
 
+[[constraint]]
+  revision = "e386b2658ed20923da8cc9250e552f082899a1ee"
+  name = "k8s.io/apimachinery"
+
 [prune]
   go-tests = true
   unused-packages = true

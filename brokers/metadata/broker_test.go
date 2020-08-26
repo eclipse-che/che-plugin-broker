@@ -40,6 +40,7 @@ func initMocks() *mocks {
 	rand := &commonMock.Random{}
 
 	commonBroker.On("PrintInfo", mock.AnythingOfType("string"))
+	commonBroker.On("PrintInfoBuffer", mock.Anything)
 	commonBroker.On("PrintDebug", mock.AnythingOfType("string"))
 	commonBroker.On("PubFailed", mock.AnythingOfType("string"))
 	commonBroker.On("PubLog", mock.AnythingOfType("string"))

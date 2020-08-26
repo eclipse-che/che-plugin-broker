@@ -68,10 +68,10 @@ metas:
         - https://test.extension2
 expected:
   - apiVersion: v2
-    id: eclipse-che/merged-testImg/latest
-    publisher: eclipse-che
-    name: merged-testImg
-    version: latest
+    id: testpub/duplicated_elements1/testver
+    publisher: testpub
+    name: duplicated_elements1
+    version: testver
     type: theia plugin
     spec:
       endpoints:

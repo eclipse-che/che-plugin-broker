@@ -76,15 +76,15 @@ func MergePlugins(plugins []model.PluginMeta) ([]model.PluginMeta, []string) {
 func mergePluginsForImage(image string, plugins []model.PluginMeta) (*model.PluginMeta, error) {
 	merged := &model.PluginMeta{
 		APIVersion: "v2",
-		Version:    "latest",
-		Name:       "merged-" + utils.SanitizeImage(image),
-		Publisher:  "eclipse-che",
+		Version:    plugins[0].Version,
+		Name:       plugins[0].Name,
+		Publisher:  plugins[0].Publisher,
 		Type:       model.TheiaPluginType,
 	}
 	merged.ID = fmt.Sprintf("%s/%s/%s", merged.Publisher, merged.Name, merged.Version)
 
 	container := model.Container{
-		Name:  merged.Name,
+		Name:  "merged-" + utils.SanitizeImage(image),
 		Image: image,
 	}
 

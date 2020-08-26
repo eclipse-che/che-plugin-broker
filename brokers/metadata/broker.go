@@ -16,6 +16,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/eclipse/che-plugin-broker/utils/mergeplugins"
+
 	jsonrpc "github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/model"
@@ -108,8 +110,9 @@ func (b *Broker) ProcessPlugins(metas []model.PluginMeta) ([]model.ChePlugin, er
 	}
 
 	plugins := make([]model.ChePlugin, 0)
-
-	for _, meta := range metas {
+	mergedMetas, logs := mergeplugins.MergePlugins(metas)
+	b.PrintInfoBuffer(logs)
+	for _, meta := range mergedMetas {
 		plugin := b.ProcessPlugin(meta, remoteInjection)
 		plugins = append(plugins, plugin)
 	}

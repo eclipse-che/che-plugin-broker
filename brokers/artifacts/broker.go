@@ -19,6 +19,7 @@ import (
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/model"
 	"github.com/eclipse/che-plugin-broker/utils"
+	"github.com/eclipse/che-plugin-broker/utils/mergeplugins"
 )
 
 // Broker is used to process Che plugins
@@ -64,9 +65,10 @@ func (b *Broker) Start(pluginFQNs []model.PluginFQN, defaultRegistry string) err
 	if err != nil {
 		return b.fail(err)
 	}
+	mergedMetas, logs := mergeplugins.MergePlugins(pluginMetas)
+	b.PrintInfoBuffer(logs)
 
-	requestedPlugins := convertMetasToPlugins(pluginMetas)
-
+	requestedPlugins := convertMetasToPlugins(mergedMetas)
 	toInstall := b.syncWithPluginsDir(requestedPlugins)
 
 	for _, plugin := range toInstall {

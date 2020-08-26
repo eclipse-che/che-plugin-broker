@@ -30,3 +30,7 @@ func GetPluginUniqueName(meta model.PluginMeta) string {
 func ConvertIDToUniqueName(id string) string {
 	return re.ReplaceAllString(id, "_")
 }
+
+func SanitizeImage(image string) string {
+	return re.ReplaceAllString(image, "-")
+}

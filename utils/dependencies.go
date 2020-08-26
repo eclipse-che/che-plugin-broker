@@ -41,14 +41,14 @@ func GetExtensionCollisions(metas []model.PluginMeta) map[string][]string {
 func ConvertCollisionsToLog(collisions map[string][]string) []string {
 	var output []string
 	for ext, plugins := range collisions {
-		output = append(output, fmt.Sprintf("  Plugins"))
+		output = append(output, "  Plugins")
 		for _, plugin := range plugins {
 			output = append(output, fmt.Sprintf("    - %s", plugin))
 		}
 		if len(plugins) > 2 {
-			output = append(output, fmt.Sprintf("  all depend on and embed extension"))
+			output = append(output, "  all depend on and embed extension")
 		} else {
-			output = append(output, fmt.Sprintf("  both depend on and embed extension"))
+			output = append(output, "  both depend on and embed extension")
 		}
 		output = append(output, fmt.Sprintf("    %s", ext))
 	}

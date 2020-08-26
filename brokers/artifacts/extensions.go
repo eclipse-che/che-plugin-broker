@@ -43,7 +43,7 @@ func (b *Broker) ProcessPlugin(plugin *model.CachedPlugin) error {
 		extensionIdx = extensionIdx + 1
 		logBuf = append(logBuf, fmt.Sprintf("  Installing plugin extension %d/%d", extensionIdx, numExtensions))
 		if path != "" {
-			logBuf = append(logBuf, fmt.Sprintf("    Plugin already downloaded"))
+			logBuf = append(logBuf, "    Plugin already downloaded")
 			continue
 		}
 		logBuf = append(logBuf, fmt.Sprintf("    Downloading plugin from %s", URL))

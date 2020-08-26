@@ -347,10 +347,10 @@ expected:
       extensions:
         - https://download.jboss.org/jbosstools/vscode/3rdparty/vscode-yaml/vscode-yaml-0.8.0.vsix
   - apiVersion: v2
-    id: eclipse-che/merged-quay-io-eclipse-che-sidecar-java-8-0cfbacb/latest
-    publisher: eclipse-che
-    name: merged-quay-io-eclipse-che-sidecar-java-8-0cfbacb
-    version: latest
+    id: redhat/java/0.63.0
+    publisher: redhat
+    name: java
+    version: 0.63.0
     type: theia plugin
     spec:
       containers:

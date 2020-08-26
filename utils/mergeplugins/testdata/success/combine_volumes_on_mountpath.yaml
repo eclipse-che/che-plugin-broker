@@ -31,10 +31,10 @@ metas:
         - https://test.extension2
 expected:
   - apiVersion: v2
-    id: eclipse-che/merged-testImg/latest
-    publisher: eclipse-che
-    name: merged-testImg
-    version: latest
+    id: testpub/sharedVolume/testver
+    publisher: testpub
+    name: sharedVolume
+    version: testver
     type: theia plugin
     spec:
       containers:

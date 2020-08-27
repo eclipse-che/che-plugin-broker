@@ -15,6 +15,7 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/eclipse/che-plugin-broker/cfg"
 
 	"github.com/eclipse/che-plugin-broker/utils/mergeplugins"
 
@@ -110,9 +111,14 @@ func (b *Broker) ProcessPlugins(metas []model.PluginMeta) ([]model.ChePlugin, er
 	}
 
 	plugins := make([]model.ChePlugin, 0)
-	mergedMetas, logs := mergeplugins.MergePlugins(metas)
-	b.PrintInfoBuffer(logs)
-	for _, meta := range mergedMetas {
+	metasToProcess := metas
+	if cfg.MergePlugins{
+		var logs []string
+		metasToProcess, logs = mergeplugins.MergePlugins(metas)
+		b.PrintInfoBuffer(logs)
+	}
+
+	for _, meta := range metasToProcess {
 		plugin := b.ProcessPlugin(meta, remoteInjection)
 		plugins = append(plugins, plugin)
 	}

@@ -72,6 +72,10 @@ var (
 	// CABundleDirPath Path to directory with trusted CA certificates.
 	// Usually they contain all the trusted CA in the cluster.
 	CABundleDirPath string
+
+	// MergePlugins determines whether the brokers should attempt to merge plugins
+	// when they run in the same sidecar image
+	MergePlugins bool
 )
 
 func init() {
@@ -149,6 +153,12 @@ func init() {
 		"cadir",
 		"",
 		"Path to directory with trusted CA certificates",
+	)
+	flag.BoolVar(
+		&MergePlugins,
+		"merge-plugins",
+		false,
+		"Configures the broker to attempt to merge plugins that run in the same sidecar during brokering",
 	)
 }
 

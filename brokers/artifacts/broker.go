@@ -14,6 +14,7 @@ package artifacts
 
 import (
 	"fmt"
+	"github.com/eclipse/che-plugin-broker/cfg"
 
 	jsonrpc "github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-plugin-broker/common"
@@ -65,10 +66,14 @@ func (b *Broker) Start(pluginFQNs []model.PluginFQN, defaultRegistry string) err
 	if err != nil {
 		return b.fail(err)
 	}
-	mergedMetas, logs := mergeplugins.MergePlugins(pluginMetas)
-	b.PrintInfoBuffer(logs)
+	metasToProcess := pluginMetas
+	if cfg.MergePlugins{
+		var logs []string
+		metasToProcess, logs = mergeplugins.MergePlugins(pluginMetas)
+		b.PrintInfoBuffer(logs)
+	}
 
-	requestedPlugins := convertMetasToPlugins(mergedMetas)
+	requestedPlugins := convertMetasToPlugins(metasToProcess)
 	toInstall := b.syncWithPluginsDir(requestedPlugins)
 
 	for _, plugin := range toInstall {

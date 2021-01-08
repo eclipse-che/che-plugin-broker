@@ -34,3 +34,9 @@ _testmain.go
 .theia/
 
 config.json
+
+# Generated files
+bin/
+c.out
+coverage.html
+coverage.txt

@@ -5,8 +5,7 @@ version: 2.0
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.13
-    working_directory: /go/src/github.com/eclipse/che-plugin-broker
+      - image: circleci/golang:1.14
     steps:
       - checkout
       - run: 
@@ -18,7 +17,7 @@ jobs:
       - run: 
           name: "Build sources"
           command: |
-            CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo ./...
+            CGO_ENABLED=0 GOOS=linux GO111MODULE=on go build -mod vendor -a -ldflags '-w -s' -a -installsuffix cgo ./...
       - run: 
           name: "Run tests"
           command: |
@@ -34,5 +33,15 @@ jobs:
           name: "Run GolangCI linter"
           command: |
             golangci-lint run -v
+      - run:
+          name: "Check go modules and vendor"
+          command: |
+            go mod tidy && go mod vendor
+            if [[ ! -z $(git status -s) ]]
+            then
+              echo "Go mod state is not clean"
+              git status
+              exit 1
+            fi
       - store_artifacts:
           path: /tmp/artifacts

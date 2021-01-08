@@ -39,10 +39,6 @@ lint:
 fmt:
 	go fmt ./...
 
-.PHONY: dep-update
-dep-update:
-	dep ensure
-
 .PHONY: build-docker-artifacts
 build-docker-artifacts:
 	docker build -t quay.io/eclipse/che-plugin-artifacts-broker:latest -f build/artifacts/Dockerfile .

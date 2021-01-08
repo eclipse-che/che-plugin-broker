@@ -22,7 +22,7 @@ There are two development linux containers inside workspace: `dev` and `plugin-r
 ### Dev container target
 
 `dev` container created for development che-plugin-broker. It contains pre-installed development binaries:
-golang, dep tool, git, golangci-lint and so on. In the devfile, `/plugins` is mounted as a volume on the `dev` container
+golang, git, golangci-lint and so on. In the devfile, `/plugins` is mounted as a volume on the `dev` container
 to store plugins binaries downloaded with help of `unified` plugin broker.
 
 ### Plugin registry container target
@@ -34,7 +34,7 @@ The `unified` plugin broker can connect to this service to get plugins meta.yaml
 ### Development commands
 
 devfile.yaml provides development `tasks` for the Eclipse Che workspace.
-|These are defined in the devfile `commands` section.
+These are defined in the devfile `commands` section.
 
 To launch development commands in the Eclipse Che workspace, you can:
 
@@ -75,13 +75,3 @@ To format che-plugin-broker code use task with name `format code`.
 ### Lint code
 
 To lint che-plugin-broker code use task `lint code`.
-
-### Update golang dependencies
-
-To manage che-plugin-broker golang dependencies we are using [dep tool](https://golang.github.io/dep).
-List dependencies stored in the [Gopkg.toml](Gopkg.toml). To change dependencies you need modify this file.
-Use task with name `update dependencies` to flash Gopkg.toml changes:
-this task call dep tool to synchronize `vendor` folder and [Gopkg.lock](Gopkg.lock) with updated list dependencies.
-
-> Notice: `Gopkg.lock and vendor folder` changes should be contributed too.
-

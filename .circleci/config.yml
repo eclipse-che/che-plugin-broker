@@ -6,7 +6,6 @@ jobs:
   build:
     docker:
       - image: circleci/golang:1.14
-    working_directory: /build/che-plugin-broker
     steps:
       - checkout
       - run: 
@@ -18,7 +17,7 @@ jobs:
       - run: 
           name: "Build sources"
           command: |
-            CGO_ENABLED=0 GOOS=linux go build -mod vendor -a -ldflags '-w -s' -a -installsuffix cgo ./...
+            CGO_ENABLED=0 GOOS=linux GO111MODULE=on go build -mod vendor -a -ldflags '-w -s' -a -installsuffix cgo ./...
       - run: 
           name: "Run tests"
           command: |
@@ -41,6 +40,7 @@ jobs:
             if [[ ! -z $(git status -s) ]]
             then
               echo "Go mod state is not clean"
+              git status
               exit 1
             fi
       - store_artifacts:

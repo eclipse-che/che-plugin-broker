@@ -186,7 +186,7 @@ func TestIoUtil_Download(t *testing.T) {
 			},
 			want: want{
 				downloadedPath: "",
-				errRegexp:      regexp.MustCompile("Get test.url: TestError"),
+				errRegexp:      regexp.MustCompile(`Get "test.url": TestError`),
 			},
 			mocks: generateMocks("testBody", http.StatusForbidden, http.Header{}, errors.New("TestError"), false),
 		},

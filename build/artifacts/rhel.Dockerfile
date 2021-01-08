@@ -10,23 +10,23 @@
 #
 
 # https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/devtools/go-toolset-rhel7
-FROM registry.access.redhat.com/devtools/go-toolset-rhel7:1.13.4-18 as builder
-ENV PATH=/opt/rh/go-toolset-1.13/root/usr/bin:$PATH \
+FROM registry.access.redhat.com/devtools/go-toolset-rhel7:1.14.12-4 as builder
+ENV PATH=/opt/rh/go-toolset-1.14/root/usr/bin:$PATH \
     GOPATH=/go/
 USER root
-WORKDIR /go/src/github.com/eclipse/che-plugin-broker/brokers/artifacts/cmd/
-COPY . /go/src/github.com/eclipse/che-plugin-broker/
+WORKDIR /build/che-plugin-broker/brokers/artifacts/cmd/
+COPY . /build/che-plugin-broker/
 RUN adduser appuser && \
-    CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -installsuffix cgo -o artifacts-broker main.go
+    CGO_ENABLED=0 GOOS=linux go build -mod vendor -a -ldflags '-w -s' -installsuffix cgo -o artifacts-broker main.go
 
 # https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8-minimal
-FROM registry.access.redhat.com/ubi8-minimal:8.2-267
+FROM registry.access.redhat.com/ubi8-minimal:8.3-230
 
 RUN microdnf update -y systemd && microdnf clean all && rm -rf /var/cache/yum && echo "Installed Packages" && rpm -qa | sort -V && echo "End Of Installed Packages"
 
 USER appuser
 COPY --from=builder /etc/passwd /etc/passwd
-COPY --from=builder /go/src/github.com/eclipse/che-plugin-broker/brokers/artifacts/cmd/artifacts-broker /
+COPY --from=builder /build/che-plugin-broker/brokers/artifacts/cmd/artifacts-broker /
 ENTRYPOINT ["/artifacts-broker"]
 
 # append Brew metadata here

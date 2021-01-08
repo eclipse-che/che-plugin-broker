@@ -10,7 +10,7 @@
 #   Red Hat, Inc. - initial API and implementation
 #
 
-FROM golang:1.13
+FROM golang:1.14
 RUN wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.30.0
 RUN adduser --disabled-password --gecos '' appuser
 USER appuser

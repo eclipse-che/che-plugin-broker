@@ -14,8 +14,8 @@ FROM golang:1.14
 RUN wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.30.0
 RUN adduser --disabled-password --gecos '' appuser
 USER appuser
-COPY . /go/src/github.com/eclipse/che-plugin-broker/
-WORKDIR /go/src/github.com/eclipse/che-plugin-broker/
-RUN  CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo ./...
+COPY . /build/che-plugin-broker/
+WORKDIR /build/che-plugin-broker/
+RUN  CGO_ENABLED=0 GOOS=linux go build -mod vendor -a -ldflags '-w -s' -a -installsuffix cgo ./...
 RUN golangci-lint run -v
 RUN go test -v -race ./...

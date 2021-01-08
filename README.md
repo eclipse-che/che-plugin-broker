@@ -38,25 +38,12 @@ There is a Makefile included in the repo to make building and testing the code e
 | `make test` | Run all tests in repo |
 | `make lint` | Run `golangci-lint` on repo |
 | `make fmt` | Run `go fmt` on all `.go` files |
-| `make dep-update` | Run `dep ensure`; must be run after updating dependencies |
 | `make build-docker-artifacts` | Build `eclipse/che-plugin-artifacts-broker` image |
 | `make build-docker-metadata` | Build `eclipse/che-plugin-metadata-broker` image |
 | `test-metadata` | Build and run metadata broker locally, using plugin ids from `brokers/testdata/config-plugin-ids.json`; prints output to stdout |
 | `test-artifacts` | Build and run artifacts broker locally, using plugin ids from `brokers/testdata/config-plugin-ids.json`; downloads all extensions to `/plugins` locally (directory must be writable, e.g. via a softlink to a user-writable directory) |
 
 For more information, view the targets in the Makefile.
-
-### Dependencies
-
-Dependencies in the project are managed by Go Dep.
-After you added a dependency you need to run the following command to download dependencies to vendor repo and lock file and then commit changes:
-
-```shell
-dep ensure
-```
-
-`dep ensure` doesn't automatically change Gopkg.toml which contains dependencies constrants.
-So, when a dependency is introduced or changed it should be reflected in Gopkg.toml.
 
 ### CentOS CI
 The following [CentOS CI jobs](https://ci.centos.org/) are associated with the repository:

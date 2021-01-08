@@ -17,6 +17,3 @@ ARG GO_BIN_LOCATION=${GOPATH}/bin
 RUN cd ${GOPATH} && \
     # Download golang ci lint binary
     wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.15.0 && \
-    # Download dep tool to manage golang dependencies
-    wget -q https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-amd64 -O ${GO_BIN_LOCATION}/dep && \
-    chmod +x ${GO_BIN_LOCATION}/dep

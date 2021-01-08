@@ -84,7 +84,7 @@ commands:
         type: exec
         command: >-
           printf 'Update dependencies...\n' &&
-          make dep-update &&
+          go mod tidy && go mod vendor
           printf "\033[32mDone.\033[0m"
         component: dev
   - name: start plugin artifacts broker

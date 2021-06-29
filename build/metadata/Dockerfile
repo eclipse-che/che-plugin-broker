@@ -10,17 +10,18 @@
 #   Red Hat, Inc. - initial API and implementation
 #
 
-FROM golang:1.14-alpine3.12 as builder
-RUN apk add --no-cache ca-certificates
-RUN adduser -D -g '' appuser
+# https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8/go-toolset
+FROM registry.access.redhat.com/ubi8/go-toolset:1.15.7-11 as builder
+USER root
 WORKDIR /build/che-plugin-broker/brokers/metadata/cmd/
 COPY . /build/che-plugin-broker/
-RUN CGO_ENABLED=0 GOOS=linux go build -mod vendor -a -ldflags '-w -s' -installsuffix cgo -o metadata-broker main.go
+RUN adduser appuser && \
+    CGO_ENABLED=0 GOOS=linux go build -mod vendor -a -ldflags '-w -s' -installsuffix cgo -o metadata-broker main.go
 
 
-FROM alpine:3.12
+# https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8-minimal
+FROM registry.access.redhat.com/ubi8-minimal:8.4-200.1622548483
 USER appuser
 COPY --from=builder /etc/passwd /etc/passwd
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /build/che-plugin-broker/brokers/metadata/cmd/metadata-broker /
 ENTRYPOINT ["/metadata-broker"]

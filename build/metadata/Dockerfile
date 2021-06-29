@@ -20,7 +20,7 @@ RUN adduser appuser && \
 
 
 # https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8-micro
-FROM registry.access.redhat.com/ubi8-micro:8.4-72
+FROM registry.access.redhat.com/ubi8/ubi-micro:8.4-72
 USER appuser
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /build/che-plugin-broker/brokers/metadata/cmd/metadata-broker /

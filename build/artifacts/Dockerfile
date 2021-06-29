@@ -20,7 +20,7 @@ RUN adduser appuser && \
 
 
 # https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8-minimal
-FROM registry.access.redhat.com/ubi8-minimal:8.4-200.1622548483
+FROM registry.access.redhat.com/ubi8-micro:8.4-72
 USER appuser
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /build/che-plugin-broker/brokers/artifacts/cmd/artifacts-broker /

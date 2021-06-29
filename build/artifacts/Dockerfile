@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018-2020 Red Hat, Inc.
+# Copyright (c) 2018-2021 Red Hat, Inc.
 # This program and the accompanying materials are made
 # available under the terms of the Eclipse Public License 2.0
 # which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -19,7 +19,7 @@ RUN adduser appuser && \
     CGO_ENABLED=0 GOOS=linux go build -mod vendor -a -ldflags '-w -s' -installsuffix cgo -o artifacts-broker main.go
 
 
-# https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8-minimal
+# https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8-micro
 FROM registry.access.redhat.com/ubi8-micro:8.4-72
 USER appuser
 COPY --from=builder /etc/passwd /etc/passwd

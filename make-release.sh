@@ -116,7 +116,7 @@ echo "Updating VERSION file to $VERSION"
 echo "$VERSION" > VERSION
 
 # commit change into branch
-COMMIT_MSG="[release] Bump to $VERSION in $BRANCH"
+COMMIT_MSG="chore: release: bump to $VERSION in $BRANCH"
 echo "Creating commit in $BRANCH with message: $COMMIT_MSG"
 gitw pull origin "$BRANCH"
 gitw commit -s -m "$COMMIT_MSG" VERSION
@@ -157,7 +157,7 @@ echo "${NEXT_VERSION}" > VERSION
 
 # commit change into branch
 echo "Committing version change in $BASE_BRANCH"
-COMMIT_MSG="[release] Bump to ${NEXT_VERSION} in ${BASE_BRANCH}"
+COMMIT_MSG="chore: release: bump to ${NEXT_VERSION} in ${BASE_BRANCH}"
 gitw pull origin "${BASE_BRANCH}"
 gitw commit -s -m "${COMMIT_MSG}" VERSION
 
